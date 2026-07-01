@@ -1,0 +1,12 @@
+%% diagram_otentikasi.mmd — Otentikasi (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> TampilkanLogin[Tampilkan halaman login]
+  TampilkanLogin --> KirimLogin[Kirim form login]
+  KirimLogin --> Validasi{Kredensial valid}
+  Validasi -->|Ya| SetSesi[Set sesi dan arahkan ke Dasbor]
+  Validasi -->|Tidak| TampilkanLogin
+  Dasbor --> KlikLogout[Klik logout]
+  KlikLogout --> HapusSesi[Hapus sesi dan arahkan ke login]
+  HapusSesi --> Selesai((Selesai))

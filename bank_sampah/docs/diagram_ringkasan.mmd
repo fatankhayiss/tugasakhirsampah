@@ -1,0 +1,20 @@
+%% diagram_ringkasan.mmd — Ringkasan aplikasi (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> Kunjungi[Kunjungi index.php]
+  Kunjungi --> Cek{Sudah login}
+  Cek -->|Tidak| HalamanLogin[Form login]
+  HalamanLogin --> ProsesLogin[Proses login POST]
+  ProsesLogin -->|Berhasil| Dasbor[Dasbor]
+  ProsesLogin -->|Gagal| HalamanLogin
+  Cek -->|Ya| Dasbor
+  Dasbor --> Transaksi[Transaksi: setor dan riwayat]
+  Dasbor --> Edukasi[Edukasi: tambah/simpan/hapus]
+  Dasbor --> JenisSampah[Jenis sampah: CRUD]
+  Dasbor --> Warga[Warga: CRUD]
+  Dasbor --> Profil[Profil: update dan ganti password]
+  Dasbor --> Laporan[Laporan: harian dan bulanan]
+  Dasbor --> APIModul[API Modul: detect]
+  Dasbor --> Logout[Logout]
+  Logout --> Selesai((Selesai))

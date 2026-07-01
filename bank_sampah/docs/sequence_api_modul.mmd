@@ -1,0 +1,19 @@
+%% sequence_api_modul.mmd — Sequence diagram API Detect (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant 📱 Klien
+  participant 🧩 API
+  participant 🗂️ FileSys
+  participant 🤖 MLService
+  participant 🗄️ Database
+
+  Klien->>API: Kirim file gambar
+  API->>FileSys: Simpan file sementara
+  API->>MLService: Kirim file untuk deteksi
+  MLService-->>API: Hasil deteksi (JSON)
+  alt Simpan hasil
+    API->>Database: Simpan hasil deteksi
+    Database-->>API: OK
+  end
+  API-->>Klien: Kembalikan hasil deteksi (JSON)

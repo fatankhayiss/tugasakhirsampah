@@ -1,0 +1,21 @@
+%% sequence_login.mmd — Sequence diagram alur login (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant 👤 Pengguna
+  participant 🖥️ Frontend
+  participant ⚙️ Server
+  participant 🗄️ Database
+
+  Pengguna->>Frontend: Isi username dan password, kirim form
+  Frontend->>Server: submitLogin(data)
+  Server->>Database: Query user berdasarkan username
+  Database-->>Server: Data user (hash password)
+  alt Password cocok
+    Server->>Server: Set session / token
+    Server-->>Frontend: Redirect ke /dashboard
+    Frontend-->>Pengguna: Tampilkan halaman dasbor
+  else Password salah
+    Server-->>Frontend: Balikkan error (login gagal)
+    Frontend-->>Pengguna: Tampilkan pesan error
+  end

@@ -1,0 +1,10 @@
+%% diagram_api_modul.mmd — API Modul (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> InputGambar[Input gambar]
+  InputGambar --> SimpanFile[Pindah file dan simpan path]
+  SimpanFile --> PanggilDetect[Panggil script detect atau layanan ML]
+  PanggilDetect --> ParseHasil[Parsing hasil deteksi dan simpan opsional]
+  ParseHasil --> Respon[Kembalikan JSON atau arahkan dengan status]
+  Respon --> Selesai((Selesai))

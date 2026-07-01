@@ -1,0 +1,16 @@
+%% sequence_laporan.mmd — Sequence diagram Laporan & Ekspor (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant Pengguna
+  participant Aplikasi
+  participant Database
+
+  Pengguna->>Aplikasi: Pilih laporan (harian/bulanan)
+  Aplikasi->>Database: Query data laporan sesuai filter
+  Database-->>Aplikasi: Hasil query
+  Aplikasi-->>Pengguna: Render tabel/grafik
+
+  Pengguna->>Aplikasi: Klik Ekspor
+  Aplikasi->>Aplikasi: Generate CSV/XLSX
+  Aplikasi-->>Pengguna: Sediakan file untuk diunduh

@@ -1,0 +1,8 @@
+%% diagram_logout.mmd — Alur Logout (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Dasbor((Dasbor)) --> KlikLogout[Klik tombol Logout]
+  KlikLogout --> HapusSesi[Hapus sesi pengguna]
+  HapusSesi --> Arahkan[ Arahkan ke halaman login]
+  Arahkan --> Selesai((Selesai))

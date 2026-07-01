@@ -1,0 +1,35 @@
+%% sequence_profil.mmd — Sequence diagram Update Profil & Ganti Password (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant Pengguna
+  participant Frontend
+  participant Server
+  participant Database
+
+  Pengguna->>Frontend: Buka form update profil
+  Pengguna->>Frontend: Kirim data update
+  Frontend->>Server: submitUpdateProfil(data)
+  Server->>Server: Validasi data
+  alt Valid
+    Server->>Database: Update profil pengguna
+    Database-->>Server: OK
+    Server-->>Frontend: Tampilkan pesan sukses
+    Frontend-->>Pengguna: Tampilkan pesan sukses
+  else Tidak valid
+    Server-->>Frontend: Balikkan error
+    Frontend-->>Pengguna: Tampilkan pesan error
+  end
+
+  Pengguna->>Frontend: Kirim form ganti password
+  Frontend->>Server: submitGantiPassword(data)
+  Server->>Server: Verifikasi password lama dan validasi baru
+  alt Valid
+    Server->>Database: Update password
+    Database-->>Server: OK
+    Server-->>Frontend: Minta login ulang
+    Frontend-->>Pengguna: Tampilkan instruksi login ulang
+  else Tidak valid
+    Server-->>Frontend: Balikkan error ganti password
+    Frontend-->>Pengguna: Tampilkan pesan error
+  end

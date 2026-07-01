@@ -1,0 +1,22 @@
+%% sequence_warga.mmd — Sequence diagram CRUD Warga (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant 👮‍♂️ Petugas
+  participant 🖥️ Frontend
+  participant ⚙️ Server
+  participant 🗄️ Database
+
+  Petugas->>Frontend: Buka form tambah warga
+  Petugas->>Frontend: Isi data dan kirim
+  Frontend->>Server: submitWarga(data)
+  Server->>Server: Validasi data
+  alt Valid
+    Server->>Database: Insert warga
+    Database-->>Server: OK
+    Server-->>Frontend: Redirect ke daftar (sukses)
+    Frontend-->>Petugas: Tampilkan pesan sukses
+  else Tidak valid
+    Server-->>Frontend: Balikkan error validasi
+    Frontend-->>Petugas: Tampilkan pesan error
+  end

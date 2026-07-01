@@ -1,0 +1,119 @@
+%% diagrams.mmd — sanitized Mermaid diagrams for draw.io import
+%% Import via Draw.io: Arrange > Insert > Advanced > Mermaid
+
+flowchart TD
+  %% Overview subgraph (Ringkasan)
+  subgraph Ringkasan
+    OStart((Mulai)) --> Kunjungi[Kunjungi index.php]
+    Kunjungi --> Cek{Sudah login}
+    Cek -->|Tidak| HalamanLogin[Form login]
+    HalamanLogin --> ProsesLogin[Proses login POST]
+    ProsesLogin -->|Berhasil| Dasbor[Dasbor]
+    ProsesLogin -->|Gagal| HalamanLogin
+    Cek -->|Ya| Dasbor
+    Dasbor --> Transaksi[Transaksi: setor dan riwayat]
+    Dasbor --> Edukasi[Edukasi: tambah/simpan/hapus]
+    Dasbor --> JenisSampahLabel[Jenis sampah: CRUD]
+    Dasbor --> WargaLabel[Warga: CRUD]
+    Dasbor --> ProfilLabel[Profil: update dan ganti password]
+    Dasbor --> LaporanLabel[Laporan: harian dan bulanan]
+    Dasbor --> APIModul[API Modul: detect]
+    Dasbor --> Logout[Logout]
+    Logout --> OEnd((Selesai))
+  end
+
+  %% Auth subgraph (Otentikasi)
+  subgraph Otentikasi
+    AStart((Mulai)) --> TampilkanLogin[Tampilkan halaman login]
+    TampilkanLogin --> KirimLogin[Kirim form login]
+    KirimLogin --> ValidasiKredensial{Kredensial valid}
+    ValidasiKredensial -->|Ya| SetSesi[Set sesi dan arahkan ke Dasbor]
+    ValidasiKredensial -->|Tidak| TampilkanLogin
+    Dasbor --> KlikLogout[Klik logout]
+    KlikLogout --> HapusSesi[Hapus sesi dan arahkan ke login]
+    HapusSesi --> AEnd((Selesai))
+  end
+
+  %% Transaksi subgraph
+  subgraph Transaksi
+    TStart((Mulai)) --> BukaForm[Buka form setor]
+    BukaForm --> Isi[Isi jenis, berat, jumlah]
+    Isi --> KirimSetor[Kirim proses_setor POST]
+    KirimSetor --> ValidasiSetor{Input valid}
+    ValidasiSetor -->|Tidak| TampilError[Tampilkan form + pesan error]
+    ValidasiSetor -->|Ya| SimpanDB[Simpan transaksi dan detail_setoran]
+    SimpanDB --> UpdateSaldo[Perbarui saldo nasabah]
+    UpdateSaldo --> Berhasil[Arahkan ke riwayat atau konfirmasi]
+    Berhasil --> TEnd((Selesai))
+  end
+
+  %% Edukasi subgraph
+  subgraph Edukasi
+    EStart((Mulai)) --> ListE[Daftar edukasi dan lihat]
+    ListE --> TambahE[Form tambah edukasi]
+    TambahE --> KirimTambahE[Proses simpan edukasi POST]
+    KirimTambahE --> ValidasiTambah{Valid}
+    ValidasiTambah -->|Ya| TersimpanE[Simpan dan kembali ke daftar]
+    ValidasiTambah -->|Tidak| TambahE
+    ListE --> EditE[Edit edukasi]
+    EditE --> KirimEditE[Proses simpan edukasi POST]
+    ListE --> HapusE[Hapus edukasi konfirmasi dan hapus]
+    TersimpanE --> EEnd((Selesai))
+  end
+
+  %% Jenis Sampah subgraph
+  subgraph JenisSampah
+    JStart((Mulai)) --> ListJ[Daftar jenis sampah]
+    ListJ --> TambahJ[Form tambah jenis sampah]
+    TambahJ --> KirimTambahJ[Proses simpan jenis sampah POST]
+    KirimTambahJ -->|OK| KembaliJ[Kembali ke daftar]
+    ListJ --> EditJ[Edit jenis sampah]
+    EditJ --> KirimEditJ[Proses simpan jenis sampah POST]
+    ListJ --> HapusJ[Hapus jenis sampah konfirmasi dan hapus]
+    KembaliJ --> JEnd((Selesai))
+  end
+
+  %% Warga subgraph
+  subgraph Warga
+    WStart((Mulai)) --> ListW[Daftar warga]
+    ListW --> TambahW[Form tambah warga]
+    TambahW --> KirimW[Proses simpan warga POST]
+    KirimW -->|Valid| SimpanW[Simpan dan kembali]
+    ListW --> EditW[Edit warga]
+    EditW --> KirimEditW[Proses simpan warga POST]
+    ListW --> HapusW[Hapus warga konfirmasi dan hapus]
+    SimpanW --> WEnd((Selesai))
+  end
+
+  %% Profil subgraph
+  subgraph Profil
+    PStart((Mulai)) --> LihatP[Lihat profil]
+    LihatP --> FormUpdateP[Form update profil POST]
+    FormUpdateP --> ValidasiPU{Valid}
+    ValidasiPU -->|Ya| SimpanP[Perbarui DB dan beri pesan lalu arahkan]
+    ValidasiPU -->|Tidak| LihatP
+    LihatP --> GantiPass[Form ganti password POST]
+    GantiPass --> ValidasiPass{Valid}
+    ValidasiPass -->|Ya| SimpanPass[Perbarui password lalu minta login ulang]
+    SimpanPass --> PEnd((Selesai))
+  end
+
+  %% Laporan subgraph
+  subgraph Laporan
+    LStart((Mulai)) --> PilihLaporan{Pilih Harian Bulanan Export}
+    PilihLaporan --> Harian[Laporan harian: query dan tampilkan]
+    PilihLaporan --> Bulanan[Laporan bulanan: ringkasan dan grafik]
+    PilihLaporan --> Ekspor[Ekspor: buat CSV atau XLSX]
+    Ekspor --> Unduh[Sajikan file untuk diunduh]
+    Unduh --> LEnd((Selesai))
+  end
+
+  %% Modules API subgraph
+  subgraph APIModul
+    MStart((Mulai)) --> InputGambar[Input gambar]
+    InputGambar --> SimpanFile[Pindah file dan simpan path]
+    SimpanFile --> PanggilDetect[Panggil script detect atau layanan ML]
+    PanggilDetect --> ParseHasil[Parsing hasil deteksi dan simpan opsional]
+    ParseHasil --> Respon[Kembalikan JSON atau arahkan dengan status]
+    Respon --> MEnd((Selesai))
+  end

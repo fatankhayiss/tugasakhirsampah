@@ -1,0 +1,22 @@
+%% sequence_edukasi.mmd — Sequence diagram CRUD Edukasi (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant 👩‍💼 Admin
+  participant 🖥️ Frontend
+  participant ⚙️ Server
+  participant 🗄️ Database
+
+  Admin->>Frontend: Buka form tambah edukasi
+  Admin->>Frontend: Isi data dan kirim
+  Frontend->>Server: submitEdukasi(data)
+  Server->>Server: Validasi data
+  alt Valid
+    Server->>Database: Insert edukasi
+    Database-->>Server: OK
+    Server-->>Frontend: Redirect ke daftar (sukses)
+    Frontend-->>Admin: Tampilkan pesan sukses
+  else Tidak valid
+    Server-->>Frontend: Balikkan error validasi
+    Frontend-->>Admin: Tampilkan pesan error
+  end

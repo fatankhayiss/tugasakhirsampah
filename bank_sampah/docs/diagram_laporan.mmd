@@ -1,0 +1,10 @@
+%% diagram_laporan.mmd — Laporan (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> Pilih{Pilih Harian Bulanan Ekspor}
+  Pilih --> Harian[Laporan harian: query dan tampilkan]
+  Pilih --> Bulanan[Laporan bulanan: ringkasan dan grafik]
+  Pilih --> Ekspor[Ekspor: buat CSV atau XLSX]
+  Ekspor --> Unduh[Sajikan file untuk diunduh]
+  Unduh --> Selesai((Selesai))

@@ -1,0 +1,72 @@
+name: mobile_user
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  http: ^1.6.0
+  cupertino_icons: ^1.0.8
+  font_awesome_flutter: ^11.0.0
+  camera: ^0.12.0+1
+  permission_handler: ^12.0.1
+  google_fonts: ^8.1.0
+  flutter_svg: ^2.0.9
+  shared_preferences: ^2.3.4
+  flutter_lucide: ^1.11.0
+  video_player: ^2.10.1
+  chewie: ^1.12.1
+  image_picker: ^1.2.2
+  image_cropper: ^12.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # ---------------------------------------------------------------------------
+  # ASSETS — production-ready layout
+  #
+  # Rules (Flutter official):
+  # 1. Directory entry MUST end with "/" → includes files in that folder only
+  # 2. Subfolders are NOT recursive — register each folder separately
+  # 3. Filenames with spaces MUST be listed explicitly (not via directory "- assets/")
+  # 4. After any change: flutter pub get → full restart (hot reload is NOT enough)
+  # ---------------------------------------------------------------------------
+  assets:
+    # Structured image library (preferred for new assets)
+    - assets/images/auth/
+    - assets/images/home/
+    - assets/images/common/
+    - assets/images/transfer/
+    - assets/images/intro/
+    - assets/images/education/
+    - assets/icons/
+
+    # Legacy root assets — explicit paths (spaces & special chars safe)
+    - assets/Avatar.png
+    - assets/5484790 1.png
+    - assets/botol plastik.jpg
+    - assets/Button Primary.png
+    - assets/Button Primary (1).png
+    - assets/Button Primary (2).png
+    - assets/cover3 1.png
+    - assets/Frame.png
+    - assets/Image (1).png
+    - assets/Image (5).png
+    - assets/image 3.png
+    - assets/kumpulkan sampah.png
+    - assets/Loading Screen.png
+    - assets/logo Itrashy 1.png
+    - assets/logo Itrashy 2.png
+    - assets/poin logo 3.png
+    - assets/tiktok.png

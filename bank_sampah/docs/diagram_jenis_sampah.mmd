@@ -1,0 +1,12 @@
+%% diagram_jenis_sampah.mmd — Jenis Sampah (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> Daftar[Daftar jenis sampah]
+  Daftar --> Tambah[Form tambah jenis sampah]
+  Tambah --> KirimTambah[Proses simpan jenis sampah POST]
+  KirimTambah -->|OK| Kembali[Kembali ke daftar]
+  Daftar --> Edit[Edit jenis sampah]
+  Edit --> KirimEdit[Proses simpan jenis sampah POST]
+  Daftar --> Hapus[Hapus jenis sampah konfirmasi dan hapus]
+  Kembali --> Selesai((Selesai))

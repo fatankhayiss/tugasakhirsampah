@@ -1,0 +1,31 @@
+%% sequence_registrasi.mmd — Sequence diagram alur registrasi (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant 👤 Pengguna
+  participant 🖥️ Frontend
+  participant ⚙️ Server
+  participant 🛡️ AuthService
+  participant 🗄️ Database
+
+  Pengguna->>Frontend: Input username, email, no telepon, password, confirm password
+  Frontend->>Server: submitRegistration(data)
+  Server->>AuthService: validateRegistration(data)
+  AuthService->>Database: checkEmailExist(email)
+  Database-->>AuthService: return EmailStatus
+
+  alt Email sudah terdaftar
+    AuthService-->>Server: showError("Email sudah terdaftar")
+    Server-->>Frontend: displayErrorMessage("Email sudah terdaftar")
+  else Email belum terdaftar
+    AuthService->>AuthService: validatePassword(password, confirmPassword)
+    alt Password tidak cocok
+      AuthService-->>Server: showError("Confirm Password tidak sama")
+      Server-->>Frontend: displayErrorMessage("Confirm Password tidak sama")
+    else Password cocok
+      AuthService->>Database: addNewUser(data)
+      Database-->>AuthService: OK (id_user)
+      AuthService-->>Server: showSuccess("Registrasi berhasil")
+      Server-->>Frontend: redirect("/dashboard")
+    end
+  end

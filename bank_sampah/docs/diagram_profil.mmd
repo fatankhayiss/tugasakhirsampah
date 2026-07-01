@@ -1,0 +1,13 @@
+%% diagram_profil.mmd — Profil (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> Lihat[Lihat profil]
+  Lihat --> FormUpdate[Form update profil POST]
+  FormUpdate --> Validasi{Valid}
+  Validasi -->|Ya| Simpan[Perbarui DB dan beri pesan lalu arahkan]
+  Validasi -->|Tidak| Lihat
+  Lihat --> Ganti[Form ganti password POST]
+  Ganti --> ValidasiPass{Valid}
+  ValidasiPass -->|Ya| SimpanPass[Perbarui password lalu minta login ulang]
+  SimpanPass --> Selesai((Selesai))

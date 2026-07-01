@@ -1,0 +1,24 @@
+%% sequence_transaksi.mmd — Sequence diagram Transaksi Setor (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant 👤 Pengguna
+  participant 🖥️ Frontend
+  participant ⚙️ Server
+  participant 🗄️ Database
+
+  Pengguna->>Frontend: Buka form setor
+  Pengguna->>Frontend: Isi jenis, berat, jumlah dan kirim
+  Frontend->>Server: submitSetor(data)
+  Server->>Server: Validasi input
+  alt Input tidak valid
+    Server-->>Frontend: Balikkan error validasi
+    Frontend-->>Pengguna: Tampilkan pesan error
+  else Input valid
+    Server->>Database: Insert transaksi dan detail_setoran
+    Database-->>Server: OK (id_transaksi)
+    Server->>Database: Update saldo nasabah
+    Database-->>Server: OK
+    Server-->>Frontend: Redirect ke riwayat / konfirmasi
+    Frontend-->>Pengguna: Tampilkan konfirmasi
+  end

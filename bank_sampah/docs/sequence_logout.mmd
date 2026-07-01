@@ -1,0 +1,13 @@
+%% sequence_logout.mmd — Sequence diagram alur logout (Bahasa Indonesia)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+sequenceDiagram
+  participant 👤 Pengguna
+  participant 🖥️ Frontend
+  participant ⚙️ Server
+
+  Pengguna->>Frontend: Klik tombol Logout
+  Frontend->>Server: requestLogout()
+  Server->>Server: Hapus session / token
+  Server-->>Frontend: Redirect ke halaman login
+  Frontend-->>Pengguna: Tampilkan halaman login

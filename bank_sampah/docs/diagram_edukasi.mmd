@@ -1,0 +1,14 @@
+%% diagram_edukasi.mmd — Edukasi (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> Daftar[Daftar edukasi dan lihat]
+  Daftar --> Tambah[Form tambah edukasi]
+  Tambah --> KirimTambah[Proses simpan edukasi POST]
+  KirimTambah --> Validasi{Valid}
+  Validasi -->|Ya| Tersimpan[Simpan dan kembali ke daftar]
+  Validasi -->|Tidak| Tambah
+  Daftar --> Edit[Edit edukasi]
+  Edit --> KirimEdit[Proses simpan edukasi POST]
+  Daftar --> Hapus[Hapus edukasi konfirmasi dan hapus]
+  Tersimpan --> Selesai((Selesai))

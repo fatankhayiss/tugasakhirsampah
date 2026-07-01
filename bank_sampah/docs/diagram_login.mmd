@@ -1,0 +1,10 @@
+%% diagram_login.mmd — Alur Login (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> TampilkanLogin[Tampilkan halaman login]
+  TampilkanLogin --> KirimLogin[Kirim form login]
+  KirimLogin --> Validasi{Kredensial valid}
+  Validasi -->|Ya| SetSesi[Set sesi dan arahkan ke Dasbor]
+  Validasi -->|Tidak| TampilkanLogin
+  SetSesi --> Selesai((Selesai))

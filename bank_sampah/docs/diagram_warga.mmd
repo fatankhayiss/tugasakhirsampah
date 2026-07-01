@@ -1,0 +1,12 @@
+%% diagram_warga.mmd — Warga (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> Daftar[Daftar warga]
+  Daftar --> Tambah[Form tambah warga]
+  Tambah --> Kirim[Proses simpan warga POST]
+  Kirim -->|Valid| Tersimpan[Simpan dan kembali]
+  Daftar --> Edit[Edit warga]
+  Edit --> KirimEdit[Proses simpan warga POST]
+  Daftar --> Hapus[Hapus warga konfirmasi dan hapus]
+  Tersimpan --> Selesai((Selesai))

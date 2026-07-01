@@ -1,0 +1,13 @@
+%% diagram_transaksi.mmd — Transaksi (portrait/vertical)
+%% Import: draw.io → Arrange → Insert → Advanced → Mermaid
+
+flowchart TB
+  Mulai((Mulai)) --> BukaForm[Buka form setor]
+  BukaForm --> Isi[Isi jenis, berat, jumlah]
+  Isi --> KirimSetor[Kirim proses_setor POST]
+  KirimSetor --> Validasi{Input valid}
+  Validasi -->|Tidak| Error[Tampilkan form + pesan error]
+  Validasi -->|Ya| Simpan[Simpan transaksi dan detail_setoran]
+  Simpan --> UpdateSaldo[Perbarui saldo nasabah]
+  UpdateSaldo --> Sukses[Arahkan ke riwayat atau konfirmasi]
+  Sukses --> Selesai((Selesai))
