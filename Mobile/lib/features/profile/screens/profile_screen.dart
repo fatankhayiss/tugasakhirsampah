@@ -4,7 +4,7 @@ import '../../../core/constants/app_images.dart';
 import '../../../core/localization/app_language.dart';
 import '../../../core/repositories/profile_repository.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../main/screens/main_navigation_screen.dart';
+import '../../home/screens/main_navigation_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 

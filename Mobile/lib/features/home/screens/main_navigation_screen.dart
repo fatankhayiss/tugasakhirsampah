@@ -3,8 +3,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../shared/widgets/bottom_navbar.dart';
 import '../../../shared/widgets/exit_app_dialog.dart';
-import '../../home/screens/home_screen.dart';
-import '../../notifications/screens/notifications_screen.dart';
+import 'home_screen.dart';
+import '../../notification/screens/notifications_screen.dart';
 import '../../orders/screens/orders_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 

@@ -11,8 +11,21 @@ const _surface = Colors.white;
 const _surfaceVariant = Color(0xFFE7E7E7);
 const _textMuted = Color(0xFF6D7B6D);
 
-class PickupVerificationScreen extends StatelessWidget {
+class PickupVerificationScreen extends StatefulWidget {
   const PickupVerificationScreen({super.key});
+
+  @override
+  State<PickupVerificationScreen> createState() => _PickupVerificationScreenState();
+}
+
+class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
+  final TextEditingController _weightController = TextEditingController();
+
+  @override
+  void dispose() {
+    _weightController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +84,7 @@ class PickupVerificationScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _DynamicMapCard(task: task),
                     const SizedBox(height: 16),
-                    _buildWeightInput(),
+                    _buildWeightInput(task),
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -114,18 +127,21 @@ class PickupVerificationScreen extends StatelessWidget {
                 flex: 2,
                 child: ElevatedButton.icon(
                   onPressed: () async {
+                    final weightStr = _weightController.text.trim();
+                    final finalWeight = weightStr.isNotEmpty ? '$weightStr Kg' : (task['estimasi_berat'] ?? '0 Kg');
+                    task['berat_aktual'] = finalWeight;
+
                     showDialog(
                       context: context,
                       barrierDismissible: false,
                       builder: (_) => const Center(child: CircularProgressIndicator()),
                     );
-                    final res = await ApiService().updateOrderStatus(task['id_order'], 'picked_up');
+                    final res = await ApiService().updateOrderStatus(task['id_order'], 'picked_up', beratAktual: finalWeight);
                     if (context.mounted) Navigator.of(context).pop();
                     if (res['success']) {
                       task['status'] = 'picked_up';
                       if (context.mounted) {
-                        Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Penjemputan selesai!')));
+                        Navigator.of(context).pushReplacementNamed('/complete-pickup', arguments: task);
                       }
                     } else {
                       if (context.mounted) {
@@ -135,7 +151,7 @@ class PickupVerificationScreen extends StatelessWidget {
                   },
                   icon: const Icon(Icons.check_circle, size: 20),
                   label: const Text(
-                    'Selesaikan Penjemputan',
+                    'Konfirmasi Sampah Diangkut',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -240,29 +256,34 @@ class PickupVerificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWeightInput() {
+  Widget _buildWeightInput(Map<String, dynamic> task) {
+    final estStr = task['estimasi_berat'] ?? '0 kg';
+    final estNumStr = estStr.toString().replaceAll(RegExp(r'[^0-9.]'), '');
+    final estVal = double.tryParse(estNumStr) ?? 0.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            Text(
+          children: [
+            const Text(
               'Input Berat Aktual',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
-            Text('Estimasi: 3.25 kg', style: TextStyle(color: _textMuted)),
+            Text('Estimasi: $estStr', style: const TextStyle(color: _textMuted)),
           ],
         ),
         const SizedBox(height: 12),
         Stack(
           children: [
             TextField(
+              controller: _weightController,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
               decoration: InputDecoration(
-                hintText: '0.00',
+                hintText: estVal > 0 ? estVal.toStringAsFixed(2) : '0.00',
                 filled: true,
                 fillColor: const Color(0xFFF3F4F5),
                 contentPadding: const EdgeInsets.symmetric(
@@ -295,7 +316,11 @@ class PickupVerificationScreen extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (estVal > 0) {
+                    _weightController.text = (estVal * 1.5).toStringAsFixed(2);
+                  }
+                },
                 style: OutlinedButton.styleFrom(
                   backgroundColor: const Color(0xFFE7E8E9),
                   foregroundColor: _textMuted,
@@ -310,7 +335,11 @@ class PickupVerificationScreen extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (estVal > 0) {
+                    _weightController.text = estVal.toStringAsFixed(2);
+                  }
+                },
                 style: OutlinedButton.styleFrom(
                   backgroundColor: const Color(0xFFE7E8E9),
                   foregroundColor: _textMuted,
@@ -352,18 +381,6 @@ class _Tag extends StatelessWidget {
   }
 }
 
-class _Dot extends StatelessWidget {
-  const _Dot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
-    );
-  }
-}
 
 class _DynamicMapCard extends StatelessWidget {
   final Map<String, dynamic> task;

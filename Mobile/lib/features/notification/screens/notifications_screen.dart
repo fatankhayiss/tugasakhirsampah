@@ -44,35 +44,65 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Color _getTypeColor(String type) {
-    switch (type) {
+    switch (type.toLowerCase()) {
+      case 'pending':
+        return const Color(0xFFD97706); // Kuning/amber
+      case 'accepted':
+        return AppColors.primaryBlue; // Biru primary
+      case 'on_the_way':
+        return const Color(0xFF4F46E5); // Ungu/indigo
+      case 'picked_up':
       case 'pickup':
-        return AppColors.secondary; // Eco green
+        return const Color(0xFF0D9488); // Teal eco green
+      case 'validating':
+        return const Color(0xFFEA580C); // Oranye
+      case 'completed':
       case 'reward':
-        return const Color(0xFFEAB308); // Gold/amber reward
+        return const Color(0xFF16A34A); // Hijau selesai
       case 'transfer':
         return AppColors.primaryBlue; // Fintech blue
       default:
-        return AppColors.textSoft;
+        return AppColors.primaryBlue;
     }
   }
 
   Color _getTypeBgColor(String type) {
-    switch (type) {
-      case 'pickup':
-        return AppColors.softGreen;
-      case 'reward':
+    switch (type.toLowerCase()) {
+      case 'pending':
         return const Color(0xFFFEF9C3);
+      case 'accepted':
+        return const Color(0xFFDBEAFE);
+      case 'on_the_way':
+        return const Color(0xFFE0E7FF);
+      case 'picked_up':
+      case 'pickup':
+        return const Color(0xFFCCFBF1);
+      case 'validating':
+        return const Color(0xFFFFEDD5);
+      case 'completed':
+      case 'reward':
+        return const Color(0xFFDCFCE7);
       case 'transfer':
         return AppColors.softBlue;
       default:
-        return const Color(0xFFF1F5F9);
+        return const Color(0xFFEFF6FF);
     }
   }
 
   IconData _getTypeIcon(String type) {
-    switch (type) {
+    switch (type.toLowerCase()) {
+      case 'pending':
+        return LucideIcons.clock;
+      case 'accepted':
+        return LucideIcons.user_check;
+      case 'on_the_way':
+        return LucideIcons.navigation;
+      case 'picked_up':
       case 'pickup':
-        return LucideIcons.truck;
+        return LucideIcons.package_check;
+      case 'validating':
+        return LucideIcons.scale;
+      case 'completed':
       case 'reward':
         return LucideIcons.sparkles;
       case 'transfer':

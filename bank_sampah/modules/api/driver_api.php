@@ -58,7 +58,7 @@ if ($action === 'get_active_task') {
                    w.nama_lengkap as nama_warga, w.no_telepon as telp_warga
             FROM orders o
             JOIN pengguna w ON o.id_warga = w.id_pengguna
-            WHERE o.id_driver = ? AND o.status IN ('accepted', 'on_the_way')
+            WHERE o.id_driver = ? AND o.status IN ('accepted', 'on_the_way', 'picked_up')
             ORDER BY o.created_at ASC LIMIT 1";
             
     $stmt_order = mysqli_prepare($koneksi, $sql);

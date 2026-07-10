@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class CameraButtonWidget extends StatefulWidget {
@@ -48,7 +48,7 @@ class _CameraButtonWidgetState extends State<CameraButtonWidget>
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.9 : 1.0),
+        transform: Matrix4.identity()..scaleByDouble(_isPressed ? 0.9 : 1.0, _isPressed ? 0.9 : 1.0, 1.0, 1.0),
         transformAlignment: Alignment.center,
         child: Stack(
           alignment: Alignment.center,

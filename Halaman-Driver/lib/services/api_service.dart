@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/api_config.dart';
 
 class ApiResponse {
   final bool success;
@@ -19,6 +20,7 @@ class ApiResponse {
 class ApiService {
   ApiService._privateConstructor();
   static final ApiService instance = ApiService._privateConstructor();
+  factory ApiService() => instance;
 
   static const String _tokenKey = 'auth_token';
   static const String _userDataKey = 'user_data';
@@ -86,7 +88,12 @@ class ApiService {
     return null;
   }
 
-  Future<Map<String, dynamic>> updateOrderStatus(int orderId, String status) async {
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
+  }
+
+  Future<Map<String, dynamic>> updateOrderStatus(int orderId, String status, {String? beratAktual}) async {
     final token = await getToken();
     if (token == null) return {'success': false, 'message': 'Not authenticated'};
 
@@ -100,6 +107,7 @@ class ApiService {
         body: jsonEncode({
           'id_order': orderId,
           'status': status,
+          if (beratAktual != null) 'berat_aktual': beratAktual,
         }),
       );
 

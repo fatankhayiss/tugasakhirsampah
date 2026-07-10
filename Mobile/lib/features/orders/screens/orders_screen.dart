@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/order_model.dart';
 import '../../../core/repositories/order_repository.dart';
-import '../../scan/widgets/deposit_method_modal.dart';
+import '../../deposit/widgets/deposit_method_modal.dart';
 import '../models/history_item_model.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/filter_chip_widget.dart';
@@ -224,6 +224,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildOngoingTab(List ongoing) {
+    if (_isLoadingOngoing) return const Center(child: CircularProgressIndicator());
     if (ongoing.isEmpty) {
       return EmptyStateWidget.ongoing(
         key: const ValueKey('ongoing-empty'),
@@ -243,6 +244,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildHistoryTab() {
+    if (_isLoadingHistory) return const Center(child: CircularProgressIndicator());
     final items = _filteredHistory;
 
     if (items.isEmpty) {

@@ -14,4 +14,6 @@ class AppRoutes {
   static const alerts = '/alerts';
   static const profile = '/profile';
   static const transfer = '/transfer';
+  static const orderDetail = '/order-detail';
+  static const checkout = '/checkout';
 }

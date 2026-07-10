@@ -293,7 +293,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     onTapCancel: () => setState(() => _isRegisterPressed = false),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      transform: Matrix4.identity()..scale(_isRegisterPressed ? 0.95 : 1.0),
+                      transform: Matrix4.identity()..scaleByDouble(_isRegisterPressed ? 0.95 : 1.0, _isRegisterPressed ? 0.95 : 1.0, 1.0, 1.0),
                       transformAlignment: Alignment.center,
                       width: double.infinity,
                       height: 56,

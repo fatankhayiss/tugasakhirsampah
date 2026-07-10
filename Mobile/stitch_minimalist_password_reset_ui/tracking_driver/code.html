@@ -1,0 +1,278 @@
+<!DOCTYPE html><html lang="id" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>EcoTrack - Tracking Driver</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100..900&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .blue-gradient {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        }
+        .soft-shadow {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .map-container {
+            height: 45vh;
+            position: relative;
+        }
+        .timeline-line {
+            height: 2px;
+            background: #e2e8f0;
+            width: 100%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 0;
+        }
+        .timeline-line-active {
+            height: 2px;
+            background: #2563eb;
+            width: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+        body {
+            background-color: #ffffff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #181d17;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#181d17",
+                        "secondary-fixed-dim": "#78dc77",
+                        "on-background": "#181d17",
+                        "outline": "#6f7a6c",
+                        "surface-container-highest": "#dfe4da",
+                        "inverse-surface": "#2c322b",
+                        "surface-dim": "#d6dcd2",
+                        "on-primary-fixed-variant": "#005319",
+                        "on-secondary-fixed-variant": "#005313",
+                        "on-primary-container": "#c2ffbf",
+                        "surface-variant": "#dfe4da",
+                        "tertiary-fixed-dim": "#88d982",
+                        "surface-bright": "#f6fbf1",
+                        "tertiary": "#0c621b",
+                        "secondary": "#006e1c",
+                        "on-tertiary-container": "#c4ffbb",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#026e25",
+                        "inverse-primary": "#7fdb83",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#002204",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#005312",
+                        "tertiary-container": "#2d7c31",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#e5eae0",
+                        "primary-fixed-dim": "#7fdb83",
+                        "primary-container": "#1e7d32",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#a3f69c",
+                        "outline-variant": "#bfcaba",
+                        "on-surface-variant": "#3f493e",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#edf2e8",
+                        "surface": "#f6fbf1",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f0f5eb",
+                        "surface-container": "#eaf0e5",
+                        "primary": "#006320",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#91f78e",
+                        "on-primary-fixed": "#002106",
+                        "primary-fixed": "#9af89d",
+                        "on-secondary-container": "#00731e",
+                        "on-tertiary-fixed": "#002204",
+                        "secondary-fixed": "#94f990",
+                        "background": "#f6fbf1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "container-margin": "20px",
+                        "xs": "4px",
+                        "gutter": "16px",
+                        "base": "8px",
+                        "sm": "8px"
+                    },
+                    "fontFamily": {
+                        "title-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "title-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white">
+<!-- Top AppBar -->
+<header class="fixed top-0 w-full z-50 bg-white px-container-margin h-16 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<button class="p-2 -ml-2 active:scale-95 transition-transform" onclick="window.history.back()">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<div>
+<h1 class="font-title-lg text-title-lg text-on-surface">Tracking Driver</h1>
+<p class="text-xs text-on-surface-variant leading-tight">Pantau perjalanan driver menuju lokasi Anda.</p>
+</div>
+</div>
+<button class="p-2">
+<span class="material-symbols-outlined text-on-surface">more_vert</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="pt-16 pb-32">
+<!-- Map Section -->
+<section class="map-container w-full overflow-hidden">
+<div class="absolute inset-0 bg-slate-100" data-alt="A clean and modern digital map interface featuring a minimalist design of urban streets in Jakarta. The map highlights a blue navigation route polyline connecting a stylized truck icon representing a service driver to a house icon representing the user's location. The visual style is bright and professional with soft pastel colors and clear iconography, consistent with a high-end logistics mobile application." data-location="Jakarta" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB6zgjHfsNuEGAr_taeq14LJLjY1N2DtgkGZxZvzlErXa3ghm2Trr2m2yO03CpSNVwKzGcTtZGWx13kKiaJP2Gh-y0iGg78dLI9_ZdXV3RafbPLmqGkX2ruNkLmiACaxVtWrfLVga7fL6VNdFh78-jHnQi9Qj_RVF9wp0CdT4Ih6WTay52nVRb7TyWmcZQxo_syDQ5qROwQJiltcprlaT_SEFrV7pSGRHH1_Mnuejq3ifkatwl9zGKU')">
+<!-- Overlay markers (simulated) -->
+<div class="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2" style="transform: translate(1.4px, 0.7px) translate(-50%, -50%);">
+<div class="bg-blue-600 p-2 rounded-full shadow-lg border-2 border-white animate-bounce">
+<span class="material-symbols-outlined text-white text-sm">local_shipping</span>
+</div>
+</div>
+<div class="absolute bottom-1/4 right-1/3">
+<div class="bg-primary p-2 rounded-full shadow-lg border-2 border-white">
+<span class="material-symbols-outlined text-white text-sm">home</span>
+</div>
+</div>
+</div>
+<!-- Floating ETA Card -->
+<div class="absolute top-4 right-4 bg-white rounded-xl soft-shadow p-3 flex items-center gap-3 border border-slate-100">
+<div class="bg-blue-50 p-2 rounded-lg">
+<span class="material-symbols-outlined text-blue-600">schedule</span>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Estimasi Tiba</p>
+<p class="font-title-md text-blue-600">15 Menit <span class="text-slate-400 font-normal text-sm ml-1">• 2.3 Km</span></p>
+</div>
+</div>
+</section>
+<div class="px-container-margin -mt-6 relative z-10 space-y-4">
+<!-- Driver Info Card -->
+<div class="bg-white rounded-xl soft-shadow p-4 border border-slate-50">
+<div class="flex items-center gap-4 mb-4">
+<img class="w-14 h-14 rounded-full object-cover border-2 border-slate-100" data-alt="A professional studio portrait of a friendly male service driver named Budi Santoso in his early 40s wearing a clean green service uniform. He has a warm, trustworthy expression and is looking directly at the camera. The background is a simple neutral gray, emphasizing a clean corporate aesthetic. High-quality professional lighting with sharp focus and natural skin tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPzgIiE4ICJnWjd5S0maJpCI9sOVydpeX4ivP4npTadnjtpUGb_a_zbsTVtt0-er5LbJkKAawq6Rsga9riY_-5nozYzzdI-O2am1oGVBjEDZijAXj-Iv8exf_h7S-yxClyLH-ap4kRATwWubl9sse_adyWzxXIPMSoyPDBGdsNzDcvJ_C58Cx6-ZZSkvbvkvheS0RuZiLruqIcENtY0FQ5_OLC6ADVMn7HLcjmgFx_t-Of4e_MLUNI">
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h3 class="font-title-md text-on-surface">Budi Santoso</h3>
+<div class="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-amber-500 text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-xs font-bold text-amber-700">4.8</span>
+</div>
+</div>
+<p class="text-sm text-slate-500">Motor Box - B 1234 ABC</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-full border-2 border-primary text-primary font-label-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-xl">call</span>
+                        Hubungi
+                    </button>
+<button class="bg-primary flex items-center justify-center gap-2 py-2.5 px-4 rounded-full text-white font-label-lg active:scale-95 transition-transform shadow-md">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+                        Chat Driver
+                    </button>
+</div>
+</div>
+<!-- Status Timeline -->
+
+<!-- Summary Card -->
+<div class="bg-white rounded-xl soft-shadow overflow-hidden border border-slate-50">
+<div class="p-4 border-b border-slate-100 flex justify-between items-center">
+<div>
+<p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">ID Pesanan</p>
+<p class="font-title-md text-on-surface">#ORD-20260021</p>
+</div>
+<span class="px-3 py-1 bg-secondary-container text-on-secondary-container text-xs font-bold rounded-full">Driver Menuju Lokasi</span>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-xl">location_on</span>
+<div>
+<p class="text-xs text-slate-500">Alamat Penjemputan</p>
+<p class="text-sm font-medium text-on-surface">Jl. Melati No. 45, Kebayoran Baru, Jakarta Selatan</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-50">
+<div>
+<p class="text-xs text-slate-500">Estimasi Berat</p>
+<p class="text-sm font-bold text-on-surface">5 Kg</p>
+</div>
+<div>
+<p class="text-xs text-slate-500">Estimasi Poin</p>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs" style="font-variation-settings: 'FILL' 1;">eco</span>
+<p class="text-sm font-bold text-primary">1,250 Poin</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Info Alert Card -->
+<div class="bg-emerald-50 rounded-xl p-4 flex gap-3 border border-emerald-100">
+<span class="material-symbols-outlined text-primary">info</span>
+<p class="text-sm text-emerald-900 leading-relaxed">
+                    Driver sedang menuju lokasi penjemputan. Pastikan sampah telah dipersiapkan dan dikemas dengan rapi untuk mempercepat proses pengambilan.
+                </p>
+</div>
+</div>
+</main>
+<!-- Bottom Action Area -->
+<footer class="fixed bottom-0 w-full bg-white px-container-margin pt-4 pb-8 space-y-3 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+
+<button class="w-full text-slate-500 font-label-lg py-2" onclick="window.history.back()">
+            Kembali
+        </button>
+</footer>
+<script>
+        // Micro-interaction for driver movement simulation
+        document.addEventListener('DOMContentLoaded', () => {
+            const driverIcon = document.querySelector('.animate-bounce');
+            if (driverIcon) {
+                let pos = 0;
+                setInterval(() => {
+                    pos = (pos + 0.1) % 5;
+                    driverIcon.parentElement.style.transform = `translate(${pos}px, ${pos * 0.5}px) translate(-50%, -50%)`;
+                }, 100);
+            }
+        });
+    </script>
+
+
+</body></html>

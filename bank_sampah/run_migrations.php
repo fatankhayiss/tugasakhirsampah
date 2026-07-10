@@ -5,11 +5,16 @@ $queries = [
     "ALTER TABLE `pengguna` MODIFY `level` ENUM('admin','petugas','warga','driver') NOT NULL",
     "ALTER TABLE `pengguna` ADD COLUMN `foto_profil` VARCHAR(255) DEFAULT NULL AFTER `saldo`",
     "ALTER TABLE `pengguna` ADD COLUMN `api_token` VARCHAR(255) DEFAULT NULL AFTER `foto_profil`",
-    "ALTER TABLE `pengguna` ADD COLUMN `email` VARCHAR(100) DEFAULT NULL AFTER `no_telepon`"
+    "ALTER TABLE `pengguna` ADD COLUMN `email` VARCHAR(100) DEFAULT NULL AFTER `no_telepon`",
+    "ALTER TABLE `orders` MODIFY `status` ENUM('pending','accepted','on_the_way','picked_up','validating','completed','cancelled') DEFAULT 'pending'"
 ];
 
 foreach ($queries as $q) {
-    mysqli_query($koneksi, $q); // Ignore duplicate column errors
+    try {
+        @mysqli_query($koneksi, $q);
+    } catch (Throwable $e) {
+        // Ignore duplicate column errors on PHP 8+
+    }
 }
 
 $sql = "
@@ -25,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `waktu_jemput_sampai` TIME DEFAULT NULL,
   `estimasi_berat` VARCHAR(50) DEFAULT NULL,
   `estimasi_poin` INT DEFAULT 0,
-  `status` ENUM('pending','accepted','on_the_way','picked_up','completed','cancelled') DEFAULT 'pending',
+  `status` ENUM('pending','accepted','on_the_way','picked_up','validating','completed','cancelled') DEFAULT 'pending',
   `catatan` TEXT DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -61,6 +66,24 @@ CREATE TABLE IF NOT EXISTS `notifikasi` (
   PRIMARY KEY (`id_notifikasi`),
   KEY `idx_notif_user` (`id_pengguna`),
   CONSTRAINT `notif_ibfk_user` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `detail_driver` (
+  `id_detail` INT(11) NOT NULL AUTO_INCREMENT,
+  `id_pengguna` INT(11) NOT NULL,
+  `kecamatan` VARCHAR(100) DEFAULT NULL,
+  `kab_kota` VARCHAR(100) DEFAULT NULL,
+  `wilayah` VARCHAR(100) DEFAULT NULL,
+  `kode_pos` VARCHAR(20) DEFAULT NULL,
+  `tipe_kendaraan` ENUM('Mobil', 'Truk', 'Motor') NOT NULL,
+  `jenis_kendaraan` VARCHAR(100) NOT NULL,
+  `plat_nomor` VARCHAR(20) NOT NULL,
+  `kapasitas_berat` DECIMAL(5,2) DEFAULT 0.00,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_detail`),
+  KEY `idx_detail_driver_pengguna` (`id_pengguna`),
+  CONSTRAINT `fk_detail_driver_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 ";
 

@@ -393,7 +393,7 @@ class _AnimatedLoadingDotsState extends State<_AnimatedLoadingDots>
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: opacity),
               ),
-              transform: Matrix4.identity()..scale(scale),
+              transform: Matrix4.identity()..scaleByDouble(scale, scale, 1.0, 1.0),
               transformAlignment: Alignment.center,
             );
           },

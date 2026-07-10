@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../features/scan/widgets/deposit_method_modal.dart';
+import '../../features/deposit/widgets/deposit_method_modal.dart';
 
 /// Premium floating capsule-style Bottom Navigation Bar with elevated center FAB.
 class BottomNavbar extends StatelessWidget {
