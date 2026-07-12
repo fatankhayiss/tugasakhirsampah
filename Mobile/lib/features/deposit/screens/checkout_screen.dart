@@ -5,6 +5,7 @@ import '../../../core/models/notification_model.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../core/repositories/order_repository.dart';
+import '../../../core/utils/address_verification_helper.dart';
 import '../../../shared/widgets/primary_button.dart';
 import 'change_address_screen.dart';
 import 'deposit_submitted_screen.dart';
@@ -229,6 +230,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
       return;
     }
+
+    final isValidAddress = await AddressVerificationHelper.checkAndPrompt(
+      context,
+      onValid: () {},
+    );
+    if (!isValidAddress) return;
 
     setState(() => _isSubmitting = true);
 

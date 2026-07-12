@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/repositories/waste_repository.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../core/navigation/app_dialog_transitions.dart';
 import 'checkout_screen.dart';
 
 class ManualDepositScreen extends StatefulWidget {
@@ -74,7 +75,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
 
   void _openWeightBottomSheet(WasteItem item) {
     double tempWeight = 1.0;
-    showModalBottomSheet(
+    AppDialogTransitions.showSlideBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

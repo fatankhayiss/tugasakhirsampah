@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_asset_image.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/exit_app_dialog.dart';
 import '../../../core/repositories/auth_repository.dart';
+import '../../../core/navigation/app_dialog_transitions.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? initialEmail;
@@ -37,13 +38,40 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _showAlertDialog(String title, String message) {
+    AppDialogTransitions.showFadeScaleDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Color(0xFF43C97B), fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleLogin() async {
-    final email = _emailController.text.trim();
+    final usernameOrPhone = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email/Username dan password wajib diisi')),
+    if (usernameOrPhone.isEmpty || password.isEmpty) {
+      _showAlertDialog(
+        'Peringatan',
+        'Username / Nomor HP dan Password wajib diisi.',
       );
       return;
     }
@@ -52,18 +80,37 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final repo = AuthRepository();
-      await repo.login(email, password);
+      await repo.login(usernameOrPhone, password);
       
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.main);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      if (errorMsg.toLowerCase().contains('akun tidak ditemukan') || errorMsg.contains('404')) {
+        _showAlertDialog('Akun tidak ditemukan', 'Periksa kembali Username atau Nomor HP Anda.');
+      } else if (errorMsg.toLowerCase().contains('password salah') || errorMsg.contains('401')) {
+        _showAlertDialog('Password salah', 'Password yang Anda masukkan tidak sesuai.');
+      } else {
+        _showAlertDialog('Peringatan', errorMsg);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = AuthRepository();
+      final userData = await repo.loginWithGoogle();
+      if (!mounted) return;
+      if (userData != null) {
+        Navigator.pushReplacementNamed(context, AppRoutes.main);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showAlertDialog('Peringatan', e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -143,18 +190,10 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // =====================================================
-              // LOGIN BANNER IMAGE
-              // FILE:
-              // assets/images/auth/login_banner.png
-              //
-              // Cara ganti:
-              // Replace nama file atau ubah AppImages.loginBanner
-              // =====================================================
-              const AppAssetImage(
-                assetPath: AppImages.loginBanner,
-                fit: BoxFit.cover,
-              ),
+            const AppAssetImage(
+              assetPath: AppImages.loginBanner,
+              fit: BoxFit.cover,
+            ),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -198,9 +237,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildEmailField() {
     return AuthTextField(
       controller: _emailController,
-      hintText: 'Email Address',
-      prefixIcon: Icons.email_outlined,
-      keyboardType: TextInputType.emailAddress,
+      hintText: 'Username / Nomor HP',
+      prefixIcon: Icons.person_outline_rounded,
+      keyboardType: TextInputType.text,
     );
   }
 
@@ -277,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Or continue with',
+            'Atau lanjutkan dengan',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -291,79 +330,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildSocialLogin() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _SocialButton(
-          icon: FontAwesomeIcons.google,
-          color: const Color(0xFFEA4335),
-          onTap: () {},
-        ),
-        const SizedBox(width: 24),
-        _SocialButton(
-          icon: FontAwesomeIcons.apple,
-          color: Colors.black,
-          onTap: () {},
-        ),
-        const SizedBox(width: 24),
-        _SocialButton(
-          icon: FontAwesomeIcons.facebookF,
-          color: const Color(0xFF1877F2),
-          onTap: () {},
-        ),
-      ],
-    );
-  }
-}
-
-class _SocialButton extends StatefulWidget {
-  final dynamic icon; // ✅ FIX: dynamic agar kompatibel dengan FaIconData dari FontAwesome
-  final Color color;
-  final VoidCallback onTap;
-
-  const _SocialButton({
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  State<_SocialButton> createState() => _SocialButtonState();
-}
-
-class _SocialButtonState extends State<_SocialButton> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _isHovered = true),
-        onTapUp: (_) => setState(() => _isHovered = false),
-        onTapCancel: () => setState(() => _isHovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 56,
-          height: 56,
-          transform: Matrix4.identity()..scaleByDouble(_isHovered ? 0.95 : 1.0, _isHovered ? 0.95 : 1.0, 1.0, 1.0),
-          decoration: BoxDecoration(
-            color: widget.color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.04),
-                blurRadius: _isHovered ? 5 : 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: OutlinedButton.icon(
+        onPressed: _isLoading ? null : _handleGoogleLogin,
+        icon: const FaIcon(FontAwesomeIcons.google, color: Color(0xFFEA4335), size: 20),
+        label: const Text(
+          'Masuk dengan Google',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
           ),
-          child: Center(
-            // ✅ FIX: changed Icon → FaIcon agar kompatibel dengan FaIconData
-            child: FaIcon(widget.icon, color: Colors.white, size: 24),
+        ),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
+          elevation: 0,
         ),
       ),
     );

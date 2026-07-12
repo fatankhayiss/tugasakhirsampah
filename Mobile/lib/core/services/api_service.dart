@@ -14,6 +14,9 @@ class ApiService {
   static const String _tokenKey = 'api_token';
   static const String _userKey = 'user_data';
 
+  final ValueNotifier<int> profileUpdateNotifier = ValueNotifier<int>(0);
+  void notifyProfileChanged() => profileUpdateNotifier.value++;
+
   /// Save auth token after login.
   Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -26,10 +29,11 @@ class ApiService {
     return prefs.getString(_tokenKey);
   }
 
-  /// Save user data as JSON string.
+  /// Save user data as JSON string and notify listeners.
   Future<void> saveUserData(Map<String, dynamic> userData) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userKey, json.encode(userData));
+    notifyProfileChanged();
   }
 
   /// Get stored user data.

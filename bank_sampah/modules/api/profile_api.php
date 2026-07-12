@@ -108,9 +108,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = (int)$user['id_pengguna'];
 
     $nama = isset($_POST['nama_lengkap']) ? trim($_POST['nama_lengkap']) : null;
+    $username = isset($_POST['username']) ? trim($_POST['username']) : null;
     $alamat = isset($_POST['alamat']) ? trim($_POST['alamat']) : null;
     $no_telepon = isset($_POST['no_telepon']) ? trim($_POST['no_telepon']) : null;
     $email = isset($_POST['email']) ? trim($_POST['email']) : null;
+    $remove_foto = isset($_POST['remove_foto']) ? trim($_POST['remove_foto']) : null;
+
+    // Cek duplikat Username jika diubah
+    if ($username !== null && $username !== '') {
+        $stmt_check = mysqli_prepare($koneksi, "SELECT id_pengguna FROM pengguna WHERE username = ? AND id_pengguna != ? LIMIT 1");
+        mysqli_stmt_bind_param($stmt_check, "si", $username, $user_id);
+        mysqli_stmt_execute($stmt_check);
+        $res_check = mysqli_stmt_get_result($stmt_check);
+        if (mysqli_fetch_assoc($res_check)) {
+            mysqli_stmt_close($stmt_check);
+            api_respond(false, 'Username sudah digunakan.', null, 400);
+        }
+        mysqli_stmt_close($stmt_check);
+    }
+
+    // Cek duplikat Email jika diubah
+    if ($email !== null && $email !== '') {
+        $stmt_check_email = mysqli_prepare($koneksi, "SELECT id_pengguna FROM pengguna WHERE email = ? AND id_pengguna != ? LIMIT 1");
+        mysqli_stmt_bind_param($stmt_check_email, "si", $email, $user_id);
+        mysqli_stmt_execute($stmt_check_email);
+        $res_check_email = mysqli_stmt_get_result($stmt_check_email);
+        if (mysqli_fetch_assoc($res_check_email)) {
+            mysqli_stmt_close($stmt_check_email);
+            api_respond(false, 'Email sudah terdaftar.', null, 400);
+        }
+        mysqli_stmt_close($stmt_check_email);
+    }
 
     $updates = [];
     $types = '';
@@ -120,6 +148,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updates[] = "nama_lengkap = ?";
         $types .= 's';
         $values[] = $nama;
+    }
+    if ($username !== null && $username !== '') {
+        $updates[] = "username = ?";
+        $types .= 's';
+        $values[] = $username;
     }
     if ($alamat !== null) {
         $updates[] = "alamat = ?";
@@ -135,6 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updates[] = "email = ?";
         $types .= 's';
         $values[] = $email;
+    }
+    if ($remove_foto === '1' || $remove_foto === 'true') {
+        $updates[] = "foto_profil = NULL";
     }
 
     // Handle foto upload

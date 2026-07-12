@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_images.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../core/repositories/order_repository.dart';
+import '../../../core/navigation/app_dialog_transitions.dart';
 import 'driver_tracking_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -42,7 +43,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _cancelOrder() async {
-    final confirm = await showDialog<bool>(
+    final confirm = await AppDialogTransitions.showFadeScaleDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text(

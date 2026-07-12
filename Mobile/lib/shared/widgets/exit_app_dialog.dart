@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 
+import '../../core/navigation/app_dialog_transitions.dart';
+
 /// Premium exit confirmation modal for double-back flow.
 class ExitAppDialog extends StatelessWidget {
   const ExitAppDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showDialog(
+    return AppDialogTransitions.showFadeScaleDialog(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.45),
       builder: (_) => const ExitAppDialog(),

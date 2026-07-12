@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/utils/address_verification_helper.dart';
+import '../../../core/navigation/app_dialog_transitions.dart';
 
 /// Premium bottom sheet — pilih metode setor sampah.
 class DepositMethodModal extends StatefulWidget {
   const DepositMethodModal({super.key});
 
-  static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.4),
-      transitionAnimationController: null,
-      builder: (context) => const _AnimatedModalWrapper(
-        child: DepositMethodModal(),
-      ),
+  static Future<void> show(BuildContext context) async {
+    await AddressVerificationHelper.checkAndPrompt(
+      context,
+      onValid: () {
+        if (!context.mounted) return;
+        AppDialogTransitions.showSlideBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => const _AnimatedModalWrapper(
+            child: DepositMethodModal(),
+          ),
+        );
+      },
     );
   }
 
@@ -128,8 +134,13 @@ class _DepositMethodModalState extends State<DepositMethodModal> {
             description: 'Input jenis sampah dan berat secara manual',
             icon: Icons.inventory_2_outlined,
             onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, AppRoutes.manualDeposit);
+              AddressVerificationHelper.checkAndPrompt(
+                context,
+                onValid: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.manualDeposit);
+                },
+              );
             },
           ),
           const SizedBox(height: 14),
@@ -140,8 +151,13 @@ class _DepositMethodModalState extends State<DepositMethodModal> {
             icon: Icons.qr_code_scanner_rounded,
             secondaryIcon: Icons.camera_alt_rounded,
             onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, AppRoutes.scan);
+              AddressVerificationHelper.checkAndPrompt(
+                context,
+                onValid: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.scan);
+                },
+              );
             },
           ),
         ],

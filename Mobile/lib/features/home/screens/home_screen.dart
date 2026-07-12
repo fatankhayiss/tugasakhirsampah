@@ -17,6 +17,7 @@ import '../../../shared/widgets/app_asset_image.dart';
 import '../../../core/navigation/app_page_transitions.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/constants/api_config.dart';
+import '../../../shared/widgets/staggered_animation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,11 +43,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _userName = 'Guest';
   String? _avatarUrl;
+  String? _userAddress;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    ApiService.instance.profileUpdateNotifier.addListener(_loadUserData);
     _pageController.addListener(() {
       final page = _pageController.page?.round() ?? 0;
       if (page != _carouselIndex) {
@@ -71,12 +74,18 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       setState(() {
         if (userData == null) {
-          _userName = "NULL";
+          _userName = "Guest";
+          _userAddress = null;
+          _avatarUrl = null;
         } else {
-          _userName = userData['nama_lengkap'] ?? userData['username'] ?? 'NoName';
-          _avatarUrl = userData['foto_profil'] != null 
-              ? '${ApiConfig.baseUrl}${userData['foto_profil']}' 
+          final uname = userData['username']?.toString().trim() ?? '';
+          _userName = uname.isNotEmpty ? uname : 'User';
+          final foto = userData['foto_profil']?.toString() ?? '';
+          _avatarUrl = foto.isNotEmpty
+              ? (foto.startsWith('http') ? foto : '${ApiConfig.baseUrl}$foto')
               : null;
+          final alamat = userData['alamat']?.toString() ?? '';
+          _userAddress = alamat.isNotEmpty ? alamat : 'Alamat belum diatur';
         }
       });
     }
@@ -84,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    ApiService.instance.profileUpdateNotifier.removeListener(_loadUserData);
     _autoScrollTimer?.cancel();
     _pageController.dispose();
     super.dispose();
@@ -142,67 +152,99 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.pushNamed(context, AppRoutes.profile);
                   },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        width: 2,
+                  child: Hero(
+                    tag: 'profile_avatar',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Hero(
-                      tag: 'profile_avatar',
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.primary, width: 2),
-                        ),
-                        child: CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.white,
-                          backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                              ? NetworkImage(_avatarUrl!) as ImageProvider
-                              : const AssetImage(AppImages.avatar),
-                        ),
+                      child: ClipOval(
+                        child: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                            ? Image.network(
+                                _avatarUrl!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  width: 50,
+                                  height: 50,
+                                  color: Colors.grey[200],
+                                  alignment: Alignment.center,
+                                  child: Icon(Icons.person, color: Colors.grey[600], size: 28),
+                                ),
+                              )
+                            : Container(
+                                width: 50,
+                                height: 50,
+                                color: Colors.grey[200],
+                                alignment: Alignment.center,
+                                child: Icon(Icons.person, color: Colors.grey[600], size: 28),
+                              ),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _greeting,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF8A92A6),
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _greeting,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF8A92A6),
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$_userName 👋',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark,
-                        letterSpacing: -0.3,
+                      const SizedBox(height: 2),
+                      Text(
+                        '$_userName 👋',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      if (_userAddress != null) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, size: 13, color: AppColors.primary),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                _userAddress!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 NotificationBadge(
                   count: _unreadNotificationCount,
                   onTap: () {
@@ -219,57 +261,74 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 24),
-                  _BalanceCard(),
+                  StaggeredCardAnimation(
+                    index: 0,
+                    child: _BalanceCard(),
+                  ),
                   const SizedBox(height: 24),
-                  _QuickActionButtons(context: context),
+                  StaggeredCardAnimation(
+                    index: 1,
+                    child: _QuickActionButtons(context: context),
+                  ),
                   const SizedBox(height: 24),
-                  _Carousel(
-                    controller: _pageController,
-                    images: _carouselImages,
-                    index: _carouselIndex,
+                  StaggeredCardAnimation(
+                    index: 2,
+                    child: _Carousel(
+                      controller: _pageController,
+                      images: _carouselImages,
+                      index: _carouselIndex,
+                    ),
                   ),
                   const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Edukasi Terpopuler',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            CustomPageRoute(
-                              page: const EducationScreen(),
-                            ),
-                          );
-                        },
-                        child: Row(
-                          children: const [
-                            Text(
-                              'Jelajahi Edukasi',
+                  StaggeredCardAnimation(
+                    index: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Edukasi Terpopuler',
                               style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                letterSpacing: 0.2,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textDark,
+                                letterSpacing: -0.3,
                               ),
                             ),
-                            SizedBox(width: 4),
-                            Icon(Icons.arrow_forward_rounded, size: 16, color: AppColors.primary),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  CustomPageRoute(
+                                    page: const EducationScreen(),
+                                  ),
+                                );
+                              },
+                              child: Row(
+                                children: const [
+                                  Text(
+                                    'Jelajahi Edukasi',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                  SizedBox(width: 4),
+                                  Icon(Icons.arrow_forward_rounded, size: 16, color: AppColors.primary),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        _EducationGrid(),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _EducationGrid(),
                   const SizedBox(height: 120), // Bottom padding for floating nav
                 ],
               ),

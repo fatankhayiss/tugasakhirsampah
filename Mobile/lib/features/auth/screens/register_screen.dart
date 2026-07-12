@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:mobile_user/core/repositories/auth_repository.dart';
 import '../../../core/constants/app_colors.dart';
-import '../widgets/social_login_button.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/navigation/app_dialog_transitions.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -13,10 +13,10 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen>
-    {
-  final _nameController = TextEditingController();
+class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -30,29 +30,67 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
+    _usernameController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
+  void _showAlertDialog(String title, String message) {
+    AppDialogTransitions.showFadeScaleDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Color(0xFF43C97B), fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleRegister() async {
-    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
+    final noTelepon = _phoneController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua field wajib diisi')),
+    if (email.isEmpty || username.isEmpty || noTelepon.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      _showAlertDialog(
+        'Peringatan',
+        'Semua kolom (Username, Email, Nomor HP, Password, Confirm Password) wajib diisi.',
       );
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password dan konfirmasi password tidak cocok')),
+      _showAlertDialog(
+        'Password Tidak Cocok',
+        'Password dan konfirmasi password tidak cocok.',
+      );
+      return;
+    }
+
+    if (!_agreedToTerms) {
+      _showAlertDialog(
+        'Peringatan',
+        'Anda wajib menyetujui Ketentuan Layanan & Kebijakan Privasi.',
       );
       return;
     }
@@ -61,7 +99,14 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     try {
       final repo = AuthRepository();
-      await repo.register(name, email, password);
+      await repo.register(
+        username,
+        email,
+        password,
+        username: username,
+        noTelepon: noTelepon,
+        alamat: '',
+      );
       await repo.logout(); // Hapus auto-login agar user terpaksa login manual
       
       if (!mounted) return;
@@ -74,20 +119,30 @@ class _RegisterScreenState extends State<RegisterScreen>
       Navigator.pushReplacementNamed(context, AppRoutes.login, arguments: email);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception: ', '')),
-          backgroundColor: Colors.redAccent,
-        ),
+      _showAlertDialog(
+        'Peringatan',
+        e.toString().replaceAll('Exception: ', ''),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _handleSocialLogin(String provider) {
-    // TODO: Implement social login
-    debugPrint('Social Login: $provider');
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = AuthRepository();
+      final userData = await repo.loginWithGoogle();
+      if (!mounted) return;
+      if (userData != null) {
+        Navigator.pushReplacementNamed(context, AppRoutes.main);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showAlertDialog('Peringatan', e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -138,9 +193,9 @@ class _RegisterScreenState extends State<RegisterScreen>
                   ),
                   const SizedBox(height: 36),
 
-                  // Name Field
+                  // Username Field
                   const Text(
-                    'Nama',
+                    'Username',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -149,8 +204,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                   ),
                   const SizedBox(height: 10),
                   _EcoTextField(
-                    controller: _nameController,
-                    hintText: content.namePlaceholder,
+                    controller: _usernameController,
+                    hintText: 'Masukkan username Anda',
                   ),
                   const SizedBox(height: 24),
 
@@ -168,6 +223,23 @@ class _RegisterScreenState extends State<RegisterScreen>
                     controller: _emailController,
                     hintText: content.emailPlaceholder,
                     keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Phone Number Field
+                  const Text(
+                    'Nomor HP',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _EcoTextField(
+                    controller: _phoneController,
+                    hintText: 'Masukkan nomor HP (08xxx / +62xxx)',
+                    keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: 24),
 
@@ -401,28 +473,30 @@ class _RegisterScreenState extends State<RegisterScreen>
                   ),
                   const SizedBox(height: 32),
 
-                  // Social Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SocialLoginButton(
-                        icon: FontAwesomeIcons.google,
-                        iconColor: Colors.redAccent,
-                        onPressed: () => _handleSocialLogin('Google'),
+                  // Social Buttons (Only Google)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _handleGoogleLogin,
+                      icon: const FaIcon(FontAwesomeIcons.google, color: Color(0xFFEA4335), size: 20),
+                      label: const Text(
+                        'Masuk dengan Google',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
+                        ),
                       ),
-                      const SizedBox(width: 20),
-                      SocialLoginButton(
-                        icon: FontAwesomeIcons.apple,
-                        iconColor: Colors.black87,
-                        onPressed: () => _handleSocialLogin('Apple'),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
                       ),
-                      const SizedBox(width: 20),
-                      SocialLoginButton(
-                        icon: FontAwesomeIcons.facebookF,
-                        iconColor: const Color(0xFF1877F2),
-                        onPressed: () => _handleSocialLogin('Facebook'),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 48),
                 ],
@@ -441,6 +515,9 @@ class _EcoTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final VoidCallback? onToggleObscure;
+  final int maxLines;
+  final int minLines;
+  final IconData? prefixIcon;
 
   const _EcoTextField({
     required this.controller,
@@ -448,6 +525,9 @@ class _EcoTextField extends StatefulWidget {
     this.keyboardType,
     this.obscureText = false,
     this.onToggleObscure,
+    this.maxLines = 1,
+    this.minLines = 1,
+    this.prefixIcon,
   });
 
   @override
@@ -506,12 +586,17 @@ class _EcoTextFieldState extends State<_EcoTextField> {
         focusNode: _focusNode,
         keyboardType: widget.keyboardType,
         obscureText: widget.obscureText,
+        maxLines: widget.obscureText ? 1 : widget.maxLines,
+        minLines: widget.obscureText ? 1 : widget.minLines,
         style: const TextStyle(fontSize: 15, color: AppColors.textDark),
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          prefixIcon: widget.prefixIcon != null
+              ? Icon(widget.prefixIcon, color: _isFocused ? AppColors.primary : Colors.grey[400], size: 20)
+              : null,
           suffixIcon: widget.onToggleObscure != null
               ? IconButton(
                   icon: AnimatedSwitcher(

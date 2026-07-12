@@ -153,96 +153,79 @@ class _SplashIntroScreenState extends State<SplashIntroScreen>
             ),
           ),
           child: SafeArea(
-            bottom: false,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final height = constraints.maxHeight;
+                final double maxLogoSize = (constraints.maxWidth * 0.16).clamp(50.0, 75.0);
 
-                final bool isShortScreen = height < 700;
-                final double logoTop = isShortScreen ? height * 0.03 : height * 0.06;
-                final double textTop = isShortScreen ? height * 0.35 : height * 0.44;
-                
-                final double logoSize = isShortScreen ? 60 : 72;
-                final double titleFontSize = isShortScreen ? 28 : 34;
-                final double subtitleFontSize = isShortScreen ? 13 : 14.5;
-                final double spacingTitleSubtitle = isShortScreen ? 10 : 16;
-                final double spacingSubtitleDots = isShortScreen ? 16 : 24;
-
-                return Stack(
+                return Column(
                   children: [
+                    const SizedBox(height: 16),
                     // Centered Logo & Brand Name at the top
-                    Positioned(
-                      top: logoTop,
-                      left: 0,
-                      right: 0,
-                      child: FadeTransition(
-                        opacity: _logoFadeAnimation,
-                        child: AnimatedBuilder(
-                          animation: _logoSlideAnimation,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: Offset(0, _logoSlideAnimation.value),
-                              child: ScaleTransition(
-                                scale: _logoScaleAnimation,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Circular Logo Frame
-                                    Container(
-                                      padding: const EdgeInsets.all(18),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white.withValues(alpha: 0.12),
-                                        border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.15),
-                                          width: 1.5,
+                    FadeTransition(
+                      opacity: _logoFadeAnimation,
+                      child: AnimatedBuilder(
+                        animation: _logoSlideAnimation,
+                        builder: (context, child) {
+                          return Transform.translate(
+                            offset: Offset(0, _logoSlideAnimation.value),
+                            child: ScaleTransition(
+                              scale: _logoScaleAnimation,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withValues(alpha: 0.12),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.15),
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF0F4227).withValues(alpha: 0.10),
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 4),
                                         ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFF0F4227).withValues(alpha: 0.10),
-                                            blurRadius: 16,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Image.asset(
-                                        AppImages.introLogo,
-                                        width: logoSize,
-                                        height: logoSize,
-                                        fit: BoxFit.contain,
-                                      ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 12),
-                                    
-                                    // App Name / Brand Title
-                                    const Text(
-                                      'iTrashy',
-                                      style: TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                        letterSpacing: -0.5,
-                                      ),
+                                    child: Image.asset(
+                                      AppImages.introLogo,
+                                      width: maxLogoSize,
+                                      height: maxLogoSize,
+                                      fit: BoxFit.contain,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'iTrashy',
+                                    style: TextStyle(
+                                      fontSize: (constraints.maxWidth * 0.075).clamp(24.0, 32.0),
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
                     ),
 
+                    const Spacer(flex: 2),
+
                     // Left-aligned Text Block
-                    Positioned(
-                      top: textTop,
-                      left: 28,
-                      right: 28,
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: (constraints.maxWidth * 0.07).clamp(20.0, 48.0),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Title: Smart Waste Management Made Easy
                           FadeTransition(
                             opacity: _titleFadeAnimation,
                             child: AnimatedBuilder(
@@ -250,23 +233,25 @@ class _SplashIntroScreenState extends State<SplashIntroScreen>
                               builder: (context, child) {
                                 return Transform.translate(
                                   offset: Offset(0, _titleSlideAnimation.value),
-                                  child: Text(
-                                    'Smart Waste\nManagement Made\nEasy',
-                                    style: TextStyle(
-                                      fontSize: titleFontSize,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      height: 1.25,
-                                      letterSpacing: -0.5,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      'Smart Waste\nManagement Made\nEasy',
+                                      style: TextStyle(
+                                        fontSize: (constraints.maxWidth * 0.082).clamp(26.0, 38.0),
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        height: 1.25,
+                                        letterSpacing: -0.5,
+                                      ),
                                     ),
                                   ),
                                 );
                               },
                             ),
                           ),
-                          SizedBox(height: spacingTitleSubtitle),
-                          
-                          // Description Subtitle
+                          const SizedBox(height: 12),
                           FadeTransition(
                             opacity: _subtitleFadeAnimation,
                             child: AnimatedBuilder(
@@ -277,7 +262,7 @@ class _SplashIntroScreenState extends State<SplashIntroScreen>
                                   child: Text(
                                     'Ayo setor sampahmu, jadwalkan pickup\nsampahmu dan dapatkan rewards.',
                                     style: TextStyle(
-                                      fontSize: subtitleFontSize,
+                                      fontSize: (constraints.maxWidth * 0.036).clamp(12.0, 15.0),
                                       fontWeight: FontWeight.w500,
                                       color: Colors.white.withValues(alpha: 0.85),
                                       height: 1.5,
@@ -287,9 +272,7 @@ class _SplashIntroScreenState extends State<SplashIntroScreen>
                               },
                             ),
                           ),
-                          SizedBox(height: spacingSubtitleDots),
-
-                          // Dynamic Animated Loading Wave Dots
+                          const SizedBox(height: 18),
                           FadeTransition(
                             opacity: _dotsFadeAnimation,
                             child: AnimatedBuilder(
@@ -306,11 +289,11 @@ class _SplashIntroScreenState extends State<SplashIntroScreen>
                       ),
                     ),
 
-                    // Fixed Bottom Illustration
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
+                    const Spacer(flex: 2),
+
+                    // Flexible Bottom Illustration
+                    Flexible(
+                      flex: 6,
                       child: FadeTransition(
                         opacity: _illustrationFadeAnimation,
                         child: AnimatedBuilder(
@@ -318,10 +301,15 @@ class _SplashIntroScreenState extends State<SplashIntroScreen>
                           builder: (context, child) {
                             return Transform.translate(
                               offset: Offset(0, _illustrationSlideAnimation.value),
-                              child: Image.asset(
-                                AppImages.introIllustration,
-                                fit: BoxFit.fitWidth,
-                                alignment: Alignment.bottomCenter,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: (constraints.maxHeight * 0.42).clamp(160.0, 360.0),
+                                ),
+                                child: Image.asset(
+                                  AppImages.introIllustration,
+                                  fit: BoxFit.contain,
+                                  alignment: Alignment.bottomCenter,
+                                ),
                               ),
                             );
                           },

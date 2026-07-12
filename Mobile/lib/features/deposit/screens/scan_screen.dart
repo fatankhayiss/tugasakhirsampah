@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/navigation/app_dialog_transitions.dart';
 import '../widgets/permission_modal_widget.dart';
 import '../widgets/scan_frame_widget.dart';
 import '../widgets/camera_button_widget.dart';
@@ -45,7 +46,7 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   void _showPermissionModal() {
-    showDialog(
+    AppDialogTransitions.showFadeScaleDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => PermissionModalWidget(

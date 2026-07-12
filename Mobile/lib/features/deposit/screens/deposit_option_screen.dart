@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import 'manual_deposit_screen.dart';
 import 'scan_deposit_screen.dart';
 import '../../../core/navigation/app_page_transitions.dart';
+import '../../../core/utils/address_verification_helper.dart';
 
 class DepositOptionScreen extends StatelessWidget {
   const DepositOptionScreen({super.key});
@@ -65,11 +66,17 @@ class DepositOptionScreen extends StatelessWidget {
                   'Input sampah secara manual dengan memilih jenis dan berat sampah',
               color: AppColors.secondary,
               onTap: () {
-                Navigator.push(
+                AddressVerificationHelper.checkAndPrompt(
                   context,
-                  CustomPageRoute(
-                    page: const ManualDepositScreen(),
-                  ),
+                  onValid: () {
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      CustomPageRoute(
+                        page: const ManualDepositScreen(),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -81,11 +88,17 @@ class DepositOptionScreen extends StatelessWidget {
                   'Gunakan kamera AI untuk mendeteksi dan mengkategorikan sampah Anda',
               color: AppColors.primaryBlue,
               onTap: () {
-                Navigator.push(
+                AddressVerificationHelper.checkAndPrompt(
                   context,
-                  CustomPageRoute(
-                    page: const ScanDepositScreen(),
-                  ),
+                  onValid: () {
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      CustomPageRoute(
+                        page: const ScanDepositScreen(),
+                      ),
+                    );
+                  },
                 );
               },
             ),

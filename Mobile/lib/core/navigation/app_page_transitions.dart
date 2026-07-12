@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Centralized premium slide-from-bottom + fade-in PageRoute builder.
+/// Centralized premium slide-from-bottom + fade-in PageRoute builder with M3 SharedAxis outgoing motion.
 class CustomPageRoute<T> extends PageRouteBuilder<T> {
   final Widget page;
   final Duration? customDuration;
@@ -11,22 +11,44 @@ class CustomPageRoute<T> extends PageRouteBuilder<T> {
     this.customDuration,
   }) : super(
           pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionDuration: customDuration ?? const Duration(milliseconds: 350),
-          reverseTransitionDuration: customDuration ?? const Duration(milliseconds: 350),
+          transitionDuration: customDuration ?? const Duration(milliseconds: 300),
+          reverseTransitionDuration: customDuration ?? const Duration(milliseconds: 260),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final curved = CurvedAnimation(
+            final curvedIn = CurvedAnimation(
               parent: animation,
               curve: Curves.easeOutCubic,
               reverseCurve: Curves.easeInCubic,
             );
-            final slide = Tween<Offset>(
-              begin: const Offset(0, 0.04), // Subtle 4% slide from bottom
-              end: Offset.zero,
-            ).animate(curved);
+            final curvedOut = CurvedAnimation(
+              parent: secondaryAnimation,
+              curve: Curves.easeInOut,
+            );
 
-            return FadeTransition(
-              opacity: curved,
-              child: SlideTransition(position: slide, child: child),
+            // Incoming animation: Fade + Slide Up
+            final slideIn = Tween<Offset>(
+              begin: const Offset(0, 0.05), // Subtle 5% slide from bottom
+              end: Offset.zero,
+            ).animate(curvedIn);
+
+            Widget incoming = FadeTransition(
+              opacity: curvedIn,
+              child: SlideTransition(position: slideIn, child: child),
+            );
+
+            // Outgoing animation: when another page is pushed on top of this page
+            return AnimatedBuilder(
+              animation: secondaryAnimation,
+              builder: (context, _) {
+                final scale = 1.0 - (0.04 * curvedOut.value);
+                final opacity = (1.0 - (0.25 * curvedOut.value)).clamp(0.0, 1.0);
+                return Opacity(
+                  opacity: opacity,
+                  child: Transform.scale(
+                    scale: scale,
+                    child: incoming,
+                  ),
+                );
+              },
             );
           },
         );

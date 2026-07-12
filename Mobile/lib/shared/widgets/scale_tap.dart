@@ -12,8 +12,8 @@ class ScaleTap extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
-    this.scaleDown = 0.96, // premium subtle 4% scale down
-    this.duration = const Duration(milliseconds: 100),
+    this.scaleDown = 0.97, // premium subtle 3% scale down (M3 compliant)
+    this.duration = const Duration(milliseconds: 150),
   });
 
   @override
@@ -32,7 +32,11 @@ class _ScaleTapState extends State<ScaleTap> with SingleTickerProviderStateMixin
       duration: widget.duration,
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: widget.scaleDown).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInOut,
+      ),
     );
   }
 

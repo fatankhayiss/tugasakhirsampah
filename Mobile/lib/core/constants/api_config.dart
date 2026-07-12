@@ -15,6 +15,7 @@ class ApiConfig {
   // API Endpoints
   static const String authLogin = '${baseUrl}modules/api/auth_api.php?action=login';
   static const String authRegister = '${baseUrl}modules/api/auth_api.php?action=register';
+  static const String authGoogleLogin = '${baseUrl}modules/api/auth_api.php?action=google_login';
   static const String profile = '${baseUrl}modules/api/profile_api.php';
   static const String transaksi = '${baseUrl}modules/api/transaksi_api.php';
   static const String jenisSampah = '${baseUrl}modules/api/jenis_sampah_api.php';

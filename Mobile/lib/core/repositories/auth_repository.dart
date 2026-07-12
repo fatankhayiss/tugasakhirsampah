@@ -3,6 +3,7 @@ import '../constants/app_images.dart';
 import '../models/login_content.dart';
 import '../models/register_content.dart';
 import '../services/api_service.dart';
+import '../services/google_auth_service.dart';
 
 /// Repository for authentication — connects to bank_sampah auth_api.php.
 class AuthRepository {
@@ -28,16 +29,16 @@ class AuthRepository {
       title: 'Daftar',
       subtitle: 'Buat akumu sekarang dan mulai langkah kecil untuk bumi kita!',
       namePlaceholder: 'Nama',
-      emailPlaceholder: 'Email',
-      passwordPlaceholder: 'Create a password',
-      confirmPasswordPlaceholder: 'Confirm password',
-      termsText: 'I\'ve read and agree to the',
-      termsLinkText: 'Terms and Conditions',
-      privacyLinkText: 'Privacy Policy',
+      emailPlaceholder: 'Email Address',
+      passwordPlaceholder: 'Password',
+      confirmPasswordPlaceholder: 'Confirm Password',
+      termsText: 'Saya setuju dengan ',
+      termsLinkText: 'Ketentuan Layanan',
+      privacyLinkText: ' & Kebijakan Privasi.',
       registerButtonText: 'Daftar',
       hasAccountText: 'Sudah punya akun?',
-      loginLinkText: 'Login',
-      continueWithText: 'Or continue with',
+      loginLinkText: 'Masuk di sini',
+      continueWithText: 'Atau lanjutkan dengan',
     );
   }
 
@@ -45,10 +46,7 @@ class AuthRepository {
   Future<Map<String, dynamic>?> login(String username, String password) async {
     final response = await _api.post(
       ApiConfig.authLogin,
-      body: {
-        'username': username,
-        'password': password,
-      },
+      body: {'username': username, 'password': password},
     );
 
     if (response.success && response.data != null) {
@@ -60,7 +58,7 @@ class AuthRepository {
       await _api.saveUserData(userData);
       return userData;
     }
-    
+
     throw Exception(response.message);
   }
 
@@ -69,6 +67,7 @@ class AuthRepository {
     String name,
     String email,
     String password, {
+    String? username,
     String? noTelepon,
     String? alamat,
   }) async {
@@ -77,6 +76,9 @@ class AuthRepository {
       'email': email,
       'password': password,
     };
+    if (username != null && username.isNotEmpty) {
+      body['username'] = username;
+    }
     if (noTelepon != null && noTelepon.isNotEmpty) {
       body['no_telepon'] = noTelepon;
     }
@@ -94,7 +96,36 @@ class AuthRepository {
       await _api.saveUserData(userData);
       return userData;
     }
-    
+
+    throw Exception(response.message);
+  }
+
+  /// Login Google via API backend MySQL
+  Future<Map<String, dynamic>?> loginWithGoogleBackend(
+    String googleUid,
+    String email,
+    String name,
+    String? photoUrl,
+  ) async {
+    final response = await _api.post(
+      ApiConfig.authGoogleLogin,
+      body: {
+        'google_uid': googleUid,
+        'email': email,
+        'nama_lengkap': name,
+        'photo_url': photoUrl ?? '',
+      },
+    );
+
+    if (response.success && response.data != null) {
+      final userData = response.data as Map<String, dynamic>;
+      if (userData['token'] != null) {
+        await _api.saveToken(userData['token']);
+      }
+      await _api.saveUserData(userData);
+      return userData;
+    }
+
     throw Exception(response.message);
   }
 
@@ -105,21 +136,13 @@ class AuthRepository {
   Future<Map<String, dynamic>?> getSavedUser() => _api.getUserData();
 
   /// Logout — clear stored token and user data.
-  Future<void> logout() => _api.clearAuth();
-
-  // Social login stubs (not implemented on backend yet)
-  Future<bool> loginWithGoogle() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return false;
+  Future<void> logout() async {
+    await GoogleAuthService.instance.signOut();
+    await _api.clearAuth();
   }
 
-  Future<bool> loginWithApple() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return false;
-  }
-
-  Future<bool> loginWithFacebook() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return false;
+  /// Alur Google Sign-In terintegrasi ke MySQL
+  Future<Map<String, dynamic>?> loginWithGoogle() async {
+    return await GoogleAuthService.instance.signInWithGoogle();
   }
 }

@@ -4,7 +4,7 @@ import 'api_service.dart';
 class AuthService {
   final ApiService _api = ApiService.instance;
 
-  Future<Map<String, dynamic>?> login(String username, String password) async {
+  Future<ApiResponse> login(String username, String password) async {
     final response = await _api.post(
       ApiConfig.authLogin,
       body: {'username': username, 'password': password},
@@ -14,16 +14,20 @@ class AuthService {
       final userData = response.data as Map<String, dynamic>;
 
       if (userData['level'] != 'driver') {
-        return null;
+        return ApiResponse(
+          success: false,
+          message: 'Akun ini bukan akun Driver. Silakan gunakan aplikasi Warga atau hubungi Admin.',
+          statusCode: 403,
+        );
       }
 
       if (userData['token'] != null) {
         await _api.saveToken(userData['token']);
       }
       await _api.saveUserData(userData);
-      return userData;
+      return response;
     }
-    return null;
+    return response;
   }
 
   Future<ApiResponse> register(Map<String, dynamic> registerData) async {
