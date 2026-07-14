@@ -12,6 +12,14 @@ $current_page = isset($current_page) ? $current_page : (isset($_GET['page']) ? $
         </a>
     </li>
     <li>
+        <a href="<?php echo BASE_URL; ?>index.php?page=monitor_ai/index" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200 <?php echo (strpos($current_page, 'monitor_ai/') === 0) ? 'active-nav-link' : ''; ?>">
+            <i class="fas fa-camera-retro w-5"></i>
+            <span>Monitor AI Scan</span>
+            <span class="ml-auto inline-block px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">LIVE</span>
+        </a>
+    </li>
+    <li>
         <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/data" 
            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200 <?php echo (strpos($current_page, 'edukasi/') === 0) ? 'active-nav-link' : ''; ?>">
             <i class="fas fa-book-open w-5"></i>

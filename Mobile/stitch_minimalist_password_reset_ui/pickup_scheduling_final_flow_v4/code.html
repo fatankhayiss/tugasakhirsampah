@@ -1,0 +1,235 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Buat Penjemputan - Bank Sampah Bersinar</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-container": "#00731e",
+                    "primary-container": "#1e7d32",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed-dim": "#78dc77",
+                    "inverse-on-surface": "#edf2e8",
+                    "on-tertiary-fixed-variant": "#005312",
+                    "surface-bright": "#f6fbf1",
+                    "primary-fixed-dim": "#7fdb83",
+                    "surface-tint": "#026e25",
+                    "on-primary": "#ffffff",
+                    "on-background": "#181d17",
+                    "inverse-surface": "#2c322b",
+                    "surface-container-low": "#f0f5eb",
+                    "tertiary-container": "#2d7c31",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed": "#002204",
+                    "secondary-container": "#91f78e",
+                    "inverse-primary": "#7fdb83",
+                    "on-surface": "#181d17",
+                    "surface-container": "#eaf0e5",
+                    "primary-fixed": "#9af89d",
+                    "surface-dim": "#d6dcd2",
+                    "tertiary-fixed": "#a3f69c",
+                    "surface-container-highest": "#dfe4da",
+                    "on-primary-fixed-variant": "#005319",
+                    "secondary-fixed": "#94f990",
+                    "on-secondary-fixed-variant": "#005313",
+                    "surface-variant": "#dfe4da",
+                    "on-primary-fixed": "#002106",
+                    "surface-container-high": "#e5eae0",
+                    "on-tertiary-container": "#c4ffbb",
+                    "on-tertiary-fixed": "#002204",
+                    "tertiary-fixed-dim": "#88d982",
+                    "background": "#f6fbf1",
+                    "error-container": "#ffdad6",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary": "#0c621b",
+                    "secondary": "#006e1c",
+                    "on-surface-variant": "#3f493e",
+                    "surface": "#f6fbf1",
+                    "on-primary-container": "#c2ffbf",
+                    "primary": "#006320",
+                    "outline": "#6f7a6c",
+                    "outline-variant": "#bfcaba",
+                    "on-secondary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "error": "#ba1a1a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "12px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "base": "8px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "gutter": "16px",
+                    "xs": "4px",
+                    "container-margin": "20px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "title-lg": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "title-md": ["Plus Jakarta Sans"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "700"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .bento-card {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            transition: all 0.2s ease;
+        }
+        .bento-card:active {
+            transform: scale(0.98);
+        }
+        .blue-gradient {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+    </style>
+</head>
+<body class="bg-white text-on-surface font-body-md min-h-screen pb-56">
+<!-- Header Area -->
+<header class="fixed top-0 w-full z-40 bg-white shadow-sm px-container-margin py-md"><div class="flex items-center gap-md"><button class="transition-all duration-200 active:scale-95 text-on-surface"><span class="material-symbols-outlined">arrow_back</span></button><h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Buat Penjemputan</h1></div><p class="text-on-surface-variant font-label-lg mt-xs">Atur jadwal penjemputan sampah Anda.</p></header>
+<!-- Main Content -->
+<main class="flex-grow pt-28 pb-32 px-container-margin space-y-md">
+<!-- Top Summary Card: Three Columns -->
+<section class="bg-white rounded-2xl p-md shadow-sm border border-outline-variant">
+<div class="grid grid-cols-3 gap-md items-start">
+<div class="flex flex-col">
+<span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Kategori</span>
+<p class="font-title-md text-on-surface whitespace-nowrap">2 Jenis Sampah</p>
+</div>
+<div class="flex flex-col border-x border-outline-variant/30 px-md">
+<span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs text-center">Total Berat</span>
+<p class="font-title-md text-on-surface text-center">5.5 kg</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-on-surface-variant text-[10px] uppercase font-bold tracking-wider mb-xs">Est. Poin</span>
+<p class="font-title-md text-primary font-bold">1.250 Poin</p>
+</div>
+</div>
+<div class="mt-md pt-md border-t border-outline-variant/30">
+<button class="text-primary font-label-lg text-label-lg flex items-center gap-1 hover:underline transition-all">
+                Lihat Detail Sampah
+                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Address Card -->
+<section class="bg-white rounded-2xl p-md shadow-sm border border-outline-variant space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">location_on</span>
+<h2 class="font-title-md text-title-md">Alamat Penjemputan</h2>
+</div>
+<button class="border border-primary text-primary px-4 py-1.5 rounded-full font-label-lg text-[12px] hover:bg-surface-container-low transition-colors">
+                Ganti Lokasi
+            </button>
+</div>
+<div class="flex gap-md items-start">
+<div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant">
+
+</div>
+<div class="flex flex-col gap-xs">
+<p class="font-title-md text-on-surface">Rumah (Utama)</p>
+<p class="font-body-md text-body-md text-on-surface-variant leading-tight">Jl. Kebon Jeruk No. 12, Jakarta Barat, DKI Jakarta 11530</p>
+</div>
+</div>
+</section>
+<!-- Scheduling Section -->
+<section class="bg-white rounded-2xl p-md shadow-sm border border-outline-variant space-y-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">calendar_today</span>
+<h2 class="font-title-md text-title-md">Jadwal Penjemputan</h2>
+</div>
+<div class="grid grid-cols-2 gap-md">
+<div class="space-y-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant px-1">Pilih Tanggal</label>
+<div class="relative group">
+<input class="w-full h-12 bg-surface-container-lowest border border-outline rounded-lg px-md font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all appearance-none cursor-pointer" type="date">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none group-focus-within:text-primary">calendar_month</span>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant px-1">Pilih Waktu</label>
+<div class="relative group">
+<select class="w-full h-12 bg-surface-container-lowest border border-outline rounded-lg px-md font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all appearance-none cursor-pointer">
+<option value="">Pilih Jam</option>
+<option value="08:00">08:00 - 10:00</option>
+<option value="10:00">10:00 - 12:00</option>
+<option value="13:00">13:00 - 15:00</option>
+<option value="15:00">15:00 - 17:00</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none group-focus-within:text-primary">schedule</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Notes Section -->
+<section class="space-y-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant px-1">Catatan Tambahan</label>
+<div class="bg-white border border-outline rounded-2xl p-md shadow-sm">
+<textarea class="w-full bg-transparent font-body-md text-on-surface border-none p-0 focus:ring-0 outline-none resize-none placeholder:text-outline-variant" placeholder="Tuliskan catatan untuk driver..." rows="3"></textarea>
+</div>
+</section>
+<!-- Information Card -->
+<section class="bg-surface-container-low rounded-xl p-md flex gap-md border-l-4 border-secondary">
+<span class="material-symbols-outlined text-secondary flex-shrink-0">info</span>
+<p class="text-[12px] leading-relaxed text-on-surface-variant">
+            Driver akan menggunakan estimasi berat sebagai acuan awal. <span class="text-primary font-bold">Berat akhir akan divalidasi kembali di Bank Sampah.</span>
+</p>
+</section>
+</main>
+<!-- Bottom CTA Layer -->
+<footer class="fixed bottom-0 left-0 w-full z-40 summary-blur border-t border-outline-variant p-container-margin flex flex-col gap-md">
+<button class="w-full blue-gradient py-md rounded-full text-white font-title-md flex items-center justify-center gap-sm shadow-lg transition-transform active:scale-95">
+<span class="">Ajukan Penjemputan</span>
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</footer>
+<script>
+    // Micro-interactions for buttons
+    document.querySelectorAll('button').forEach(button => {
+        button.addEventListener('touchstart', () => {
+            button.classList.add('opacity-80');
+        });
+        button.addEventListener('touchend', () => {
+            button.classList.remove('opacity-80');
+        });
+    });
+</script>
+
+
+</body></html>

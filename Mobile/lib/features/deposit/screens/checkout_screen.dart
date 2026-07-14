@@ -1,136 +1,138 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../shared/widgets/point_badge.dart';
-import '../../../core/models/waste_item.dart';
-import '../../../core/repositories/waste_repository.dart';
-import 'change_address_screen.dart';
-import '../../../core/repositories/order_repository.dart';
 import '../../../core/models/notification_model.dart';
+import '../../../core/models/waste_item.dart';
 import '../../../core/repositories/notification_repository.dart';
-import '../../main/screens/main_navigation_screen.dart';
-import '../../../core/navigation/app_page_transitions.dart';
+import '../../../core/repositories/order_repository.dart';
+import '../../../shared/widgets/primary_button.dart';
+import 'change_address_screen.dart';
+import 'deposit_submitted_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<WasteItem> cartItems;
+  final String pickupAddress;
+  final String notes;
 
-  const CheckoutScreen({super.key, required this.cartItems});
+  const CheckoutScreen({
+    super.key,
+    required this.cartItems,
+    this.pickupAddress =
+        'Jl. Raya Bersinar No. 123, RT 04/RW 05, Kelurahan Hijau, Kota Bandung, Jawa Barat 40123',
+    this.notes = '',
+  });
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  String selectedLocation =
-      'Jl. Adhyaksa III, Sukajaya, Kab. Bandung, Jawa Barat 40163';
-  DateTime? selectedPickupDate;
-  TimeOfDay? selectedPickupTime;
+  late DateTime _selectedDate;
+  late TimeOfDay _selectedTime;
+  late String _currentAddress;
+  late TextEditingController _notesController;
+  bool _isSubmitting = false;
 
-  double get totalWeight {
-    return widget.cartItems.fold(
-      0,
-      (sum, item) => sum + (item.weight * item.quantity),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _currentAddress = widget.pickupAddress;
+    _notesController = TextEditingController(text: widget.notes);
+    _initializeSchedule();
   }
 
-  double get totalPrice {
-    return widget.cartItems.fold(
-      0,
-      (sum, item) => sum + (item.totalPrice * item.quantity),
-    );
-  }
-
-  bool get _isSchedulerValid {
-    if (selectedPickupDate == null || selectedPickupTime == null) return false;
-
+  void _initializeSchedule() {
     final now = DateTime.now();
-    final isToday = selectedPickupDate!.year == now.year &&
-        selectedPickupDate!.month == now.month &&
-        selectedPickupDate!.day == now.day;
+    _selectedDate = now;
 
-    if (isToday) {
-      final selectedDateTime = DateTime(
-        selectedPickupDate!.year,
-        selectedPickupDate!.month,
-        selectedPickupDate!.day,
-        selectedPickupTime!.hour,
-        selectedPickupTime!.minute,
-      );
-      final minValidDateTime = now.add(const Duration(minutes: 30));
-      return selectedDateTime.isAfter(minValidDateTime);
+    final nextHour = now.hour + (now.minute > 30 ? 2 : 1);
+    if (nextHour <= 17) {
+      _selectedTime = TimeOfDay(hour: nextHour.clamp(8, 17), minute: 0);
+    } else {
+      _selectedDate = now.add(const Duration(days: 1));
+      _selectedTime = const TimeOfDay(hour: 9, minute: 0);
     }
-
-    return true;
   }
 
-  void _showValidationSnackbar() {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFFFFEBEE), // soft red tint
-        elevation: 0,
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFFFCDD2), width: 1), // soft border
-        ),
-        duration: const Duration(seconds: 4),
-        content: Row(
-          children: const [
-            Icon(
-              LucideIcons.triangle_alert,
-              color: Color(0xFFD32F2F), // dark red warning icon
-              size: 20,
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Silakan pilih waktu pickup yang masih tersedia.',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  color: Color(0xFFD32F2F), // dark red text
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
   }
 
-  void _selectPickupDate() async {
+  bool _canScheduleToday(TimeOfDay time) {
+    final now = TimeOfDay.now();
+    final nowMinutes = now.hour * 60 + now.minute;
+    final pickMinutes = time.hour * 60 + time.minute;
+    return (pickMinutes - nowMinutes) >= 30;
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agt',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatFullDate(DateTime date) {
+    const days = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu'
+    ];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agt',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
+    ];
+    return '${days[date.weekday - 1]}, ${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  double get _totalWeight =>
+      widget.cartItems.fold(0, (sum, item) => sum + item.weight);
+
+  int get _totalPoints => widget.cartItems
+      .fold(0, (sum, item) => sum + item.totalPrice.round());
+
+  Future<void> _pickDate() async {
     final now = DateTime.now();
-    final DateTime firstDate = DateTime(now.year, now.month, now.day);
-    final DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
-      initialDate: selectedPickupDate ?? firstDate,
-      firstDate: firstDate,
-      lastDate: now.add(const Duration(days: 30)),
+      initialDate: _selectedDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 14)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: AppColors.secondary, // Eco green theme
+              primary: AppColors.primaryBlue,
               onPrimary: Colors.white,
+              surface: Colors.white,
               onSurface: AppColors.textDark,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.secondary,
-                textStyle: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            dialogTheme: DialogThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
             ),
           ),
           child: child!,
@@ -140,25 +142,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (picked != null) {
       setState(() {
-        selectedPickupDate = picked;
-        // Validate pre-existing selected time against today
-        if (selectedPickupTime != null) {
-          final isToday = picked.year == now.year &&
-              picked.month == now.month &&
-              picked.day == now.day;
-
-          if (isToday) {
-            final selectedDateTime = DateTime(
-              picked.year,
-              picked.month,
-              picked.day,
-              selectedPickupTime!.hour,
-              selectedPickupTime!.minute,
-            );
-            final minValidDateTime = now.add(const Duration(minutes: 30));
-            if (selectedDateTime.isBefore(minValidDateTime)) {
-              _showValidationSnackbar();
-              selectedPickupTime = null; // reset invalid time
+        _selectedDate = picked;
+        if (DateUtils.isSameDay(picked, DateTime.now())) {
+          if (!_canScheduleToday(_selectedTime)) {
+            final n = DateTime.now();
+            final nextHour = n.hour + (n.minute > 30 ? 2 : 1);
+            if (nextHour <= 17) {
+              _selectedTime = TimeOfDay(hour: nextHour.clamp(8, 17), minute: 0);
             }
           }
         }
@@ -166,32 +156,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  void _selectPickupTime() async {
-    final TimeOfDay? picked = await showTimePicker(
+  Future<void> _pickTime() async {
+    final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
+    final picked = await showTimePicker(
       context: context,
-      initialTime: selectedPickupTime ?? TimeOfDay.now(),
+      initialTime: _selectedTime,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: AppColors.secondary, // Eco green theme
+              primary: AppColors.primaryBlue,
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: AppColors.textDark,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.secondary,
-                textStyle: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            dialogTheme: DialogThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
             ),
           ),
           child: child!,
@@ -200,76 +177,130 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     if (picked != null) {
-      if (selectedPickupDate != null) {
-        final now = DateTime.now();
-        final isToday = selectedPickupDate!.year == now.year &&
-            selectedPickupDate!.month == now.month &&
-            selectedPickupDate!.day == now.day;
-
-        if (isToday) {
-          final selectedDateTime = DateTime(
-            selectedPickupDate!.year,
-            selectedPickupDate!.month,
-            selectedPickupDate!.day,
-            picked.hour,
-            picked.minute,
-          );
-          final minValidDateTime = now.add(const Duration(minutes: 30));
-
-          if (selectedDateTime.isBefore(minValidDateTime)) {
-            _showValidationSnackbar();
-            setState(() {
-              selectedPickupTime = null; // Do not save invalid time
-            });
-            return;
-          }
-        }
+      if (isToday && !_canScheduleToday(picked)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Jadwal penjemputan hari ini minimal 30 menit dari waktu sekarang.'),
+            backgroundColor: Color(0xFFEF4444),
+          ),
+        );
+        return;
       }
-      setState(() {
-        selectedPickupTime = picked;
-      });
+      if (picked.hour < 8 || picked.hour > 17) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Jam operasional penjemputan adalah pukul 08:00 - 17:00 WIB.'),
+            backgroundColor: Color(0xFFEF4444),
+          ),
+        );
+        return;
+      }
+      setState(() => _selectedTime = picked);
     }
   }
 
-  String _formatFullDate(DateTime date) {
-    final days = [
-      'Minggu',
-      'Senin',
-      'Selasa',
-      'Rabu',
-      'Kamis',
-      'Jumat',
-      'Sabtu',
-    ];
-    final months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
-    ];
-    final dayName = days[date.weekday % 7];
-    final monthName = months[date.month - 1];
-    return '$dayName, ${date.day} $monthName ${date.year}';
+  Future<void> _changeAddress() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeAddressScreen(currentAddress: _currentAddress),
+      ),
+    );
+    if (result != null && result.trim().isNotEmpty) {
+      setState(() => _currentAddress = result.trim());
+    }
   }
 
-  String _formatTimeOfDay(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute WIB';
+  Future<void> _confirmSetoran() async {
+    if (widget.cartItems.isEmpty) return;
+
+    final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
+    if (isToday && !_canScheduleToday(_selectedTime)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Jadwal penjemputan hari ini minimal 30 menit dari waktu sekarang.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final formattedDate = _formatFullDate(_selectedDate);
+      final timeStr = _selectedTime.format(context);
+      final endTime = TimeOfDay(
+          hour: (_selectedTime.hour + 2).clamp(8, 17),
+          minute: _selectedTime.minute);
+      final endTimeStr = endTime.format(context);
+
+      final newOrderIdInt = await OrderRepository.instance.createOrder(
+        alamatJemput: _currentAddress,
+        waktuDari: '$timeStr WIB',
+        waktuSampai: '$endTimeStr WIB',
+        estimasiBerat: _totalWeight.toStringAsFixed(1),
+        estimasiPoin: _totalPoints,
+        catatan: _notesController.text.trim(),
+        items: widget.cartItems
+            .map((item) => {
+                  'id': item.id,
+                  'nama': item.name,
+                  'berat': item.weight,
+                  'harga': item.pricePerKg,
+                })
+            .toList(),
+      );
+
+      final newOrderId = newOrderIdInt?.toString() ??
+          'create_${DateTime.now().millisecondsSinceEpoch}';
+
+      NotificationRepository.instance.addNotification(
+        NotificationModel(
+          id: 'pickup_$newOrderId',
+          title: 'Penjemputan Dijadwalkan',
+          message:
+              'Setoran seberat ${_totalWeight.toStringAsFixed(1)} kg telah dijadwalkan pada $formattedDate pukul $timeStr WIB.',
+          time: 'Baru saja',
+          type: 'pickup',
+          isRead: false,
+        ),
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DepositSubmittedScreen(
+            orderId: newOrderId,
+            totalWeight: _totalWeight,
+            estPoints: _totalPoints,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal membuat pesanan. Silakan coba lagi.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isButtonEnabled = _isSchedulerValid;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -283,432 +314,594 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'Checkout Setoran',
           style: TextStyle(
             color: AppColors.textDark,
-            fontSize: 24, // Premium Typography Fix
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 20,
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.4,
+            letterSpacing: -0.3,
           ),
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Pickup Location Section
-              _SectionCard(
-                title: 'Lokasi Penjemputan',
-                icon: LucideIcons.map_pin,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      selectedLocation,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF7C8592), // Body Typography Fix
-                        height: 1.5,
-                      ),
+      body: _isSubmitting
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: AppColors.primaryBlue),
+                  SizedBox(height: 16),
+                  Text(
+                    'Memproses pesanan setoran Anda...',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSoft,
                     ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final result = await Navigator.push(
-                            context,
-                            CustomPageRoute(
-                              page: ChangeAddressScreen(
-                                currentAddress: selectedLocation,
-                              ),
-                            ),
-                          );
-                          if (result != null && result is String) {
-                            setState(() {
-                              selectedLocation = result;
-                            });
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryBlue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'Ubah Alamat Penjemputan',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              // Pickup Time Section (Scheduler Refactor)
-              _SectionCard(
-                title: 'Waktu Penjemputan',
-                icon: LucideIcons.calendar,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date Selector Field (Rounded 24, Premium UI)
-                    GestureDetector(
-                      onTap: _selectPickupDate,
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAF8), // Premium subtle container bg
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(
-                                color: AppColors.softGreen, // Eco soft green tint
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                LucideIcons.calendar,
-                                color: AppColors.secondary, // Eco green tint
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Tanggal Pickup',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.textSoft,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    selectedPickupDate != null
-                                        ? _formatFullDate(selectedPickupDate!)
-                                        : 'Pilih tanggal pickup',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 15,
-                                      fontWeight: selectedPickupDate != null
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color: selectedPickupDate != null
-                                          ? AppColors.textDark
-                                          : const Color(0xFF9E9E9E), // soft gray text
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              LucideIcons.chevron_right,
-                              color: AppColors.textSoft,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
+            )
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF8EF),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFC8EED3)),
                     ),
-                    const SizedBox(height: 14),
-                    // Time Selector Field (Rounded 24, Premium UI)
-                    GestureDetector(
-                      onTap: _selectPickupTime,
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAF8), // Premium subtle container bg
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: AppColors.border),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2DAA63),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            LucideIcons.check,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(
-                                color: AppColors.softGreen, // Eco soft green tint
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                LucideIcons.clock,
-                                color: AppColors.secondary, // Eco green tint
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Waktu Pickup',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.textSoft,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    selectedPickupTime != null
-                                        ? _formatTimeOfDay(selectedPickupTime!)
-                                        : 'Pilih waktu pickup',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 15,
-                                      fontWeight: selectedPickupTime != null
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color: selectedPickupTime != null
-                                          ? AppColors.textDark
-                                          : const Color(0xFF9E9E9E), // soft gray text
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              LucideIcons.chevron_right,
-                              color: AppColors.textSoft,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (selectedPickupDate != null) ...[
-                      () {
-                        final now = DateTime.now();
-                        final isToday = selectedPickupDate!.year == now.year &&
-                            selectedPickupDate!.month == now.month &&
-                            selectedPickupDate!.day == now.day;
-                        if (isToday) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Row(
-                              children: const [
-                                Icon(
-                                  LucideIcons.info,
-                                  color: AppColors.secondary, // Eco green info icon
-                                  size: 16,
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Langkah Terakhir: Konfirmasi',
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0A5C36),
                                 ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Jam pickup mengikuti waktu yang tersedia hari ini.',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.secondary,
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Periksa kembali lokasi, jadwal & daftar sampah Anda',
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF2E7D4F),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSectionCard(
+                    icon: LucideIcons.map_pin,
+                    iconBgColor: const Color(0xFFEAF8EF),
+                    iconColor: const Color(0xFF2DAA63),
+                    title: 'Alamat Penjemputan',
+                    trailing: OutlinedButton.icon(
+                      onPressed: _changeAddress,
+                      icon: const Icon(Icons.edit_outlined, size: 14),
+                      label: const Text('Ubah'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primaryBlue,
+                        side: const BorderSide(color: AppColors.primaryBlue),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.home_outlined,
+                            size: 18,
+                            color: AppColors.textSoft,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _currentAddress,
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textDark,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildSectionCard(
+                    icon: LucideIcons.calendar_check_2,
+                    iconBgColor: const Color(0xFFEFF6FF),
+                    iconColor: AppColors.primaryBlue,
+                    title: 'Jadwal Penjemputan',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: _pickDate,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border:
+                                        Border.all(color: AppColors.border),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        LucideIcons.calendar,
+                                        size: 18,
+                                        color: AppColors.primaryBlue,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Tanggal',
+                                              style: TextStyle(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: AppColors.textSoft,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              DateUtils.isSameDay(_selectedDate,
+                                                      DateTime.now())
+                                                  ? 'Hari Ini'
+                                                  : _formatDate(_selectedDate),
+                                              style: const TextStyle(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textDark,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: InkWell(
+                                onTap: _pickTime,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border:
+                                        Border.all(color: AppColors.border),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        LucideIcons.clock,
+                                        size: 18,
+                                        color: AppColors.primaryBlue,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Jam Pickup',
+                                              style: TextStyle(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: AppColors.textSoft,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${_selectedTime.format(context)} WIB',
+                                              style: const TextStyle(
+                                                fontFamily: 'Plus Jakarta Sans',
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textDark,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF9C3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(
+                                LucideIcons.info,
+                                size: 14,
+                                color: Color(0xFF854D0E),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Jam pickup mengikuti waktu yang tersedia hari ini (min +30 menit).',
+                                  style: TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF854D0E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildSectionCard(
+                    icon: LucideIcons.recycle,
+                    iconBgColor: const Color(0xFFEAF8EF),
+                    iconColor: const Color(0xFF2DAA63),
+                    title: 'Daftar Sampah Disetor',
+                    child: Column(
+                      children: [
+                        ...widget.cartItems.map((item) {
+                          final subtotal = item.totalPrice.round();
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border:
+                                        Border.all(color: AppColors.border),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      LucideIcons.recycle,
+                                      color: Color(0xFF2DAA63),
+                                      size: 22,
                                     ),
                                   ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        style: const TextStyle(
+                                          fontFamily: 'Plus Jakarta Sans',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textDark,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Rp ${item.pricePerKg} / kg',
+                                        style: const TextStyle(
+                                          fontFamily: 'Plus Jakarta Sans',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: AppColors.textSoft,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${item.weight.toStringAsFixed(1)} kg',
+                                      style: const TextStyle(
+                                        fontFamily: 'Plus Jakarta Sans',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textDark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '+$subtotal Poin',
+                                      style: const TextStyle(
+                                        fontFamily: 'Plus Jakarta Sans',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF2DAA63),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           );
-                        }
-                        return const SizedBox.shrink();
-                      }(),
-                    ],
+                        }),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildSectionCard(
+                    icon: LucideIcons.receipt,
+                    iconBgColor: const Color(0xFFFEF3C7),
+                    iconColor: const Color(0xFFD97706),
+                    title: 'Ringkasan Estimasi',
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total Berat Sampah',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSoft,
+                              ),
+                            ),
+                            Text(
+                              '${_totalWeight.toStringAsFixed(1)} kg',
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(color: AppColors.border, height: 1),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Estimasi Poin Didapat',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEAF8EF),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                '+$_totalPoints Poin',
+                                style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF2DAA63),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildSectionCard(
+                    icon: LucideIcons.file_text,
+                    iconBgColor: const Color(0xFFF1F5F9),
+                    iconColor: AppColors.textSoft,
+                    title: 'Catatan Tambahan (Opsional)',
+                    child: TextField(
+                      controller: _notesController,
+                      maxLines: 2,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        color: AppColors.textDark,
+                      ),
+                      decoration: InputDecoration(
+                        hintText:
+                            'Contoh: Sampah sudah dipacking dalam 2 kantong besar di depan pagar.',
+                        hintStyle: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          color: AppColors.textSoft,
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.all(14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                              color: AppColors.primaryBlue, width: 1.5),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+      bottomNavigationBar: _isSubmitting
+          ? null
+          : Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 16,
+                    offset: const Offset(0, -6),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Total Estimasi',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSoft,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '+$_totalPoints Poin',
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF2DAA63),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    SizedBox(
+                      width: 180,
+                      child: PrimaryButton(
+                        text: 'Konfirmasi Setoran',
+                        onPressed: _confirmSetoran,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              // Waste Type Section
-              _SectionCard(
-                title: 'Detail Sampah yang Disetor',
-                icon: LucideIcons.recycle,
-                child: Column(
-                  children:
-                      widget.cartItems.map((item) {
-                        return _WasteItemRow(item: item);
-                      }).toList(),
-                ),
-              ),
-              const SizedBox(height: 120), // extra padding for bottom navigation
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 24,
-              offset: const Offset(0, -8),
             ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          bottom: true,
-          child: Container(
-            height: 52,
-            decoration: BoxDecoration(
-              gradient: isButtonEnabled
-                  ? const LinearGradient(
-                      colors: [AppColors.primaryBlue, AppColors.secondaryBlue],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : null,
-              color: isButtonEnabled ? null : AppColors.primaryBlue.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: isButtonEnabled
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primaryBlue.withValues(alpha: 0.15),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [],
-            ),
-            child: ElevatedButton(
-              onPressed: isButtonEnabled
-                  ? () async {
-                      // Tampilkan loading dialog
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) => const Center(child: CircularProgressIndicator()),
-                      );
-
-                      try {
-                        final itemsData = widget.cartItems.map((item) => {
-                          'id_jenis_sampah': int.tryParse(item.id) ?? 0,
-                          'estimasi_berat_kg': item.weight * item.quantity,
-                        }).toList();
-
-                        double totalWeight = widget.cartItems.fold(0, (sum, item) => sum + (item.weight * item.quantity));
-
-                        final orderId = await OrderRepository.instance.createOrder(
-                          alamatJemput: selectedLocation,
-                          waktuDari: '${selectedPickupTime!.hour.toString().padLeft(2, '0')}:${selectedPickupTime!.minute.toString().padLeft(2, '0')}',
-                          waktuSampai: '${((selectedPickupTime!.hour + 1) % 24).toString().padLeft(2, '0')}:${selectedPickupTime!.minute.toString().padLeft(2, '0')}',
-                          estimasiBerat: '${totalWeight.toStringAsFixed(1)} Kg',
-                          estimasiPoin: totalPrice.toInt(),
-                          catatan: '',
-                          items: itemsData,
-                        );
-
-                        final newId = orderId?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
-
-                        NotificationRepository().addNotification(
-                          NotificationModel(
-                            id: 'create_$newId',
-                            title: 'Order setor sampah berhasil dibuat',
-                            message: 'Pesanan Anda sedang menunggu konfirmasi dari Admin.',
-                            time: 'Baru saja',
-                            type: 'pickup',
-                            isRead: false,
-                          ),
-                        );
-
-                        if (context.mounted) {
-                          Navigator.pop(context); // close dialog
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Pesanan berhasil dibuat. Menunggu Konfirmasi dari admin.'),
-                              backgroundColor: AppColors.secondary,
-                            ),
-                          );
-
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MainNavigationScreen(initialIndex: 2),
-                            ),
-                            (route) => false,
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          Navigator.pop(context); // close dialog
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Gagal membuat pesanan: $e')),
-                          );
-                        }
-                      }
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                disabledBackgroundColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                'Konfirmasi & Jadwalkan Pickup',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: isButtonEnabled
-                      ? Colors.white
-                      : AppColors.primaryBlue.withValues(alpha: 0.4),
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
-}
 
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Widget child;
-
-  const _SectionCard({
-    required this.title,
-    required this.icon,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSectionCard({
+    required IconData icon,
+    required Color iconBgColor,
+    required Color iconColor,
+    required String title,
+    Widget? trailing,
+    required Widget child,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28), // Premium Card Style
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.01),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -718,118 +911,34 @@ class _SectionCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(
-                  color: AppColors.softGreen, // eco green tint
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: AppColors.secondary, size: 16),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18, // Typography Hierarchy Fix
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
-                  letterSpacing: -0.2,
+                child: Center(
+                  child: Icon(icon, color: iconColor, size: 18),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _WasteItemRow extends StatelessWidget {
-  final WasteItem item;
-
-  const _WasteItemRow({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAF8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          // Symmetrical 64x64, rounded border
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.softGreen,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              WasteRepository().getWasteIcon(item.name),
-              color: AppColors.secondary,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textDark,
                     letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 6),
-                PointAmountRow(
-                  amount: '${item.pricePerKg.toInt()}/kg',
-                  logoSize: 12,
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSoft,
-                  ),
-                  pointColor: AppColors.textSoft,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${item.quantity} kg',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                ),
               ),
-              const SizedBox(height: 4),
-              PointAmountRow(
-                amount: '${(item.totalPrice * item.quantity).toInt()}',
-                logoSize: 14,
-                pointColor: AppColors.primary,
-                textStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
+              if (trailing != null) trailing,
             ],
           ),
+          const SizedBox(height: 16),
+          child,
         ],
       ),
     );

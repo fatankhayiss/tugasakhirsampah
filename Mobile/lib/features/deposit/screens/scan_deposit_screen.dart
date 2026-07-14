@@ -1,13 +1,61 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:camera/camera.dart';
 
-import 'package:mobile_user/core/constants/app_images.dart';
 import 'package:mobile_user/core/repositories/detect_repository.dart';
 import 'package:mobile_user/features/deposit/screens/detection_result_screen.dart';
 import 'package:mobile_user/core/navigation/app_page_transitions.dart';
 
-class ScanDepositScreen extends StatelessWidget {
+class ScanDepositScreen extends StatefulWidget {
   const ScanDepositScreen({super.key});
+
+  @override
+  State<ScanDepositScreen> createState() => _ScanDepositScreenState();
+}
+
+class _ScanDepositScreenState extends State<ScanDepositScreen> {
+  CameraController? _cameraController;
+  bool _isCameraInitialized = false;
+  bool _isUploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
+      
+      // Gunakan kamera belakang (kamera utama)
+      final backCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
+
+      _cameraController = CameraController(
+        backCamera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      await _cameraController!.initialize();
+      if (!mounted) return;
+      setState(() {
+        _isCameraInitialized = true;
+      });
+    } catch (e) {
+      debugPrint('Error menginisialisasi kamera: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,48 +78,76 @@ class ScanDepositScreen extends StatelessWidget {
         ),
         centerTitle: true,
       ),
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // Camera Preview Placeholder
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.camera_alt_outlined,
-                  size: 100,
-                  color: Colors.white.withValues(alpha: 0.04),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Camera Preview',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.04),
-                    fontSize: 18,
+          // Live Camera Preview
+          if (_isCameraInitialized && _cameraController != null)
+            SizedBox(
+              width: double.infinity,
+              height: double.infinity,
+              child: CameraPreview(_cameraController!),
+            )
+          else
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Color(0xFF4AC08D)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Membuka Kamera...',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 14,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Fitur prediksi akan ditambahkan',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.04),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Scan Frame
-          Center(
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF4AC08D), width: 3),
-                borderRadius: BorderRadius.circular(24),
+                ],
               ),
             ),
-          ),
+            
+          // Dark Overlay with Cutout
+          if (_isCameraInitialized)
+            ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                Colors.black.withOpacity(0.6),
+                BlendMode.srcOut,
+              ),
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black,
+                      backgroundBlendMode: BlendMode.dstOut,
+                    ),
+                  ),
+                  Center(
+                    child: Container(
+                      width: 280,
+                      height: 280,
+                      decoration: BoxDecoration(
+                        color: Colors.white, // This part will be transparent due to dstOut
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Scan Frame (Green Border)
+          if (_isCameraInitialized)
+            Center(
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFF4AC08D), width: 3),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            ),
+
           // Bottom Actions
           Positioned(
             bottom: 40,
@@ -87,81 +163,86 @@ class ScanDepositScreen extends StatelessWidget {
                     border: Border.all(color: Colors.white, width: 4),
                   ),
                   child: Material(
-                    color: const Color(0xFF4AC08D),
+                    color: _isUploading ? Colors.grey : const Color(0xFF4AC08D),
                     shape: const CircleBorder(),
                     child: InkWell(
                       customBorder: const CircleBorder(),
-                      onTap: () async {
-                        final repo = DetectRepository();
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Mengunggah...'),
-                            backgroundColor: Color(0xFF4AC08D),
-                          ),
-                        );
+                      onTap: (_isUploading || !_isCameraInitialized) ? null : () async {
+                        setState(() {
+                          _isUploading = true;
+                        });
+                        
                         try {
-                          final resp = await repo.uploadAsset(
-                            AppImages.botolPlastik,
-                          );
-                          // Debug prints
-                          // ignore: avoid_print
-                          print('Upload status: ${resp.statusCode}');
-                          // ignore: avoid_print
-                          print(resp.body);
-
-                          // Parse responsebody and navigate to result screen if possible
-                          try {
-                            final parsed =
-                                jsonDecode(resp.body) as Map<String, dynamic>;
-                            if (parsed['success'] == true &&
-                                parsed.containsKey('data')) {
-                              final data = Map<String, dynamic>.from(
-                                parsed['data'],
-                              );
-                              if (!context.mounted) return;
-                              Navigator.push(
-                                context,
-                                CustomPageRoute(
-                                  page: DetectionResultScreen(
-                                    responseData: data,
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                          } catch (e) {
-                            // JSON parse failed, will show fallback snack
-                            // ignore: avoid_print
-                            print('JSON parse error: $e');
-                          }
-
-                          // Fallback: show confirmation message
+                          // Ambil foto menggunakan kamera
+                          final xFile = await _cameraController!.takePicture();
+                          
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('contoh gambar sudah ke upload'),
+                              content: Text('Memindai gambar...'),
                               backgroundColor: Color(0xFF4AC08D),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          
+                          // Upload foto asli ke backend
+                          final repo = DetectRepository();
+                          final resp = await repo.uploadFile(xFile.path);
+
+                          if (resp.statusCode == 200) {
+                            try {
+                              final parsed = jsonDecode(resp.body) as Map<String, dynamic>;
+                              if (parsed['success'] == true && parsed.containsKey('data')) {
+                                final data = Map<String, dynamic>.from(parsed['data']);
+                                if (!context.mounted) return;
+                                Navigator.pushReplacement(
+                                  context,
+                                  CustomPageRoute(
+                                    page: DetectionResultScreen(responseData: data),
+                                  ),
+                                );
+                                return;
+                              }
+                            } catch (e) {
+                              debugPrint('JSON parse error: $e');
+                            }
+                          }
+
+                          // Jika gagal parsing atau respons tidak 200
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Gagal mengenali gambar (Kode: ${resp.statusCode})'),
+                              backgroundColor: Colors.redAccent,
                             ),
                           );
                         } catch (e) {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Upload gagal: $e'),
+                              content: Text('Error kamera: $e'),
                               backgroundColor: Colors.redAccent,
                             ),
                           );
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isUploading = false;
+                            });
+                          }
                         }
                       },
+                      child: _isUploading 
+                          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                          : const SizedBox(),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Arahkan kamera ke sampah',
+                  _isUploading ? 'Sedang Menganalisa...' : 'Arahkan kamera ke sampah',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: Colors.white.withOpacity(0.8),
                     fontSize: 14,
                   ),
                 ),

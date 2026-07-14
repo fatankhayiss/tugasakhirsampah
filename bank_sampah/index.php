@@ -61,6 +61,10 @@ $allowed_pages = [
 
     // Orders Penjemputan (dari Mobile/Driver)
     'orders/data' => 'modules/orders/index.php',
+
+    // Monitor AI Scan
+    'monitor_ai/index' => 'modules/monitor_ai/index.php',
+    'monitor_ai/data' => 'modules/monitor_ai/data.php',
 ];
 
 // Mendapatkan halaman yang diminta dari URL. Default ke halaman login.
@@ -94,7 +98,8 @@ if (array_key_exists($page, $allowed_pages)) {
             'profil/proses_update_profil', 'profil/proses_ganti_password',
             'laporan/export', // Halaman handler ekspor Excel tidak memerlukan layout
             'edukasi/proses_simpan', 'edukasi/hapus',
-            'driver/proses_simpan', 'driver/hapus'
+            'driver/proses_simpan', 'driver/hapus',
+            'monitor_ai/data'
         ];
 
         // Jika halaman saat ini ada di daftar $no_layout_pages, muat file-nya saja.

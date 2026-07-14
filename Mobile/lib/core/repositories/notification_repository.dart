@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 class NotificationRepository extends ChangeNotifier {
   // Stateful Singleton Pattern
   static final NotificationRepository _instance = NotificationRepository._internal();
+  static NotificationRepository get instance => _instance;
   factory NotificationRepository() => _instance;
   NotificationRepository._internal();
 
@@ -116,23 +117,105 @@ class NotificationRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Update or generate a notification when order status changes.
+  void notifyOrderStatusChange({
+    required String orderId,
+    required String status,
+    String? customMessage,
+  }) {
+    String title = '';
+    String message = customMessage ?? '';
+    switch (status.toLowerCase()) {
+      case 'pending':
+        title = 'Menunggu Konfirmasi Admin';
+        if (message.isEmpty) message = 'Permintaan setoran sampah #$orderId sedang menunggu verifikasi admin dan penugasan driver.';
+        break;
+      case 'accepted':
+        title = 'Pesanan Diterima & Driver Ditugaskan';
+        if (message.isEmpty) message = 'Driver telah ditugaskan untuk pesanan #$orderId dan bersiap menuju lokasi Anda.';
+        break;
+      case 'on_the_way':
+        title = 'Driver Sedang Menuju Lokasi';
+        if (message.isEmpty) message = 'Driver dalam perjalanan menuju alamat penjemputan pesanan #$orderId.';
+        break;
+      case 'picked_up':
+        title = 'Sampah Berhasil Dijemput';
+        if (message.isEmpty) message = 'Sampah pesanan #$orderId telah diangkut driver dan menuju gudang Bank Sampah.';
+        break;
+      case 'validating':
+        title = 'Proses Penimbangan & Validasi';
+        if (message.isEmpty) message = 'Sampah pesanan #$orderId sedang ditimbang dan divalidasi oleh petugas gudang.';
+        break;
+      case 'completed':
+        title = 'Setoran Selesai! Poin Ditambahkan';
+        if (message.isEmpty) message = 'Proses validasi pesanan #$orderId selesai. Poin reward telah masuk ke saldo Anda.';
+        break;
+      default:
+        title = 'Pembaruan Status Pesanan';
+        if (message.isEmpty) message = 'Pesanan #$orderId kini berstatus ${status.toUpperCase()}.';
+    }
+
+    addNotification(
+      NotificationModel(
+        id: '${status.toLowerCase()}_$orderId',
+        title: title,
+        message: message,
+        time: 'Baru saja',
+        type: status.toLowerCase(),
+        isRead: false,
+      ),
+    );
+  }
+
   List<NotificationModel> _getFallbackNotifications() {
     return [
       NotificationModel(
-        id: '1',
-        title: 'Penjemputan sampah berhasil diselesaikan',
-        message: 'Poin reward telah ditambahkan ke akun Anda.',
-        time: '2 jam lalu',
-        type: 'reward',
+        id: 'ord_completed_01',
+        title: 'Setoran Selesai! Poin Ditambahkan',
+        message: 'Proses validasi selesai. Poin reward +14.500 telah resmi masuk ke saldo Bank Sampah Bersinar Anda.',
+        time: '1 jam lalu',
+        type: 'completed',
         isRead: false,
       ),
       NotificationModel(
-        id: '2',
-        title: 'Picker sedang menuju lokasi penjemputan Anda',
-        message: 'Estimasi tiba 10–15 menit lagi.',
-        time: '5 jam lalu',
-        type: 'pickup',
+        id: 'ord_validating_01',
+        title: 'Proses Penimbangan & Validasi',
+        message: 'Petugas gudang sedang melakukan penimbangan fisik dan verifikasi kualitas sampah setoran Anda.',
+        time: '3 jam lalu',
+        type: 'validating',
         isRead: false,
+      ),
+      NotificationModel(
+        id: 'ord_picked_up_01',
+        title: 'Sampah Berhasil Dijemput',
+        message: 'Sampah Anda telah diangkut oleh driver dan sedang dalam perjalanan menuju gudang Bank Sampah.',
+        time: '4 jam lalu',
+        type: 'picked_up',
+        isRead: true,
+      ),
+      NotificationModel(
+        id: 'ord_on_the_way_01',
+        title: 'Driver Sedang Menuju Lokasi',
+        message: 'Driver dalam perjalanan menuju alamat penjemputan. Estimasi tiba 10-15 menit lagi.',
+        time: '5 jam lalu',
+        type: 'on_the_way',
+        isRead: true,
+      ),
+      NotificationModel(
+        id: 'ord_accepted_01',
+        title: 'Pesanan Diterima & Driver Ditugaskan',
+        message: 'Driver Bersinar #104 telah ditugaskan dan bersiap menuju lokasi penjemputan Anda.',
+        time: '6 jam lalu',
+        type: 'accepted',
+        isRead: true,
+      ),
+      NotificationModel(
+        id: 'ord_pending_01',
+        title: 'Menunggu Konfirmasi Admin',
+        message: 'Permintaan setoran sampah Anda telah dikirim dan sedang menunggu verifikasi serta penugasan driver.',
+        time: '1 hari lalu',
+        type: 'pending',
+        isRead: true,
       ),
     ];
   }

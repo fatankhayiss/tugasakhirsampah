@@ -25,7 +25,7 @@ class WasteRepository {
         }).toList();
       }
     } catch (e) {
-      print('WASTE REPO ERROR: $e');
+      debugPrint('WASTE REPO ERROR: $e');
     }
 
     // Fallback: data statis

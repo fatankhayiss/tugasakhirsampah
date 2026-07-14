@@ -30,22 +30,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
         : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
   }
 
-  /// Helper widget untuk menampilkan gambar — network jika ada URL, fallback ke asset.
-  Widget _buildNetworkImage(String? imageUrl, String imageAsset,
-      {double? width, double? height, BoxFit fit = BoxFit.cover}) {
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return Image.network(
-        imageUrl,
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(imageAsset, width: width, height: height, fit: fit);
-        },
-      );
-    }
-    return Image.asset(imageAsset, width: width, height: height, fit: fit);
-  }
+
 
   @override
   Widget build(BuildContext context) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/point_badge.dart';
 import '../models/history_item_model.dart';
+import '../screens/order_detail_screen.dart';
 
 class TransactionCard extends StatefulWidget {
   final HistoryItemModel item;
@@ -23,6 +24,16 @@ class _TransactionCardState extends State<TransactionCard> {
         : const Color(0xFFE53935);
 
     return GestureDetector(
+      onTap: () {
+        if (widget.item.type == HistoryType.setor) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderDetailScreen(orderId: widget.item.id),
+            ),
+          );
+        }
+      },
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),

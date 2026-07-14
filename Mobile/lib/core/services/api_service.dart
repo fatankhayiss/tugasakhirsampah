@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   ApiService._();
   static final ApiService instance = ApiService._();
+  factory ApiService() => instance;
 
   static const String _tokenKey = 'api_token';
   static const String _userKey = 'user_data';
@@ -77,7 +79,7 @@ class ApiService {
       final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
       return _parseResponse(response);
     } catch (e) {
-      print('API Error (GET $url): $e');
+      debugPrint('API Error (GET $url): $e');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
@@ -90,7 +92,7 @@ class ApiService {
       final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
       return _parseResponse(response);
     } catch (e) {
-      print('API Error (POST $url): $e');
+      debugPrint('API Error (POST $url): $e');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
@@ -123,7 +125,7 @@ class ApiService {
       final response = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 15));
       return _parseResponse(response);
     } catch (e) {
-      print('API Error (Multipart POST $url): $e');
+      debugPrint('API Error (Multipart POST $url): $e');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
@@ -141,7 +143,7 @@ class ApiService {
       ).timeout(const Duration(seconds: 10));
       return _parseResponse(response);
     } catch (e) {
-      print('API Error (PUT $url): $e');
+      debugPrint('API Error (PUT $url): $e');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }

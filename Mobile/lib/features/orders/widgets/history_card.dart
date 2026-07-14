@@ -3,6 +3,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_images.dart';
 import '../../../shared/widgets/point_badge.dart';
 import '../models/history_item_model.dart';
+import '../screens/order_detail_screen.dart';
 
 class HistoryCard extends StatefulWidget {
   final HistoryItemModel item;
@@ -19,6 +20,16 @@ class _HistoryCardState extends State<HistoryCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onTap: () {
+        if (widget.item.type == HistoryType.setor) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderDetailScreen(orderId: widget.item.id),
+            ),
+          );
+        }
+      },
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),

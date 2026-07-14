@@ -1,15 +1,17 @@
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import '../constants/api_config.dart';
+import '../services/api_service.dart';
 
 /// Simple repository to upload an asset image to the bank_sampah detect API.
 ///
-/// Default `baseUrl` targets Android emulator host mapping `10.0.2.2`.
+/// Default `baseUrl` targets `ApiConfig.detect` (from centralized ApiConfig).
 class DetectRepository {
   final String endpoint;
 
   DetectRepository({String? baseUrl})
     : endpoint =
-          baseUrl ?? 'http://10.0.2.2/bank_sampah/modules/api/detect.php';
+          baseUrl ?? ApiConfig.detect;
 
   /// Uploads an image bundled as a Flutter asset (e.g. `assets/botol plastik.jpg`).
   /// Returns the HTTP response from the server.
@@ -30,7 +32,32 @@ class DetectRepository {
       ),
     );
 
-    // If you need to send a user id: request.fields['user_id'] = '1';
+    // Fetch user_id and attach if available
+    final userData = await ApiService.instance.getUserData();
+    if (userData != null && userData['id_pengguna'] != null) {
+      request.fields['user_id'] = userData['id_pengguna'].toString();
+    }
+
+    final streamed = await request.send();
+    return await http.Response.fromStream(streamed);
+  }
+
+  /// Uploads an image from a local file path (e.g. from camera capture).
+  Future<http.Response> uploadFile(String filePath) async {
+    final uri = Uri.parse(endpoint);
+    final request = http.MultipartRequest('POST', uri);
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'image',
+        filePath,
+      ),
+    );
+
+    final userData = await ApiService.instance.getUserData();
+    if (userData != null && userData['id_pengguna'] != null) {
+      request.fields['user_id'] = userData['id_pengguna'].toString();
+    }
 
     final streamed = await request.send();
     return await http.Response.fromStream(streamed);

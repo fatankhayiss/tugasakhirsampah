@@ -348,7 +348,7 @@ class _SocialButtonState extends State<_SocialButton> {
           duration: const Duration(milliseconds: 200),
           width: 56,
           height: 56,
-          transform: Matrix4.identity()..scale(_isHovered ? 0.95 : 1.0),
+          transform: Matrix4.identity()..scaleByDouble(_isHovered ? 0.95 : 1.0, _isHovered ? 0.95 : 1.0, 1.0, 1.0),
           decoration: BoxDecoration(
             color: widget.color,
             shape: BoxShape.circle,

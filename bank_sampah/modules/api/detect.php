@@ -2,6 +2,10 @@
 // modules/api/detect.php
 // Endpoint: menerima POST multipart/form-data 'image' (file) dari mobile
 // Menyimpan file, menjalankan deteksi (py script jika tersedia), lalu mencari data di tabel jenis_sampah
+error_reporting(0);
+ini_set('display_errors', 0);
+ob_start(); // Buffer any output/warnings
+
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -9,6 +13,7 @@ header('Access-Control-Allow-Headers: Content-Type, Accept');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    ob_end_clean();
     echo json_encode(['success' => true]);
     exit;
 }
@@ -17,6 +22,8 @@ require_once __DIR__ . '/../../config/database.php';
 
 function respond($success, $message, $data = null, $code = 200) {
     http_response_code($code);
+    $out = ob_get_clean(); // clean any buffered warnings
+    // Optional: error_log("Buffered output before json: " . $out);
     echo json_encode(array_filter([
         'success' => $success,
         'message' => $message,
@@ -30,32 +37,22 @@ if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
 }
 
 $file = $_FILES['image'];
+
+// Validasi mime type menggunakan getimagesize agar lebih aman dan tahan terhadap 
+// default header 'application/octet-stream' dari client Flutter.
+$image_info = @getimagesize($file['tmp_name']);
+if ($image_info === false) {
+    respond(false, 'File yang dikirim bukan gambar valid.', null, 400);
+}
 $allowedMime = ['image/jpeg','image/png','image/webp'];
-if (!in_array($file['type'], $allowedMime)) {
-    respond(false, 'Tipe file tidak diperbolehkan. Hanya JPEG/PNG/WEBP.', null, 400);
+if (!in_array($image_info['mime'], $allowedMime)) {
+    respond(false, 'Tipe file tidak diperbolehkan. Hanya JPEG/PNG/WEBP. Diterima: ' . $image_info['mime'], null, 400);
 }
 
 // Validasi ukuran file (maks 5 MB)
 $MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 if ($file['size'] > $MAX_UPLOAD_BYTES) {
     respond(false, 'Ukuran file terlalu besar. Maksimal 5 MB.', null, 413);
-}
-
-// Cek pengaturan PHP (informasi jika server membatasi ukuran lebih kecil dari yang diinginkan)
-function phpSizeToBytes($size) {
-    $unit = strtoupper(substr($size, -1));
-    $value = (int)$size;
-    switch($unit) {
-        case 'G': return $value * 1024 * 1024 * 1024;
-        case 'M': return $value * 1024 * 1024;
-        case 'K': return $value * 1024;
-        default: return (int)$size;
-    }
-}
-$uploadMax = ini_get('upload_max_filesize');
-$postMax = ini_get('post_max_size');
-if (phpSizeToBytes($uploadMax) < $MAX_UPLOAD_BYTES || phpSizeToBytes($postMax) < $MAX_UPLOAD_BYTES) {
-    respond(false, 'Pengaturan server lebih kecil dari batas upload yang diizinkan. Periksa upload_max_filesize/post_max_size di php.ini.', null, 500);
 }
 
 $uploadDir = __DIR__ . '/../../assets/uploads/';
@@ -72,14 +69,33 @@ if (!move_uploaded_file($file['tmp_name'], $target)) {
 $mlScript = __DIR__ . '/ml/detect.py';
 $detected_labels = [];
 if (file_exists($mlScript)) {
-    // Try python3 then python
-    $pythonCmds = ['python3','python'];
+    // Try .venv python first, then python3, then python
+    $venvPythonWin = realpath(__DIR__ . '/../../../.venv/Scripts/python.exe');
+    $venvPythonUnix = realpath(__DIR__ . '/../../../.venv/bin/python');
+    
+    $pythonCmds = [];
+    if ($venvPythonWin && file_exists($venvPythonWin)) {
+        $pythonCmds[] = $venvPythonWin;
+    }
+    if ($venvPythonUnix && file_exists($venvPythonUnix)) {
+        $pythonCmds[] = $venvPythonUnix;
+    }
+    $pythonCmds[] = 'python'; // Windows default
+    $pythonCmds[] = 'python3'; // Unix default
+
     $output = null; $returnVar = null; $raw = null;
     foreach ($pythonCmds as $py) {
-        $cmd = escapeshellcmd($py) . ' ' . escapeshellarg($mlScript) . ' ' . escapeshellarg($target) . ' 2>&1';
+        // Use escapeshellarg for the executable path in case it contains spaces
+        $cmd = escapeshellarg($py) . ' ' . escapeshellarg($mlScript) . ' ' . escapeshellarg($target) . ' 2>&1';
         @exec($cmd, $output, $returnVar);
         $raw = implode("\n", (array)$output);
-        if ($returnVar === 0 && !empty($raw)) break;
+        if ($returnVar === 0 && !empty($raw)) {
+            // Check if output is actually valid JSON
+            json_decode($raw);
+            if (json_last_error() === JSON_ERROR_NONE) break;
+        }
+        // Reset output for next iteration if failed
+        $output = null;
     }
 
     if (!empty($raw)) {

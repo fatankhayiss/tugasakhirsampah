@@ -315,6 +315,7 @@ class PickupDetailScreen extends StatelessWidget {
 
   Widget _buildAction(BuildContext context, Map<String, dynamic> task) {
     bool isAccepted = task['status'] == 'accepted';
+    bool isPickedUp = task['status'] == 'picked_up';
 
     return Column(
       children: [
@@ -341,6 +342,8 @@ class PickupDetailScreen extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? 'Gagal')));
                   }
                 }
+              } else if (isPickedUp) {
+                Navigator.of(context).pushNamed('/complete-pickup', arguments: task);
               } else {
                 Navigator.of(context).pushNamed('/pickup-verify', arguments: task);
               }
@@ -354,14 +357,20 @@ class PickupDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             child: Text(
-              isAccepted ? 'Konfirmasi Penjemputan' : 'Lakukan Verifikasi',
+              isAccepted
+                  ? 'Konfirmasi Penjemputan'
+                  : (isPickedUp ? 'Selesaikan di Bank Sampah' : 'Lakukan Verifikasi'),
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          isAccepted ? 'Konfirmasi penjemputan sekarang untuk mulai navigasi' : 'Lakukan verifikasi sampah warga di lokasi',
+          isAccepted
+              ? 'Konfirmasi penjemputan sekarang untuk mulai navigasi'
+              : (isPickedUp
+                  ? 'Konfirmasi penyelesaian sampah di Bank Sampah'
+                  : 'Lakukan verifikasi sampah warga di lokasi'),
           textAlign: TextAlign.center,
           style: const TextStyle(color: _textMuted, fontSize: 12),
         ),

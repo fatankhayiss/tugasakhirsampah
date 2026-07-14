@@ -32,7 +32,7 @@ class _SocialLoginButtonState extends State<SocialLoginButton> {
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.95 : 1.0),
+        transform: Matrix4.identity()..scaleByDouble(_isPressed ? 0.95 : 1.0, _isPressed ? 0.95 : 1.0, 1.0, 1.0),
         transformAlignment: Alignment.center,
         width: 56,
         height: 56,

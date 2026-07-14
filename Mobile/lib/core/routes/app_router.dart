@@ -5,11 +5,12 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/verification_code_screen.dart';
 import '../../features/deposit/screens/manual_deposit_screen.dart';
-import '../../features/main/screens/main_navigation_screen.dart';
-import '../../features/onboarding/screens/splash_intro_screen.dart';
-import '../../features/scan/screens/scan_screen.dart';
-import '../../features/splash/screens/splash_screen.dart';
-import '../../features/transfer/screens/transfer_point_page.dart';
+import '../../features/home/screens/main_navigation_screen.dart';
+import '../../features/auth/screens/splash_intro_screen.dart';
+import '../../features/deposit/screens/scan_screen.dart';
+import '../../features/auth/screens/splash_screen.dart';
+import '../../features/profile/screens/transfer_point_page.dart';
+import '../../features/orders/screens/order_detail_screen.dart';
 import 'app_routes.dart';
 
 /// Central route generator — clean, scalable, production-ready.
@@ -91,6 +92,13 @@ class AppRouter {
         return AppPageTransitions.fadeSlide(
           settings: settings,
           page: const TransferPointPage(),
+        );
+      case AppRoutes.orderDetail:
+        final args = settings.arguments;
+        final orderId = args is String ? args : '';
+        return AppPageTransitions.fadeSlide(
+          settings: settings,
+          page: OrderDetailScreen(orderId: orderId),
         );
       default:
         return AppPageTransitions.fadeSlide(
