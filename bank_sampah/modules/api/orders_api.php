@@ -312,18 +312,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         api_respond(false, 'id_order dan status wajib diisi', null, 400);
     }
 
-    $valid_statuses = ['pending', 'accepted', 'on_the_way', 'picked_up', 'completed', 'cancelled'];
+    $valid_statuses = ['pending', 'accepted', 'on_the_way', 'picked_up', 'validating', 'completed', 'cancelled'];
     if (!in_array($new_status, $valid_statuses)) {
         api_respond(false, 'Status tidak valid', null, 400);
     }
 
     $driver_id = (int)$auth_user['id_pengguna'];
+    $berat_aktual = isset($data['berat_aktual']) ? $data['berat_aktual'] : (isset($data['estimasi_berat']) ? $data['estimasi_berat'] : null);
 
     // Jika driver accept, assign driver_id
     if ($new_status === 'accepted') {
         $sql = "UPDATE orders SET status = ?, id_driver = ? WHERE id_order = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
         mysqli_stmt_bind_param($stmt, "sii", $new_status, $driver_id, $order_id);
+    } elseif ($berat_aktual !== null) {
+        $sql = "UPDATE orders SET status = ?, estimasi_berat = ? WHERE id_order = ?";
+        $stmt = mysqli_prepare($koneksi, $sql);
+        mysqli_stmt_bind_param($stmt, "ssi", $new_status, $berat_aktual, $order_id);
     } else {
         $sql = "UPDATE orders SET status = ? WHERE id_order = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
@@ -345,6 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 'accepted' => ['Driver sedang menuju lokasi Anda', 'Penjemputan Anda telah diterima oleh driver.', 'pickup'],
                 'on_the_way' => ['Driver dalam perjalanan', 'Driver sedang menuju ke lokasi penjemputan Anda.', 'pickup'],
                 'picked_up' => ['Sampah berhasil dijemput', 'Driver telah menjemput sampah Anda. Menunggu proses verifikasi.', 'pickup'],
+                'validating' => ['Validasi Bank Sampah', 'Sampah Anda telah sampai di Bank Sampah dan sedang dalam proses pengecekan akhir oleh Admin.', 'pickup'],
                 'completed' => ['Penjemputan selesai', 'Penjemputan sampah Anda telah selesai. Poin akan segera ditambahkan.', 'reward'],
                 'cancelled' => ['Penjemputan dibatalkan', 'Pesanan penjemputan Anda telah dibatalkan.', 'info'],
             ];

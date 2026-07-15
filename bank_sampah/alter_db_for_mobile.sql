@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `waktu_jemput_sampai` TIME DEFAULT NULL,
   `estimasi_berat` VARCHAR(50) DEFAULT NULL,
   `estimasi_poin` INT DEFAULT 0,
-  `status` ENUM('pending','accepted','on_the_way','picked_up','completed','cancelled') DEFAULT 'pending',
+  `status` ENUM('pending','accepted','on_the_way','picked_up','validating','completed','cancelled') DEFAULT 'pending',
   `catatan` TEXT DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
