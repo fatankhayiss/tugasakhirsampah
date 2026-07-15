@@ -73,8 +73,14 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
     ];
   }
 
-  void _openWeightBottomSheet(WasteItem item) {
-    double tempWeight = 1.0;
+  void _openWeightBottomSheet(WasteItem item, {bool isEditing = false}) {
+    double tempWeight = isEditing && item.weight > 0 ? item.weight : 1.0;
+    final TextEditingController weightController = TextEditingController(
+      text: tempWeight.toStringAsFixed(tempWeight.truncateToDouble() == tempWeight ? 1 : 2),
+    );
+    final FocusNode weightFocusNode = FocusNode();
+    String? weightError;
+
     AppDialogTransitions.showSlideBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -82,6 +88,57 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            void validateAndUpdate(String text) {
+              if (text.trim().isEmpty) {
+                setModalState(() {
+                  weightError = 'Berat sampah tidak boleh kosong';
+                });
+                return;
+              }
+              final cleanText = text.replaceAll(',', '.');
+              if (cleanText.contains('-')) {
+                setModalState(() {
+                  weightError = 'Berat tidak boleh negatif';
+                });
+                return;
+              }
+              if (cleanText.split('.').length > 2) {
+                setModalState(() {
+                  weightError = 'Format angka tidak valid';
+                });
+                return;
+              }
+              final parsed = double.tryParse(cleanText);
+              if (parsed == null) {
+                setModalState(() {
+                  weightError = 'Format angka tidak valid (hanya angka dan desimal)';
+                });
+                return;
+              }
+              if (parsed <= 0) {
+                setModalState(() {
+                  weightError = 'Berat tidak boleh nol atau negatif';
+                });
+                return;
+              }
+              if (parsed < 0.5) {
+                setModalState(() {
+                  weightError = 'Minimal berat sampah adalah 0.5 Kg';
+                });
+                return;
+              }
+              if (parsed > 100.0) {
+                setModalState(() {
+                  weightError = 'Maksimal berat sampah adalah 100 Kg';
+                });
+                return;
+              }
+              setModalState(() {
+                tempWeight = parsed;
+                weightError = null;
+              });
+            }
+
             return Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -109,7 +166,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Tambah ${item.name}',
+                    isEditing ? 'Ubah Berat ${item.name}' : 'Tambah ${item.name}',
                     style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 20,
@@ -128,16 +185,18 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Stepper Container
+                  // Stepper Container with Manual Input
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
-                      vertical: 16,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.background,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(
+                        color: weightError != null ? const Color(0xFFEF4444) : AppColors.border,
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -145,45 +204,98 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                         _buildStepperBtn(
                           icon: Icons.remove,
                           onTap: () {
-                            if (tempWeight > 0.5) {
-                              setModalState(() => tempWeight -= 0.5);
+                            double currentVal = double.tryParse(weightController.text.replaceAll(',', '.')) ?? tempWeight;
+                            if (currentVal.isNaN || currentVal < 0) currentVal = 0.5;
+                            if (currentVal > 0.5) {
+                              double newVal = (currentVal - 0.5).clamp(0.5, 100.0);
+                              weightController.text = newVal.toStringAsFixed(newVal.truncateToDouble() == newVal ? 1 : 2);
+                              validateAndUpdate(weightController.text);
+                            } else {
+                              validateAndUpdate(weightController.text);
                             }
                           },
                         ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              tempWeight.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textDark,
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              IntrinsicWidth(
+                                child: Container(
+                                  constraints: const BoxConstraints(minWidth: 50),
+                                  child: TextField(
+                                    controller: weightController,
+                                    focusNode: weightFocusNode,
+                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textDark,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    onChanged: (val) {
+                                      validateAndUpdate(val);
+                                    },
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'Kg',
-                              style: TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textSoft,
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Kg',
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSoft,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         _buildStepperBtn(
                           icon: Icons.add,
                           onTap: () {
-                            setModalState(() => tempWeight += 0.5);
+                            double currentVal = double.tryParse(weightController.text.replaceAll(',', '.')) ?? tempWeight;
+                            if (currentVal.isNaN || currentVal < 0) currentVal = 0.5;
+                            double newVal = (currentVal + 0.5).clamp(0.5, 100.0);
+                            weightController.text = newVal.toStringAsFixed(newVal.truncateToDouble() == newVal ? 1 : 2);
+                            validateAndUpdate(weightController.text);
                           },
                         ),
                       ],
                     ),
                   ),
+                  if (weightError != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Color(0xFFEF4444),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            weightError!,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFFEF4444),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -210,7 +322,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                           ),
                         ),
                         Text(
-                          '${(tempWeight * item.pricePerKg).toInt()} Poin',
+                          weightError != null ? '0 Poin' : '${(tempWeight * item.pricePerKg).toInt()} Poin',
                           style: const TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 16,
@@ -224,26 +336,32 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                   const SizedBox(height: 24),
                   PrimaryButton(
                     text: 'Konfirmasi',
-                    onPressed: () {
-                      setState(() {
-                        final idx = cartItems.indexWhere(
-                          (i) => i.id == item.id,
-                        );
-                        if (idx >= 0) {
-                          cartItems[idx].weight += tempWeight;
-                        } else {
-                          final newItem = WasteItem(
-                            id: item.id,
-                            name: item.name,
-                            imageAsset: item.imageAsset,
-                            pricePerKg: item.pricePerKg,
-                            weight: tempWeight,
-                          );
-                          cartItems.add(newItem);
-                        }
-                      });
-                      Navigator.pop(ctx);
-                    },
+                    onPressed: weightError != null
+                        ? null
+                        : () {
+                            setState(() {
+                              final idx = cartItems.indexWhere(
+                                (i) => i.id == item.id,
+                              );
+                              if (idx >= 0) {
+                                if (isEditing) {
+                                  cartItems[idx].weight = tempWeight;
+                                } else {
+                                  cartItems[idx].weight += tempWeight;
+                                }
+                              } else {
+                                final newItem = WasteItem(
+                                  id: item.id,
+                                  name: item.name,
+                                  imageAsset: item.imageAsset,
+                                  pricePerKg: item.pricePerKg,
+                                  weight: tempWeight,
+                                );
+                                cartItems.add(newItem);
+                              }
+                            });
+                            Navigator.pop(ctx);
+                          },
                   ),
                 ],
               ),
@@ -251,7 +369,10 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      weightController.dispose();
+      weightFocusNode.dispose();
+    });
   }
 
   Widget _buildStepperBtn({
@@ -663,7 +784,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               color: AppColors.textSoft,
               size: 20,
             ),
-            onPressed: () => _openWeightBottomSheet(item),
+            onPressed: () => _openWeightBottomSheet(item, isEditing: true),
           ),
           IconButton(
             icon: const Icon(

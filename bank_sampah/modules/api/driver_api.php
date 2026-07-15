@@ -21,10 +21,10 @@ function api_respond($success, $message, $data = null, $code = 200) {
     exit;
 }
 
-$action = isset($_GET['action']) ? $_GET['action'] : '';
+$action = isset($_GET['action']) ? trim($_GET['action']) : '';
 
 // Ambil Header Authorization
-$headers = getallheaders();
+$headers = getallheaders(); 
 $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : '';
 if (empty($auth_header)) {
     api_respond(false, 'Token tidak ditemukan', null, 401);

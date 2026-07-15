@@ -30,7 +30,7 @@ try {
         api_respond(false, 'Method not allowed', null, 405);
     }
 
-    $action = isset($_POST['action']) ? $_POST['action'] : (isset($_GET['action']) ? $_GET['action'] : 'login');
+    $action = isset($_POST['action']) ? trim($_POST['action']) : (isset($_GET['action']) ? trim($_GET['action']) : 'login');
 
     // =====================
     // LOGIN

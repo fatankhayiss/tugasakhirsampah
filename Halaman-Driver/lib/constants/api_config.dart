@@ -1,7 +1,7 @@
 class ApiConfig {
   ApiConfig._();
 
-  static const String baseUrl = 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
+  static const String baseUrl = 'http://192.168.167.68/tugasakhirsampah/bank_sampah/';
 
   static const String authLogin = '${baseUrl}modules/api/auth_api.php?action=login';
   static const String authRegister = '${baseUrl}modules/api/auth_api.php?action=register';

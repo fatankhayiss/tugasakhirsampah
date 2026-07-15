@@ -3,14 +3,14 @@
 /// Ubah [baseUrl] sesuai environment:
 /// - Android Emulator: `http://10.0.2.2/tugasakhirsampah/bank_sampah/`
 /// - iOS Simulator: `http://localhost/tugasakhirsampah/bank_sampah/`
-/// - Device Fisik: `http://192.168.31.220/tugasakhirsampah/bank_sampah/`
+/// - Device Fisik: `http://192.168.167.68/tugasakhirsampah/bank_sampah/`
 class ApiConfig {
   ApiConfig._();
 
   /// Base URL backend. Trailing slash wajib.
   // Jika menggunakan Android Emulator: 10.0.2.2/tugasakhirsampah/bank_sampah/
-  // Jika menggunakan Device Fisik: 192.168.31.220/tugasakhirsampah/bank_sampah/ (pastikan satu WiFi & matikan Windows Firewall)
-  static const String baseUrl = 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
+  // Jika menggunakan Device Fisik: 192.168.167.68/tugasakhirsampah/bank_sampah/ (pastikan satu WiFi & matikan Windows Firewall)
+  static const String baseUrl = 'http://192.168.167.68/tugasakhirsampah/bank_sampah/';
 
   // API Endpoints
   static const String authLogin = '${baseUrl}modules/api/auth_api.php?action=login';

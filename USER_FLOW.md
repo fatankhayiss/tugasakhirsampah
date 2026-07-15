@@ -45,7 +45,7 @@ Berikut adalah tabel matriks ikhtisar seluruh alur interaksi utama yang terjadi 
 #### UF-WRG-01 : Alur Login & Registrasi Warga
 - **Tujuan**: Memastikan identitas warga valid dan menerbitkan token sesi (`api_token`).
 - **Trigger**: Warga membuka aplikasi atau menekan tombol Masuk/Daftar.
-- **Preconditions**: Aplikasi terpasang dan terhubung ke server `192.168.31.220`.
+- **Preconditions**: Aplikasi terpasang dan terhubung ke server `192.168.167.68`.
 - **Main Flow (Langkah Normal)**:
   1. Warga membuka aplikasi $\rightarrow$ sistem memuat `WRG-001 (SplashScreen)`.
   2. Sistem memeriksa `api_token` di `SharedPreferences`. Jika tidak ada, sistem mengarahkan ke `WRG-002 (LoginScreen)`.

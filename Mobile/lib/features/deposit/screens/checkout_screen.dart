@@ -65,7 +65,90 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final now = TimeOfDay.now();
     final nowMinutes = now.hour * 60 + now.minute;
     final pickMinutes = time.hour * 60 + time.minute;
-    return (pickMinutes - nowMinutes) >= 30;
+    return pickMinutes > nowMinutes;
+  }
+
+  bool _isServiceClosedNow() {
+    return DateTime.now().hour >= 21;
+  }
+
+  void _showPickupClosedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Pickup Service Closed',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDark,
+          ),
+        ),
+        content: const Text(
+          'Pickup requests are only available until 9:00 PM.\nPlease submit your request tomorrow during operating hours.',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 14,
+            height: 1.5,
+            color: AppColors.textSoft,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryBlue,
+              textStyle: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInvalidPickupTimeDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Invalid Pickup Time',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDark,
+          ),
+        ),
+        content: const Text(
+          'The pickup time must be at least one minute after the current time.\nPast times are not allowed.',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 14,
+            height: 1.5,
+            color: AppColors.textSoft,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryBlue,
+              textStyle: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatDate(DateTime date) {
@@ -120,6 +203,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       .fold(0, (sum, item) => sum + item.totalPrice.round());
 
   Future<void> _pickDate() async {
+    if (_isServiceClosedNow()) {
+      _showPickupClosedDialog();
+      return;
+    }
+    if (DateUtils.isSameDay(_selectedDate, DateTime.now()) && !_canScheduleToday(_selectedTime)) {
+      _showInvalidPickupTimeDialog();
+    }
+
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -142,22 +233,46 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-        if (DateUtils.isSameDay(picked, DateTime.now())) {
-          if (!_canScheduleToday(_selectedTime)) {
-            final n = DateTime.now();
-            final nextHour = n.hour + (n.minute > 30 ? 2 : 1);
-            if (nextHour <= 17) {
+      if (DateUtils.isSameDay(picked, DateTime.now())) {
+        if (!_canScheduleToday(_selectedTime)) {
+          _showInvalidPickupTimeDialog();
+          final n = DateTime.now();
+          final nextHour = n.hour + (n.minute > 30 ? 2 : 1);
+          if (nextHour <= 17 && nextHour >= 8 && nextHour * 60 > n.hour * 60 + n.minute) {
+            setState(() {
+              _selectedDate = picked;
               _selectedTime = TimeOfDay(hour: nextHour.clamp(8, 17), minute: 0);
-            }
+            });
+          } else {
+            return;
           }
+        } else if (_selectedTime.hour < 8 || _selectedTime.hour > 17) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Jam operasional penjemputan adalah pukul 08:00 - 17:00 WIB.'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
+          return;
+        } else {
+          setState(() => _selectedDate = picked);
         }
-      });
+      } else {
+        setState(() => _selectedDate = picked);
+      }
     }
   }
 
   Future<void> _pickTime() async {
+    if (_isServiceClosedNow()) {
+      _showPickupClosedDialog();
+      return;
+    }
+    if (DateUtils.isSameDay(_selectedDate, DateTime.now()) && !_canScheduleToday(_selectedTime)) {
+      _showInvalidPickupTimeDialog();
+    }
+
     final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
     final picked = await showTimePicker(
       context: context,
@@ -179,14 +294,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     if (picked != null) {
       if (isToday && !_canScheduleToday(picked)) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Jadwal penjemputan hari ini minimal 30 menit dari waktu sekarang.'),
-            backgroundColor: Color(0xFFEF4444),
-          ),
-        );
+        _showInvalidPickupTimeDialog();
         return;
       }
       if (picked.hour < 8 || picked.hour > 17) {
@@ -217,17 +325,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _confirmSetoran() async {
+    if (_isServiceClosedNow()) {
+      _showPickupClosedDialog();
+      return;
+    }
     if (widget.cartItems.isEmpty) return;
 
     final isToday = DateUtils.isSameDay(_selectedDate, DateTime.now());
     if (isToday && !_canScheduleToday(_selectedTime)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Jadwal penjemputan hari ini minimal 30 menit dari waktu sekarang.'),
-          backgroundColor: Color(0xFFEF4444),
-        ),
-      );
+      _showInvalidPickupTimeDialog();
       return;
     }
 
@@ -236,6 +342,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       onValid: () {},
     );
     if (!isValidAddress) return;
+    if (!mounted) return;
 
     setState(() => _isSubmitting = true);
 
@@ -605,7 +712,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Jam pickup mengikuti waktu yang tersedia hari ini (min +30 menit).',
+                                  'Jam pickup mengikuti waktu yang tersedia hari ini (min +1 menit).',
                                   style: TextStyle(
                                     fontFamily: 'Plus Jakarta Sans',
                                     fontSize: 11,
@@ -880,7 +987,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       width: 180,
                       child: PrimaryButton(
                         text: 'Konfirmasi Setoran',
-                        onPressed: _confirmSetoran,
+                        onPressed: _isServiceClosedNow()
+                            ? _showPickupClosedDialog
+                            : _confirmSetoran,
                       ),
                     ),
                   ],
