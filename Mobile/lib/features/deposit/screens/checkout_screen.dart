@@ -99,7 +99,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryBlue,
+              foregroundColor: AppColors.primary,
               textStyle: const TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontWeight: FontWeight.w700,
@@ -138,7 +138,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryBlue,
+              foregroundColor: AppColors.primary,
               textStyle: const TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontWeight: FontWeight.w700,
@@ -221,7 +221,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryBlue,
+              primary: AppColors.primary,
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: AppColors.textDark,
@@ -281,7 +281,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: AppColors.primaryBlue,
+              primary: AppColors.primary,
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: AppColors.textDark,
@@ -441,7 +441,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: AppColors.primaryBlue),
+                  CircularProgressIndicator(color: AppColors.primary),
                   SizedBox(height: 16),
                   Text(
                     'Memproses pesanan setoran Anda...',
@@ -525,8 +525,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       icon: const Icon(Icons.edit_outlined, size: 14),
                       label: const Text('Ubah'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primaryBlue,
-                        side: const BorderSide(color: AppColors.primaryBlue),
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         shape: RoundedRectangleBorder(
@@ -570,8 +570,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const SizedBox(height: 20),
                   _buildSectionCard(
                     icon: LucideIcons.calendar_check_2,
-                    iconBgColor: const Color(0xFFEFF6FF),
-                    iconColor: AppColors.primaryBlue,
+                    iconBgColor: const Color(0xFFEAF8EF),
+                    iconColor: AppColors.primary,
                     title: 'Jadwal Penjemputan',
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,7 +596,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                       const Icon(
                                         LucideIcons.calendar,
                                         size: 18,
-                                        color: AppColors.primaryBlue,
+                                        color: AppColors.primary,
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
@@ -655,7 +655,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                       const Icon(
                                         LucideIcons.clock,
                                         size: 18,
-                                        color: AppColors.primaryBlue,
+                                        color: AppColors.primary,
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
@@ -928,7 +928,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: const BorderSide(
-                              color: AppColors.primaryBlue, width: 1.5),
+                              color: AppColors.primary, width: 1.5),
                         ),
                       ),
                     ),
@@ -984,9 +984,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(width: 16),
                     SizedBox(
-                      width: 180,
+                      width: (MediaQuery.of(context).size.width * 0.52).clamp(160.0, 240.0),
                       child: PrimaryButton(
                         text: 'Konfirmasi Setoran',
+                        isGreen: false,
                         onPressed: _isServiceClosedNow()
                             ? _showPickupClosedDialog
                             : _confirmSetoran,

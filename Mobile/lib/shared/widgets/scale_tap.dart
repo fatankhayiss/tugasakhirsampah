@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Centralized premium scale tap gesture wrapper.
 /// Shrinks slightly on touch down to offer physical tactile depth feedback.
@@ -7,13 +8,17 @@ class ScaleTap extends StatefulWidget {
   final VoidCallback? onTap;
   final double scaleDown;
   final Duration duration;
+  final bool enableHaptic;
+  final bool executeOnTap;
 
   const ScaleTap({
     super.key,
     required this.child,
     this.onTap,
-    this.scaleDown = 0.97, // premium subtle 3% scale down (M3 compliant)
-    this.duration = const Duration(milliseconds: 150),
+    this.scaleDown = 0.98, // Material 3 compliant slight scale animation (0.98)
+    this.duration = const Duration(milliseconds: 160), // duration 150-200ms
+    this.enableHaptic = true,
+    this.executeOnTap = true,
   });
 
   @override
@@ -46,34 +51,50 @@ class _ScaleTapState extends State<ScaleTap> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
-  void _onTapDown(TapDownDetails details) {
-    if (widget.onTap != null) _controller.forward();
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    if (widget.onTap != null) {
-      _controller.reverse();
-      widget.onTap!();
+  void _onPointerDown(PointerDownEvent event) {
+    if (widget.onTap != null || !widget.executeOnTap) {
+      _controller.forward();
     }
   }
 
-  void _onTapCancel() {
-    if (widget.onTap != null) _controller.reverse();
+  void _onPointerUp(PointerUpEvent event) {
+    if (widget.onTap != null || !widget.executeOnTap) {
+      _controller.reverse();
+      if (widget.enableHaptic) {
+        HapticFeedback.lightImpact();
+      }
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    if (widget.onTap != null || !widget.executeOnTap) {
+      _controller.reverse();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.onTap == null) return widget.child;
+    if (widget.onTap == null && widget.executeOnTap) return widget.child;
 
-    return GestureDetector(
-      onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
-      onTapCancel: _onTapCancel,
-      behavior: HitTestBehavior.opaque,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: widget.child,
-      ),
+    Widget content = ScaleTransition(
+      scale: _scaleAnimation,
+      child: widget.child,
+    );
+
+    if (widget.executeOnTap && widget.onTap != null) {
+      content = GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: content,
+      );
+    }
+
+    return Listener(
+      onPointerDown: _onPointerDown,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
+      behavior: HitTestBehavior.translucent,
+      child: content,
     );
   }
 }

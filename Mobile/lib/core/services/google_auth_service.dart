@@ -60,7 +60,14 @@ class GoogleAuthService {
       if (Firebase.apps.isNotEmpty) {
         await FirebaseAuth.instance.signOut();
       }
+    } catch (_) {}
+
+    try {
       await _googleSignIn.signOut();
+    } catch (_) {}
+
+    try {
+      await _googleSignIn.disconnect();
     } catch (_) {}
   }
 }

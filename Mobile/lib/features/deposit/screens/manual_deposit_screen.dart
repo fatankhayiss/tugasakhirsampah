@@ -303,10 +303,10 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.softBlue,
+                      color: const Color(0xFFEAF8EF),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.primaryBlue.withValues(alpha: 0.15),
+                        color: AppColors.primary.withValues(alpha: 0.15),
                       ),
                     ),
                     child: Row(
@@ -327,7 +327,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primaryBlue,
+                            color: AppColors.primary,
                           ),
                         ),
                       ],
@@ -336,6 +336,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                   const SizedBox(height: 24),
                   PrimaryButton(
                     text: 'Konfirmasi',
+                    isGreen: false,
                     onPressed: weightError != null
                         ? null
                         : () {
@@ -397,7 +398,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
             ),
           ],
         ),
-        child: Icon(icon, color: AppColors.primaryBlue, size: 22),
+        child: Icon(icon, color: AppColors.primary, size: 22),
       ),
     );
   }
@@ -472,7 +473,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryBlue),
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
@@ -508,7 +509,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.softBlue,
+                          color: const Color(0xFFEAF8EF),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
@@ -517,7 +518,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primaryBlue,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -530,10 +531,10 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.softBlue,
+                    color: const Color(0xFFEAF8EF),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                     ),
                   ),
                   child: const Row(
@@ -541,7 +542,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: AppColors.primaryBlue,
+                        color: AppColors.primary,
                         size: 20,
                       ),
                       SizedBox(width: 12),
@@ -608,6 +609,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               const SizedBox(height: 18),
               PrimaryButton(
                 text: 'Lanjutkan Penjemputan',
+                isGreen: false,
                 onPressed: cartItems.isEmpty
                     ? null
                     : () {
@@ -651,12 +653,12 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.softBlue,
+                  color: const Color(0xFFEAF8EF),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
                   Icons.recycling,
-                  color: AppColors.primaryBlue,
+                  color: AppColors.primary,
                   size: 24,
                 ),
               ),
@@ -693,12 +695,12 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [AppColors.primaryBlue, AppColors.secondaryBlue],
+                  colors: [AppColors.primary, AppColors.secondary],
                 ),
                 borderRadius: BorderRadius.circular(999),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primaryBlue.withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -742,12 +744,12 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppColors.softBlue,
+              color: const Color(0xFFEAF8EF),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.check_circle_outline,
-              color: AppColors.primaryBlue,
+              color: AppColors.primary,
               size: 22,
             ),
           ),
@@ -826,7 +828,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: isAccent ? AppColors.primaryBlue : AppColors.textDark,
+            color: isAccent ? AppColors.primary : AppColors.textDark,
           ),
         ),
       ],

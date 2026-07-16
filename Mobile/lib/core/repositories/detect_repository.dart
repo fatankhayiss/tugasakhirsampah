@@ -2,7 +2,6 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api_config.dart';
 import '../services/api_service.dart';
-import '../constants/api_config.dart';
 
 /// Simple repository to upload an asset image to the bank_sampah detect API.
 ///

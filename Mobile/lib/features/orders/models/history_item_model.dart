@@ -21,9 +21,9 @@ extension HistoryFilterExtension on HistoryFilter {
       case HistoryFilter.semua:
         return 'Semua';
       case HistoryFilter.setorSampah:
-        return 'Setor Sampah';
+        return 'Penjemputan';
       case HistoryFilter.pencairanSaldo:
-        return 'Pencairan Saldo';
+        return 'Tukar Poin';
       case HistoryFilter.bonus:
         return 'Bonus';
       case HistoryFilter.penukaran:
@@ -55,6 +55,13 @@ class HistoryItemModel {
   final HistoryType type;
   final String? weight;
   final String? statusLabel;
+  final String? destination;
+  final String? provider;
+  final String? accountNumber;
+  final String? accountName;
+  final double? estimatedAmount;
+  final String? adminNote;
+  final String? rawStatus;
 
   const HistoryItemModel({
     required this.id,
@@ -64,5 +71,12 @@ class HistoryItemModel {
     required this.type,
     this.weight,
     this.statusLabel,
+    this.destination,
+    this.provider,
+    this.accountNumber,
+    this.accountName,
+    this.estimatedAmount,
+    this.adminNote,
+    this.rawStatus,
   });
 }

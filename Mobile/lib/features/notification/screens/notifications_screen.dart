@@ -5,6 +5,8 @@ import '../../../core/models/notification_model.dart';
 import '../../../core/repositories/notification_repository.dart';
 import 'notification_detail_screen.dart';
 import '../../../core/navigation/app_page_transitions.dart';
+import '../../../shared/widgets/staggered_animation.dart';
+import '../../../shared/widgets/scale_tap.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -43,6 +45,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return list;
   }
 
+  List<dynamic> get _groupedNotificationItems {
+    final list = _filteredNotifications;
+    final List<dynamic> items = [];
+    bool hasToday = false;
+    bool hasYesterday = false;
+    bool hasOlder = false;
+
+    for (final n in list) {
+      final t = n.time.toLowerCase();
+      String group = 'Hari Ini';
+      if (t.contains('kemarin') || t.contains('yesterday') || t.contains('1 hari')) {
+        group = 'Kemarin';
+      } else if (t.contains('hari lalu') || t.contains('jan') || t.contains('feb') || t.contains('mar') || t.contains('apr') || t.contains('mei') || t.contains('jun') || t.contains('jul') || t.contains('agu') || t.contains('sep') || t.contains('okt') || t.contains('nov') || t.contains('des') || t.contains('2024') || t.contains('2025') || t.contains('2026')) {
+        group = 'Sebelumnya';
+      }
+
+      if (group == 'Hari Ini' && !hasToday) {
+        items.add('Hari Ini');
+        hasToday = true;
+      } else if (group == 'Kemarin' && !hasYesterday) {
+        items.add('Kemarin');
+        hasYesterday = true;
+      } else if (group == 'Sebelumnya' && !hasOlder) {
+        items.add('Sebelumnya');
+        hasOlder = true;
+      }
+      items.add(n);
+    }
+    return items;
+  }
+
+  Widget _buildGroupHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontFamily: 'Plus Jakarta Sans',
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textDark,
+          letterSpacing: -0.2,
+        ),
+      ),
+    );
+  }
+
   Color _getTypeColor(String type) {
     switch (type.toLowerCase()) {
       case 'pending':
@@ -60,6 +109,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'reward':
         return const Color(0xFF16A34A); // Hijau selesai
       case 'transfer':
+      case 'tukar_poin':
         return AppColors.primaryBlue; // Fintech blue
       default:
         return AppColors.primaryBlue;
@@ -83,6 +133,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'reward':
         return const Color(0xFFDCFCE7);
       case 'transfer':
+      case 'tukar_poin':
         return AppColors.softBlue;
       default:
         return const Color(0xFFEFF6FF);
@@ -106,6 +157,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'reward':
         return LucideIcons.sparkles;
       case 'transfer':
+      case 'tukar_poin':
         return LucideIcons.wallet;
       default:
         return LucideIcons.bell;
@@ -118,103 +170,157 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final notifications = _filteredNotifications;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Notifikasi',
-          style: TextStyle(
-            color: AppColors.textDark,
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.4,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          if (unreadCount > 0)
-            TextButton(
-              onPressed: () => _repository.markAllAsRead(),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              child: const Text(
-                'Tandai Semua',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  color: AppColors.primaryBlue,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+      backgroundColor: AppColors.background,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: const Border(
+              bottom: BorderSide(color: AppColors.border, width: 0.5),
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Symmetrical Premium Segmented Filter
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9), // Soft gray surface
-                borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _activeFilterIndex = 0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _activeFilterIndex == 0 ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: _activeFilterIndex == 0
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : [],
+            ],
+          ),
+          child: SafeArea(
+            top: true,
+            bottom: false,
+            child: Stack(
+              children: [
+                const Center(
+                  child: Text(
+                    'Notifikasi',
+                    style: TextStyle(
+                      color: AppColors.textDark,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: TextButton(
+                        onPressed: () => _repository.markAllAsRead(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                         ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Semua',
+                        child: const Text(
+                          'Tandai Semua',
                           style: TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 14,
+                            color: AppColors.primary,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: _activeFilterIndex == 0 ? AppColors.secondary : AppColors.textSoft,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  Expanded(
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Symmetrical Premium Segmented Filter matching Edukasi and Order
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ScaleTap(
+                      onTap: () => setState(() => _activeFilterIndex = 0),
+                      scaleDown: 0.96,
+                      duration: const Duration(milliseconds: 160),
+                      executeOnTap: true,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _activeFilterIndex = 0),
+                        behavior: HitTestBehavior.opaque,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: _activeFilterIndex == 0 ? AppColors.primary : Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: _activeFilterIndex == 0
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(alpha: 0.22),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ]
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.04),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Semua',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: _activeFilterIndex == 0 ? FontWeight.w700 : FontWeight.w600,
+                                fontSize: 13.5,
+                                color: _activeFilterIndex == 0 ? Colors.white : AppColors.textSoft,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ScaleTap(
+                    onTap: () => setState(() => _activeFilterIndex = 1),
+                    scaleDown: 0.96,
+                    duration: const Duration(milliseconds: 160),
+                    executeOnTap: true,
                     child: GestureDetector(
                       onTap: () => setState(() => _activeFilterIndex = 1),
-                      child: Container(
+                      behavior: HitTestBehavior.opaque,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        height: 42,
                         decoration: BoxDecoration(
-                          color: _activeFilterIndex == 1 ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
+                          color: _activeFilterIndex == 1 ? AppColors.primary : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: _activeFilterIndex == 1
                               ? [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
+                                    color: AppColors.primary.withValues(alpha: 0.22),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.04),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : [],
+                                  ),
+                                ],
                         ),
-                        alignment: Alignment.center,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -222,23 +328,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               'Belum Dibaca',
                               style: TextStyle(
                                 fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: _activeFilterIndex == 1 ? AppColors.secondary : AppColors.textSoft,
+                                fontWeight: _activeFilterIndex == 1 ? FontWeight.w700 : FontWeight.w600,
+                                fontSize: 13.5,
+                                color: _activeFilterIndex == 1 ? Colors.white : AppColors.textSoft,
                               ),
                             ),
                             if (unreadCount > 0) ...[
                               const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFFF3B30),
+                                decoration: BoxDecoration(
+                                  color: _activeFilterIndex == 1 ? Colors.white : const Color(0xFFFF3B30),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Text(
                                   '$unreadCount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: _activeFilterIndex == 1 ? AppColors.primary : Colors.white,
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -250,19 +356,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           Expanded(
             child: notifications.isEmpty
                 ? _buildEmptyState()
-                : ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 120), // extra padding for bottom navigation
-                    itemCount: notifications.length,
-                    itemBuilder: (context, index) {
-                      return _buildNotificationItem(notifications[index]);
+                : Builder(
+                    builder: (context) {
+                      final grouped = _groupedNotificationItems;
+                      return ListView.builder(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 120), // extra padding for bottom navigation
+                        itemCount: grouped.length,
+                        itemBuilder: (context, index) {
+                          final item = grouped[index];
+                          if (item is String) {
+                            return _buildGroupHeader(item);
+                          }
+                          return _buildNotificationItem(item as NotificationModel, index);
+                        },
+                      );
                     },
                   ),
           ),
@@ -319,34 +434,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationItem(NotificationModel notification) {
+  Widget _buildNotificationItem(NotificationModel notification, int index) {
     final typeColor = _getTypeColor(notification.type);
     final typeBg = _getTypeBgColor(notification.type);
     final typeIcon = _getTypeIcon(notification.type);
 
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 300),
-      opacity: notification.isRead ? 0.75 : 1.0,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: notification.isRead
-                ? AppColors.border
-                : typeColor.withValues(alpha: 0.2),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: notification.isRead ? 0.01 : 0.03),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: InkWell(
+    return StaggeredCardAnimation(
+      index: index,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
+        opacity: notification.isRead ? 0.75 : 1.0,
+        child: ScaleTap(
+          enableHaptic: true,
           onTap: () {
             // Mark as read immediately on click
             _repository.markAsRead(notification.id);
@@ -358,8 +457,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             );
           },
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,6 +566,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

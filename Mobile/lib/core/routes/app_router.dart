@@ -6,7 +6,6 @@ import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/verification_code_screen.dart';
 import '../../features/deposit/screens/manual_deposit_screen.dart';
 import '../../features/home/screens/main_navigation_screen.dart';
-import '../../features/auth/screens/splash_intro_screen.dart';
 import '../../features/deposit/screens/scan_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/profile/screens/transfer_point_page.dart';
@@ -20,14 +19,10 @@ class AppRouter {
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case AppRoutes.splash:
-        return AppPageTransitions.fadeSlide(
-          settings: settings,
-          page: const SplashScreen(),
-        );
       case AppRoutes.intro:
         return AppPageTransitions.fadeSlide(
           settings: settings,
-          page: const SplashIntroScreen(),
+          page: const SplashScreen(),
         );
       case AppRoutes.login:
         final args = settings.arguments;

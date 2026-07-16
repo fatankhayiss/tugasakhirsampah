@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_colors.dart';
 
 class ChangeAddressScreen extends StatefulWidget {
   final String currentAddress;
@@ -73,7 +74,7 @@ class _ChangeAddressScreenState extends State<ChangeAddressScreen> {
                       Container(
                         width: 2,
                         height: 10,
-                        color: const Color(0xFF007AFF),
+                        color: AppColors.primary,
                       ),
                     ],
                   ),
@@ -254,7 +255,7 @@ class _ChangeAddressScreenState extends State<ChangeAddressScreen> {
                             }
                             : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF007AFF),
+                      backgroundColor: AppColors.primary,
                       disabledBackgroundColor: Colors.grey[300],
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -320,11 +321,11 @@ class _AddressCard extends StatelessWidget {
         decoration: BoxDecoration(
           color:
               isSelected
-                  ? const Color(0xFF007AFF).withValues(alpha: 0.04)
+                  ? AppColors.primary.withValues(alpha: 0.04)
                   : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? const Color(0xFF007AFF) : Colors.grey[300]!,
+            color: isSelected ? AppColors.primary : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -336,7 +337,7 @@ class _AddressCard extends StatelessWidget {
                 Icon(
                   Icons.location_on,
                   color:
-                      isSelected ? const Color(0xFF007AFF) : Colors.grey[600],
+                      isSelected ? AppColors.primary : Colors.grey[600],
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -347,7 +348,7 @@ class _AddressCard extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color:
-                          isSelected ? const Color(0xFF007AFF) : Colors.black87,
+                          isSelected ? AppColors.primary : Colors.black87,
                     ),
                   ),
                 ),

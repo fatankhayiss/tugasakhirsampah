@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.profile);
+                    MainNavigationScreen.switchTab(context, 3);
                   },
                   child: Hero(
                     tag: 'profile_avatar',
@@ -572,7 +572,7 @@ class _Carousel extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: SizedBox(
-              height: 180,
+              height: (MediaQuery.of(context).size.width * 0.48).clamp(150.0, 220.0),
               child: Stack(
                 children: [
                   // — Banner image
@@ -719,22 +719,22 @@ class _EducationGrid extends StatelessWidget {
       future: _repository.getLatestEducation(limit: 4),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 310,
-            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          return SizedBox(
+            height: (MediaQuery.of(context).size.height * 0.36).clamp(280.0, 340.0),
+            child: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
           );
         }
 
         final items = snapshot.data ?? [];
         if (items.isEmpty) {
-          return const SizedBox(
-            height: 310,
-            child: Center(child: Text('Belum ada edukasi')),
+          return SizedBox(
+            height: (MediaQuery.of(context).size.height * 0.36).clamp(280.0, 340.0),
+            child: const Center(child: Text('Belum ada edukasi')),
           );
         }
 
         return SizedBox(
-          height: 310,
+          height: (MediaQuery.of(context).size.height * 0.36).clamp(280.0, 340.0),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -765,7 +765,7 @@ class _EducationGrid extends StatelessWidget {
                   right: index == items.length - 1 ? 0 : 8,
                 ),
                 child: SizedBox(
-                  width: 250,
+                  width: (MediaQuery.of(context).size.width * 0.65).clamp(220.0, 320.0),
                   child: _EducationCard(
                     image: image,
                     isNetworkImage: isNetworkImage,
@@ -867,7 +867,7 @@ class _EducationCardState extends State<_EducationCard> {
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   child: SizedBox(
-                    height: 120,
+                    height: (MediaQuery.of(context).size.height * 0.15).clamp(100.0, 150.0),
                     width: double.infinity,
                     child: Hero(
                       tag: widget.heroTag,
@@ -1008,7 +1008,11 @@ class _ActionButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          constraints: BoxConstraints(minHeight: (MediaQuery.of(context).size.height * 0.13).clamp(100.0, 140.0)),
+          padding: EdgeInsets.symmetric(
+            vertical: (MediaQuery.of(context).size.height * 0.02).clamp(12.0, 20.0),
+            horizontal: 8.0,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -1023,24 +1027,27 @@ class _ActionButton extends StatelessWidget {
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF5FF),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEEF5FF),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: AppColors.primary, size: 28),
               ),
               const SizedBox(height: 12),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark,
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),

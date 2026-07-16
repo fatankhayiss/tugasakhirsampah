@@ -32,6 +32,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> _checkCameraPermission() async {
     final status = await Permission.camera.status;
+    if (!mounted) return;
     if (status.isGranted) {
       _initializeCamera();
     } else if (status.isDenied) {
@@ -53,6 +54,7 @@ class _ScanScreenState extends State<ScanScreen> {
         onGrant: () async {
           Navigator.pop(context);
           final result = await Permission.camera.request();
+          if (!mounted) return;
           if (result.isGranted) {
             _initializeCamera();
           } else {
@@ -74,7 +76,7 @@ class _ScanScreenState extends State<ScanScreen> {
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
-      if (cameras.isEmpty) return;
+      if (!mounted || cameras.isEmpty) return;
 
       _cameraController = CameraController(
         cameras.first,
@@ -83,15 +85,15 @@ class _ScanScreenState extends State<ScanScreen> {
       );
 
       await _cameraController!.initialize();
+      if (!mounted) return;
 
-      if (mounted) {
-        setState(() {
-          _isCameraInitialized = true;
-          _isPermissionGranted = true;
-          _isPermissionDenied = false;
-        });
-      }
+      setState(() {
+        _isCameraInitialized = true;
+        _isPermissionGranted = true;
+        _isPermissionDenied = false;
+      });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isPermissionDenied = true;
       });
@@ -112,7 +114,7 @@ class _ScanScreenState extends State<ScanScreen> {
     try {
       final xFile = await _cameraController!.takePicture();
       
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Memindai gambar AI...'),
@@ -129,7 +131,7 @@ class _ScanScreenState extends State<ScanScreen> {
           final parsed = jsonDecode(resp.body) as Map<String, dynamic>;
           if (parsed['success'] == true && parsed.containsKey('data')) {
             final data = Map<String, dynamic>.from(parsed['data']);
-            if (!context.mounted) return;
+            if (!mounted) return;
             Navigator.pushReplacement(
               context,
               CustomPageRoute(
@@ -143,7 +145,7 @@ class _ScanScreenState extends State<ScanScreen> {
         }
       }
 
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal mengenali gambar (Kode: ${resp.statusCode})'),
@@ -151,7 +153,7 @@ class _ScanScreenState extends State<ScanScreen> {
         ),
       );
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error kamera: $e'),

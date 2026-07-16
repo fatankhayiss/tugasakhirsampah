@@ -11,19 +11,53 @@ import '../../profile/screens/profile_screen.dart';
 /// Main shell — bottom nav + tab pages + double-back exit.
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
+  final bool autoOpenEditAddress;
 
   const MainNavigationScreen({
     super.key,
     this.initialIndex = 0,
+    this.autoOpenEditAddress = false,
   });
+
+  /// Safely switches to the specified tab index from anywhere in the app while maintaining the BottomNavigationBar.
+  static void switchTab(
+    BuildContext context,
+    int index, {
+    bool autoOpenEditAddress = false,
+    int ordersInitialTabIndex = 0,
+  }) {
+    final navState = context.findAncestorStateOfType<MainNavigationScreenState>() ?? MainNavigationScreenState.instance;
+    if (navState != null) {
+      // Pop any routes that are pushed on top of MainNavigationScreen
+      Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/main');
+      navState.setTab(
+        index,
+        ordersInitialTabIndex: ordersInitialTabIndex,
+        autoOpenEditAddress: autoOpenEditAddress,
+      );
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/main'),
+          builder: (_) => MainNavigationScreen(
+            initialIndex: index,
+            autoOpenEditAddress: autoOpenEditAddress,
+          ),
+        ),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   State<MainNavigationScreen> createState() => MainNavigationScreenState();
 }
 
 class MainNavigationScreenState extends State<MainNavigationScreen> {
+  static MainNavigationScreenState? instance;
   late int _currentIndex;
   int _ordersInitialTabIndex = 0;
+  bool _autoOpenEditAddress = false;
   final _notificationRepository = NotificationRepository();
 
   List<Widget> get _screens => [
@@ -33,18 +67,26 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
       initialTabIndex: _ordersInitialTabIndex,
     ),
     const NotificationsScreen(),
-    const ProfileScreen(),
+    ProfileScreen(
+      key: ValueKey('profile_screen_$_autoOpenEditAddress'),
+      autoOpenEditAddress: _autoOpenEditAddress,
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
+    instance = this;
     _currentIndex = widget.initialIndex.clamp(0, 3);
+    _autoOpenEditAddress = widget.autoOpenEditAddress;
     _notificationRepository.addListener(_onNotificationChange);
   }
 
   @override
   void dispose() {
+    if (instance == this) {
+      instance = null;
+    }
     _notificationRepository.removeListener(_onNotificationChange);
     super.dispose();
   }
@@ -59,15 +101,17 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     if (index == _currentIndex) return;
     setState(() {
       _currentIndex = index;
+      _autoOpenEditAddress = false;
       if (index == 1) {
         _ordersInitialTabIndex = 0; // Default to Ongoing when clicked from navbar
       }
     });
   }
 
-  void setTab(int index, {int ordersInitialTabIndex = 0}) {
+  void setTab(int index, {int ordersInitialTabIndex = 0, bool autoOpenEditAddress = false}) {
     setState(() {
       _ordersInitialTabIndex = ordersInitialTabIndex;
+      _autoOpenEditAddress = autoOpenEditAddress;
       _currentIndex = index.clamp(0, 3);
     });
   }

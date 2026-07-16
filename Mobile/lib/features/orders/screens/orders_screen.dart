@@ -27,6 +27,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   /// 0 = Ongoing (default), 1 = History
   late int _selectedTab;
   HistoryFilter _selectedFilter = HistoryFilter.semua;
+  String _selectedSubFilter = 'Semua';
 
   List<HistoryItemModel> _allHistory = [];
   List<dynamic> _ongoingOrders = [];
@@ -90,7 +91,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
   List<HistoryItemModel> get _filteredHistory {
     final type = _selectedFilter.typeFilter;
     if (type == null) return _allHistory;
-    return _allHistory.where((item) => item.type == type).toList();
+    var filtered = _allHistory.where((item) => item.type == type).toList();
+    if (type == HistoryType.pencairan && _selectedSubFilter != 'Semua') {
+      filtered = filtered.where((item) {
+        final st = item.rawStatus?.toLowerCase() ?? 'completed';
+        if (_selectedSubFilter == 'Pending') return st == 'pending';
+        if (_selectedSubFilter == 'Processing') return st == 'processing';
+        if (_selectedSubFilter == 'Completed') return st == 'completed';
+        if (_selectedSubFilter == 'Rejected') return st == 'rejected';
+        return true;
+      }).toList();
+    }
+    return filtered;
   }
 
   String get _appBarTitle => _selectedTab == 0 ? 'Order' : 'Riwayat';
@@ -197,29 +209,63 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildFilterChips() {
-    // Only show relevant filters (semua, setor, pencairan)
     const relevantFilters = [
       HistoryFilter.semua,
       HistoryFilter.setorSampah,
       HistoryFilter.pencairanSaldo,
     ];
 
-    return SizedBox(
-      height: 42,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: relevantFilters.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 0),
-        itemBuilder: (context, index) {
-          final filter = relevantFilters[index];
-          return FilterChipWidget(
-            label: filter.label,
-            isSelected: _selectedFilter == filter,
-            onTap: () => setState(() => _selectedFilter = filter),
-          );
-        },
-      ),
+    const subFilters = ['Semua', 'Pending', 'Processing', 'Completed', 'Rejected'];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: (MediaQuery.of(context).size.height * 0.055).clamp(42.0, 56.0),
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: relevantFilters.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 0),
+            itemBuilder: (context, index) {
+              final filter = relevantFilters[index];
+              return FilterChipWidget(
+                label: filter.label,
+                isSelected: _selectedFilter == filter,
+                onTap: () {
+                  setState(() {
+                    _selectedFilter = filter;
+                    if (filter != HistoryFilter.pencairanSaldo) {
+                      _selectedSubFilter = 'Semua';
+                    }
+                  });
+                },
+              );
+            },
+          ),
+        ),
+        if (_selectedFilter == HistoryFilter.pencairanSaldo) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            height: (MediaQuery.of(context).size.height * 0.05).clamp(38.0, 48.0),
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: subFilters.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 0),
+              itemBuilder: (context, index) {
+                final sf = subFilters[index];
+                return FilterChipWidget(
+                  label: sf,
+                  isSelected: _selectedSubFilter == sf,
+                  onTap: () => setState(() => _selectedSubFilter = sf),
+                );
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -238,7 +284,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
       itemCount: ongoing.length,
       itemBuilder: (context, index) => OngoingCard(
         order: ongoing[index],
-        onRefresh: _loadOngoing,
+        onRefresh: () {
+          _loadOngoing();
+          _loadHistory();
+        },
       ),
     );
   }

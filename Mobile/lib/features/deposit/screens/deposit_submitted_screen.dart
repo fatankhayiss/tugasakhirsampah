@@ -39,29 +39,17 @@ class DepositSubmittedScreen extends StatelessWidget {
           child: SafeArea(
             top: true,
             bottom: false,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
-                  onPressed: () => Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MainNavigationScreen(initialIndex: 0),
-                    ),
-                    (r) => false,
-                  ),
+            child: const Center(
+              child: Text(
+                'Penjemputan Berhasil',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                  color: AppColors.textDark,
                 ),
-                const SizedBox(width: 4),
-                const Text(
-                  'Penjemputan Berhasil',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -91,12 +79,12 @@ class DepositSubmittedScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
-                      color: AppColors.softBlue,
+                      color: Color(0xFFEAF8EF),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.check_circle,
-                      color: AppColors.primaryBlue,
+                      color: AppColors.primary,
                       size: 64,
                     ),
                   ),
@@ -158,7 +146,7 @@ class DepositSubmittedScreen extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
+                      color: const Color(0xFFEAF8EF),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: const Text(
@@ -167,7 +155,7 @@ class DepositSubmittedScreen extends StatelessWidget {
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFD97706),
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -261,6 +249,7 @@ class DepositSubmittedScreen extends StatelessWidget {
             PrimaryButton(
               text: 'Lacak Status Pesanan',
               icon: Icons.local_shipping_outlined,
+              isGreen: false,
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
@@ -325,11 +314,9 @@ class DepositSubmittedScreen extends StatelessWidget {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: isDone
-                    ? AppColors.primaryBlue
-                    : (isCurrent
-                        ? const Color(0xFFF59E0B)
-                        : const Color(0xFFE5E7EB)),
+                color: isDone || isCurrent
+                    ? AppColors.primary
+                    : const Color(0xFFE5E7EB),
                 shape: BoxShape.circle,
               ),
               child: isDone
@@ -347,7 +334,7 @@ class DepositSubmittedScreen extends StatelessWidget {
                 width: 2,
                 height: subtitle.isNotEmpty ? 38 : 26,
                 color: isDone
-                    ? AppColors.primaryBlue
+                    ? AppColors.primary
                     : const Color(0xFFE5E7EB),
               ),
           ],

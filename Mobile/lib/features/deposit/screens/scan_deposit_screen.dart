@@ -27,7 +27,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
-      if (cameras.isEmpty) return;
+      if (!mounted || cameras.isEmpty) return;
       
       // Gunakan kamera belakang (kamera utama)
       final backCamera = cameras.firstWhere(
@@ -59,6 +59,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scanFrameSize = (MediaQuery.of(context).size.width * 0.72).clamp(220.0, 340.0);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -98,7 +99,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
                   Text(
                     'Membuka Kamera...',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 14,
                     ),
                   ),
@@ -110,7 +111,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
           if (_isCameraInitialized)
             ColorFiltered(
               colorFilter: ColorFilter.mode(
-                Colors.black.withOpacity(0.6),
+                Colors.black.withValues(alpha: 0.6),
                 BlendMode.srcOut,
               ),
               child: Stack(
@@ -123,8 +124,8 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
                   ),
                   Center(
                     child: Container(
-                      width: 280,
-                      height: 280,
+                      width: scanFrameSize,
+                      height: scanFrameSize,
                       decoration: BoxDecoration(
                         color: Colors.white, // This part will be transparent due to dstOut
                         borderRadius: BorderRadius.circular(24),
@@ -139,8 +140,8 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
           if (_isCameraInitialized)
             Center(
               child: Container(
-                width: 280,
-                height: 280,
+                width: scanFrameSize,
+                height: scanFrameSize,
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFF4AC08D), width: 3),
                   borderRadius: BorderRadius.circular(24),
@@ -242,7 +243,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
                 Text(
                   _isUploading ? 'Sedang Menganalisa...' : 'Arahkan kamera ke sampah',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 14,
                   ),
                 ),

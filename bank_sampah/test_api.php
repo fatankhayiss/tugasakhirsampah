@@ -1,5 +1,5 @@
 <?php
-$ch = curl_init('http://192.168.167.68/tugasakhirsampah/bank_sampah/modules/api/auth_api.php?action=register');
+$ch = curl_init('http://192.168.31.220/tugasakhirsampah/bank_sampah/modules/api/auth_api.php?action=register');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, [
     'nama_lengkap' => 'Test Driver 2',

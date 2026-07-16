@@ -163,35 +163,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(
+              horizontal: (MediaQuery.of(context).size.width * 0.06).clamp(16.0, 32.0),
+              vertical: (MediaQuery.of(context).size.height * 0.02).clamp(12.0, 24.0),
+            ),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
+                  SizedBox(height: (MediaQuery.of(context).size.height * 0.01).clamp(4.0, 12.0)),
                   // Title
                   Text(
                     content.title,
-                    style: const TextStyle(
-                      fontSize: 32,
+                    style: TextStyle(
+                      fontSize: (MediaQuery.of(context).size.width * 0.08).clamp(26.0, 34.0),
                       fontWeight: FontWeight.w800,
                       color: AppColors.textDark,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: (MediaQuery.of(context).size.height * 0.015).clamp(8.0, 16.0)),
                   // Subtitle
                   Text(
                     content.subtitle,
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontSize: (MediaQuery.of(context).size.width * 0.038).clamp(13.0, 16.0),
                       color: Colors.black54,
                       height: 1.6,
                     ),
                   ),
-                  const SizedBox(height: 36),
+                  SizedBox(height: (MediaQuery.of(context).size.height * 0.035).clamp(20.0, 36.0)),
 
                   // Username Field
                   const Text(
@@ -525,8 +529,11 @@ class _EcoTextField extends StatefulWidget {
     this.keyboardType,
     this.obscureText = false,
     this.onToggleObscure,
+    // ignore: unused_element_parameter
     this.maxLines = 1,
+    // ignore: unused_element_parameter
     this.minLines = 1,
+    // ignore: unused_element_parameter
     this.prefixIcon,
   });
 

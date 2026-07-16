@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_images.dart';
+import '../../../core/navigation/app_page_transitions.dart';
 import '../../../shared/widgets/point_badge.dart';
+import '../../../shared/widgets/scale_tap.dart';
 import '../models/ongoing_order_model.dart';
 import '../screens/order_detail_screen.dart';
+import '../screens/redemption_detail_screen.dart';
 
 class OngoingCard extends StatefulWidget {
   final OngoingOrderModel order;
@@ -16,87 +19,124 @@ class OngoingCard extends StatefulWidget {
 }
 
 class _OngoingCardState extends State<OngoingCard> {
-  bool _pressed = false;
-
-
-
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) async {
-        setState(() => _pressed = false);
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OrderDetailScreen(orderId: widget.order.id),
-          ),
-        );
-        if (result == true && widget.onRefresh != null) {
-          widget.onRefresh!();
+    return ScaleTap(
+      onTap: () async {
+        if (widget.order.isRedemption) {
+          await Navigator.push(
+            context,
+            CustomPageRoute(
+              page: RedemptionDetailScreen(
+                redemptionId: widget.order.id,
+                ongoingItem: widget.order,
+              ),
+            ),
+          );
+          if (widget.onRefresh != null) widget.onRefresh!();
+        } else {
+          final result = await Navigator.push(
+            context,
+            CustomPageRoute(
+              page: OrderDetailScreen(orderId: widget.order.id),
+            ),
+          );
+          if (result == true && widget.onRefresh != null) {
+            widget.onRefresh!();
+          }
         }
       },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F7F4), // Premium soft eco background
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row: White rounded icon container + right-aligned capsule status badge (Amber for Proses)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF2DAA63).withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Image.asset(
-                      AppImages.orderLogo,
-                      width: 26,
-                      height: 26,
-                      fit: BoxFit.contain,
+      scaleDown: 0.98,
+      duration: const Duration(milliseconds: 160),
+      enableHaptic: true,
+      executeOnTap: false,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white, // Clean white background
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          child: InkWell(
+            onTap: () async {
+              if (widget.order.isRedemption) {
+                await Navigator.push(
+                  context,
+                  CustomPageRoute(
+                    page: RedemptionDetailScreen(
+                      redemptionId: widget.order.id,
+                      ongoingItem: widget.order,
                     ),
                   ),
+                );
+                if (widget.onRefresh != null) widget.onRefresh!();
+              } else {
+                final result = await Navigator.push(
+                  context,
+                  CustomPageRoute(
+                    page: OrderDetailScreen(orderId: widget.order.id),
+                  ),
+                );
+                if (result == true && widget.onRefresh != null) {
+                  widget.onRefresh!();
+                }
+              }
+            },
+            borderRadius: BorderRadius.circular(24),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Row: White rounded icon container + right-aligned capsule status badge (Amber for Proses)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2DAA63).withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Image.asset(
+                          AppImages.orderLogo,
+                          width: 26,
+                          height: 26,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFC93C), // Processing status amber background
+                      color: widget.order.status.badgeBackground,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       widget.order.status.label,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF7A5200), // Processing status amber text
+                        color: widget.order.status.badgeText,
                       ),
                     ),
                   ),
@@ -166,9 +206,9 @@ class _OngoingCardState extends State<OngoingCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Estimasi Poin',
-                          style: TextStyle(
+                        Text(
+                          widget.order.isRedemption ? 'Poin Ditukar' : 'Estimasi Poin',
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: Color(0xFF7B8190),
@@ -201,6 +241,8 @@ class _OngoingCardState extends State<OngoingCard> {
                 ],
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),

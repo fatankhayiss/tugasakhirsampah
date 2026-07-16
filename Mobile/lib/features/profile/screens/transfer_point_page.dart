@@ -115,7 +115,7 @@ class _TransferPointPageState extends State<TransferPointPage> {
         onPressed: () => Navigator.pop(context),
       ),
       title: const Text(
-        'Transfer Poin',
+        'Tukar Poin',
         style: TextStyle(
           color: AppColors.textDark,
           fontSize: 18,
@@ -510,7 +510,7 @@ class _TransferPointPageState extends State<TransferPointPage> {
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Pastikan nomor tujuan sudah benar sebelum melakukan transfer poin.',
+              'Pastikan nomor tujuan sudah benar sebelum melakukan tukar poin.',
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSoft,

@@ -1,15 +1,17 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_images.dart';
 import '../../../core/localization/app_language.dart';
+import '../../../core/repositories/auth_repository.dart';
 import '../../../core/repositories/profile_repository.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/services/api_service.dart';
 import '../../home/screens/main_navigation_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
+import '../../../shared/widgets/scale_tap.dart';
 
 class ProfileScreen extends StatefulWidget {
   final bool autoOpenEditAddress;
@@ -40,6 +42,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     )..repeat(reverse: true);
     _loadProfile();
     if (widget.autoOpenEditAddress) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showEditAddressDialog(onSuccess: () => _loadProfile());
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.autoOpenEditAddress && !oldWidget.autoOpenEditAddress) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _showEditAddressDialog(onSuccess: () => _loadProfile());
@@ -111,8 +125,26 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     if (_avatarUrl != null && _avatarUrl!.isNotEmpty) {
       return CircleAvatar(
         radius: radius,
-        backgroundImage: NetworkImage(_avatarUrl!),
         backgroundColor: Colors.white,
+        child: ClipOval(
+          child: Image.network(
+            _avatarUrl!,
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              width: radius * 2,
+              height: radius * 2,
+              color: Colors.grey[200],
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.person,
+                color: Colors.grey[600],
+                size: radius * 1.1,
+              ),
+            ),
+          ),
+        ),
       );
     }
     return CircleAvatar(
@@ -380,7 +412,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               onPressed: () async {
                 final navigator = Navigator.of(context);
                 Navigator.pop(context);
-                await ApiService.instance.clearAuth();
+                await AuthRepository().logout();
                 navigator.pushNamedAndRemoveUntil(
                   AppRoutes.login,
                   (route) => false,
@@ -700,59 +732,71 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     required String value,
     required VoidCallback onEdit,
   }) {
-    return InkWell(
+    return ScaleTap(
       onTap: onEdit,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.softGreen,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSoft,
-                    ),
+      scaleDown: 0.98,
+      duration: const Duration(milliseconds: 160),
+      executeOnTap: false,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onEdit();
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.softGreen,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
+                  child: Icon(icon, color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSoft,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        value,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 16),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primaryBlue.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.edit_outlined, color: AppColors.primaryBlue, size: 16),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -894,7 +938,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             top: 0,
             left: 0,
             right: 0,
-            height: 375,
+            height: (MediaQuery.of(context).size.height * 0.48).clamp(360.0, 480.0),
             child: AnimatedBuilder(
               animation: _bgAnimationController,
               builder: (context, child) {
@@ -1074,12 +1118,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryBlue,
+                              color: AppColors.primary,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primaryBlue.withValues(alpha: 0.35),
+                                  color: AppColors.primary.withValues(alpha: 0.35),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -1351,47 +1395,59 @@ class _MenuItem extends StatelessWidget {
 
     return Column(
       children: [
-        InkWell(
+        ScaleTap(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDestructive
-                        ? const Color(0xFFFFEBEA)
-                        : AppColors.softGreen,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: color,
+          scaleDown: 0.98,
+          duration: const Duration(milliseconds: 160),
+          executeOnTap: false,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onTap();
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isDestructive
+                            ? const Color(0xFFFFEBEA)
+                            : AppColors.softGreen,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: iconColor,
+                        size: 20,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: isDestructive
+                          ? const Color(0xFFFF3B30).withValues(alpha: 0.6)
+                          : Colors.black38,
+                      size: 20,
+                    ),
+                  ],
                 ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: isDestructive
-                      ? const Color(0xFFFF3B30).withValues(alpha: 0.6)
-                      : Colors.black38,
-                  size: 20,
-                ),
-              ],
+              ),
             ),
           ),
         ),

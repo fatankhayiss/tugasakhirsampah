@@ -69,7 +69,7 @@ Berikut adalah matriks lengkap seluruh layar sistem yang dikelompokkan berdasark
 11. **User Action**: *Geser Slide Intro*, *Klik Mulai Sekarang*, *Klik Lewati*.
 12. **Business Rules**: Pengecekan token API (`api_token`) dilakukan secara otomatis di latar belakang saat `SplashScreen` aktif.
 13. **Empty State**: Tidak berlaku.
-14. **Loading State**: Animasi putar loading (*Spinner / Linear Progress*) saat memeriksa koneksi awal ke server `192.168.167.68`.
+14. **Loading State**: Animasi putar loading (*Spinner / Linear Progress*) saat memeriksa koneksi awal ke server `192.168.31.220`.
 15. **Error State**: Teks pemberitahuan *"Gagal terhubung ke server Bank Sampah. Periksa koneksi internet Anda."* bersertakan tombol *Coba Lagi*.
 16. **Data Dependency**: `SharedPreferences (token, is_first_time)`.
 17. **API Dependency**: `GET auth_api.php?action=check_token` (opsional untuk pengecekan keaktifan sesi).

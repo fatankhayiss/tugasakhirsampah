@@ -315,8 +315,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           if (status != 'cancelled') ...[
             _buildSectionCard(
               icon: LucideIcons.git_commit_vertical,
-              iconBgColor: const Color(0xFFEFF6FF),
-              iconColor: AppColors.primaryBlue,
+              iconBgColor: const Color(0xFFEAF8EF),
+              iconColor: AppColors.primary,
               title: 'Status Pesanan',
               child: _build6StageTimeline(status),
             ),
@@ -378,7 +378,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       width: 44,
                       height: 44,
                       decoration: const BoxDecoration(
-                        color: AppColors.softBlue,
+                        color: Color(0xFFEAF8EF),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -387,7 +387,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         },
                         icon: const Icon(
                           LucideIcons.message_square,
-                          color: AppColors.primaryBlue,
+                          color: AppColors.primary,
                           size: 20,
                         ),
                       ),
@@ -430,8 +430,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           // Card 4: Informasi Sampah
           _buildSectionCard(
             icon: LucideIcons.recycle,
-            iconBgColor: const Color(0xFFEFF6FF),
-            iconColor: AppColors.primaryBlue,
+            iconBgColor: const Color(0xFFEAF8EF),
+            iconColor: AppColors.primary,
             title: 'Informasi Sampah',
             child: items.isEmpty
                 ? _DetailRow(
@@ -599,13 +599,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     color: isCompleted
                         ? const Color(0xFF2DAA63)
                         : (isActive
-                            ? AppColors.primaryBlue
+                            ? AppColors.primary
                             : const Color(0xFFE2E8F0)),
                     shape: BoxShape.circle,
                     boxShadow: isActive
                         ? [
                             BoxShadow(
-                              color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                              color: AppColors.primary.withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -675,7 +675,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: isActive
-                            ? AppColors.primaryBlue
+                            ? AppColors.primary
                             : AppColors.textSoft,
                       ),
                     ),
@@ -712,7 +712,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           top: false,
           child: SizedBox(
             width: double.infinity,
-            height: 52,
+            height: (MediaQuery.of(context).size.height * 0.065).clamp(48.0, 60.0),
             child: OutlinedButton.icon(
               onPressed: _cancelOrder,
               icon: const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444), size: 18),
@@ -755,18 +755,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           top: false,
           child: SizedBox(
             width: double.infinity,
-            height: 52,
+            height: (MediaQuery.of(context).size.height * 0.065).clamp(48.0, 60.0),
             child: Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [AppColors.primaryBlue, AppColors.secondaryBlue],
+                  colors: [AppColors.primary, AppColors.secondary],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                    color: AppColors.primary.withValues(alpha: 0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),

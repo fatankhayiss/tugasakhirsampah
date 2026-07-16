@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../features/deposit/widgets/deposit_method_modal.dart';
+import 'scale_tap.dart';
 
 /// Premium floating capsule-style Bottom Navigation Bar with elevated center FAB.
 class BottomNavbar extends StatelessWidget {
@@ -24,7 +26,7 @@ class BottomNavbar extends StatelessWidget {
       color: Colors.transparent,
       elevation: 0,
       padding: EdgeInsets.zero,
-      height: 74 + safeBottom + 8, // fits the container + bottom safety + top height expansion
+      height: 74 + safeBottom + 8,
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 8, 16, safeBottom),
         child: Stack(
@@ -34,14 +36,15 @@ class BottomNavbar extends StatelessWidget {
             // 1. Main Capsule Navbar Container
             Container(
               height: 74,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(36), // modern premium capsule style
+                borderRadius: BorderRadius.circular(36),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 24,
-                    offset: const Offset(0, 8), // depth shadow
+                    offset: const Offset(0, 8),
                   ),
                   BoxShadow(
                     color: AppColors.primary.withValues(alpha: 0.03),
@@ -66,7 +69,7 @@ class BottomNavbar extends StatelessWidget {
                     isSelected: currentIndex == 1,
                     onTap: () => onTap(1),
                   ),
-                  // Symmetrical placeholder empty spacer to balance the elevated center FAB
+                  // Symmetrical placeholder empty spacer for center FAB
                   const SizedBox(width: 68),
                   NavbarItem(
                     icon: Icons.notifications_rounded,
@@ -84,9 +87,9 @@ class BottomNavbar extends StatelessWidget {
                 ],
               ),
             ),
-            // 2. Elevated Floating Center Scan Button (protrudes cleanly by 30px)
+            // 2. Elevated Floating Center Scan Button
             Positioned(
-              top: -30, // elevated position
+              top: -26,
               child: FloatingScanButton(
                 onTap: () => DepositMethodModal.show(context),
               ),
@@ -98,7 +101,7 @@ class BottomNavbar extends StatelessWidget {
   }
 }
 
-/// Reusable individual NavItem with scale micro-animations and unread badges.
+/// Reusable individual NavItem with active green fill + white text/icon.
 class NavbarItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -117,43 +120,58 @@ class NavbarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return ScaleTap(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 58,
-        height: 64,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Stack(
+      scaleDown: 0.98,
+      duration: const Duration(milliseconds: 180),
+      executeOnTap: false,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        width: 62,
+        height: 56,
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
               clipBehavior: Clip.none,
+              alignment: Alignment.center,
               children: [
-                AnimatedScale(
-                  scale: isSelected ? 1.05 : 1.0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.softGreen // eco green accent
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
                       icon,
                       size: 24,
-                      color: isSelected ? AppColors.primary : AppColors.textSoft,
+                      color: isSelected ? Colors.white : const Color(0xFF94A3B8),
                     ),
-                  ),
+                    const SizedBox(height: 3),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 180),
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 10.5,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected ? Colors.white : const Color(0xFF94A3B8),
+                      ),
+                      child: Text(label),
+                    ),
+                  ],
                 ),
                 if (badgeCount > 0)
                   Positioned(
-                    right: 4,
-                    top: -2,
+                    right: 10,
+                    top: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       decoration: const BoxDecoration(
@@ -179,119 +197,59 @@ class NavbarItem extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 300),
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.secondary : AppColors.textSoft,
-              ),
-              child: Text(label),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Symmetrical floating Center elevated FAB scan button with breathing and scale micro-animations.
-class FloatingScanButton extends StatefulWidget {
+/// Symmetrical floating Center scan button with clean scale and Material ripple.
+class FloatingScanButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const FloatingScanButton({super.key, required this.onTap});
 
   @override
-  State<FloatingScanButton> createState() => _FloatingScanButtonState();
-}
-
-class _FloatingScanButtonState extends State<FloatingScanButton>
-    with TickerProviderStateMixin {
-  late final AnimationController _tapController;
-  late final Animation<double> _tapScale;
-
-  late final AnimationController _floatController;
-  late final Animation<double> _floatOffset;
-
-  @override
-  void initState() {
-    super.initState();
-    // Tap interaction scale animation
-    _tapController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-    );
-    _tapScale = Tween<double>(begin: 1.0, end: 0.92).animate(
-      CurvedAnimation(parent: _tapController, curve: Curves.easeInOut),
-    );
-
-    // Continuous floating breathing animation
-    _floatController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-    
-    _floatOffset = Tween<double>(begin: 0.0, end: -6.0).animate(
-      CurvedAnimation(
-        parent: _floatController,
-        curve: Curves.easeInOutSine,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _tapController.dispose();
-    _floatController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _handleTap() async {
-    await _tapController.forward();
-    await _tapController.reverse();
-    widget.onTap();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _handleTap,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_tapScale, _floatOffset]),
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(0, _floatOffset.value),
-            child: Transform.scale(
-              scale: _tapScale.value,
-              child: child,
-            ),
-          );
-        },
-        child: Container(
-          width: 68,
-          height: 68,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.35),
-                blurRadius: 28,
-                spreadRadius: 1,
-                offset: const Offset(0, 10), // floating depth shadow
-              ),
-            ],
+    return ScaleTap(
+      scaleDown: 0.98,
+      duration: const Duration(milliseconds: 180),
+      executeOnTap: false,
+      child: Container(
+        width: 66,
+        height: 66,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [AppColors.primary, AppColors.secondary],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: const Icon(
-            Icons.qr_code_scanner_rounded,
-            color: Colors.white,
-            size: 32, // enlarged spacious icon size
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.30),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(33),
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTap();
+            },
+            borderRadius: BorderRadius.circular(33),
+            child: const Center(
+              child: Icon(
+                Icons.qr_code_scanner_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
           ),
         ),
       ),

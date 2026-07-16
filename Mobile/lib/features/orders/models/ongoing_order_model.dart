@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum OngoingStatus {
   pending,
   processing,
@@ -18,6 +20,28 @@ extension OngoingStatusExtension on OngoingStatus {
         return 'Verifikasi';
     }
   }
+
+  Color get badgeBackground {
+    switch (this) {
+      case OngoingStatus.pending:
+        return const Color(0xFFEAF8EF); // Soft green
+      case OngoingStatus.processing:
+      case OngoingStatus.pickup:
+      case OngoingStatus.verifying:
+        return const Color(0xFFDDF8E7); // Emerald green background for active states
+    }
+  }
+
+  Color get badgeText {
+    switch (this) {
+      case OngoingStatus.pending:
+        return const Color(0xFF16A34A); // Medium green text
+      case OngoingStatus.processing:
+      case OngoingStatus.pickup:
+      case OngoingStatus.verifying:
+        return const Color(0xFF15803D); // Deeper green text
+    }
+  }
 }
 
 class OngoingOrderModel {
@@ -28,6 +52,13 @@ class OngoingOrderModel {
   final OngoingStatus status;
   final String? estimatedPoints;
   final String? driverName;
+  final bool isRedemption;
+  final String? destination;
+  final String? provider;
+  final String? accountNumber;
+  final String? accountName;
+  final double? estimatedAmount;
+  final String? rawStatus;
 
   const OngoingOrderModel({
     required this.id,
@@ -37,5 +68,12 @@ class OngoingOrderModel {
     required this.status,
     this.estimatedPoints,
     this.driverName,
+    this.isRedemption = false,
+    this.destination,
+    this.provider,
+    this.accountNumber,
+    this.accountName,
+    this.estimatedAmount,
+    this.rawStatus,
   });
 }

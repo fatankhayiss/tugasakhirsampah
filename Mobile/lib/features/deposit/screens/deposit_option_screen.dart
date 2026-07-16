@@ -86,7 +86,7 @@ class DepositOptionScreen extends StatelessWidget {
               title: 'Scan Sampah (AI)',
               description:
                   'Gunakan kamera AI untuk mendeteksi dan mengkategorikan sampah Anda',
-              color: AppColors.primaryBlue,
+              color: AppColors.primary,
               onTap: () {
                 AddressVerificationHelper.checkAndPrompt(
                   context,

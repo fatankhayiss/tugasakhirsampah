@@ -16,6 +16,7 @@ class NotificationDetailScreen extends StatelessWidget {
       case 'reward':
         return const Color(0xFFEAB308); // Gold/amber reward
       case 'transfer':
+      case 'tukar_poin':
         return AppColors.primaryBlue; // Fintech blue
       default:
         return AppColors.textSoft;
@@ -29,6 +30,7 @@ class NotificationDetailScreen extends StatelessWidget {
       case 'reward':
         return const Color(0xFFFEF9C3); // Soft gold
       case 'transfer':
+      case 'tukar_poin':
         return AppColors.softBlue; // Soft blue
       default:
         return const Color(0xFFF1F5F9);
@@ -42,6 +44,7 @@ class NotificationDetailScreen extends StatelessWidget {
       case 'reward':
         return LucideIcons.sparkles;
       case 'transfer':
+      case 'tukar_poin':
         return LucideIcons.wallet;
       default:
         return LucideIcons.bell;
@@ -55,7 +58,8 @@ class NotificationDetailScreen extends StatelessWidget {
       case 'reward':
         return 'Reward Poin';
       case 'transfer':
-        return 'Pencairan Saldo';
+      case 'tukar_poin':
+        return 'Tukar Poin';
       default:
         return 'Notifikasi';
     }

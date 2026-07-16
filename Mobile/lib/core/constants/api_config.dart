@@ -3,7 +3,7 @@
 /// Ubah [baseUrl] sesuai environment:
 /// - Android Emulator: `http://10.0.2.2/tugasakhirsampah/bank_sampah/`
 /// - iOS Simulator: `http://localhost/tugasakhirsampah/bank_sampah/`
-/// - Device Fisik: `http://192.168.167.68/tugasakhirsampah/bank_sampah/`
+/// - Device Fisik: `http://192.168.31.220/tugasakhirsampah/bank_sampah/`
 class ApiConfig {
   ApiConfig._();
 
@@ -24,4 +24,5 @@ class ApiConfig {
   static const String edukasi = '${baseUrl}modules/api/edukasi.php';
   static const String detect = '${baseUrl}modules/api/detect.php';
   static const String upload = '${baseUrl}modules/api/upload.php';
+  static const String reward = '${baseUrl}modules/api/reward_api.php';
 }

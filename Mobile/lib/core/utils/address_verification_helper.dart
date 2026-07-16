@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../repositories/profile_repository.dart';
 import '../constants/app_colors.dart';
-import '../../features/profile/screens/profile_screen.dart';
+import '../../features/home/screens/main_navigation_screen.dart';
 import '../navigation/app_dialog_transitions.dart';
 
 /// Helper class to verify mandatory address requirement before initiating pickup/deposit requests.
@@ -53,12 +53,7 @@ class AddressVerificationHelper {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ProfileScreen(autoOpenEditAddress: true),
-                ),
-              );
+              MainNavigationScreen.switchTab(context, 3, autoOpenEditAddress: true);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

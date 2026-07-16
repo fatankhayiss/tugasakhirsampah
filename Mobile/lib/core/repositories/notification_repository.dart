@@ -167,6 +167,52 @@ class NotificationRepository extends ChangeNotifier {
     );
   }
 
+  /// Notify citizen when Tukar Poin redemption status changes
+  void notifyRedemptionStatusChange({
+    required String redemptionId,
+    required String status,
+    String? title,
+    String? message,
+  }) {
+    final cleanStatus = status.toLowerCase();
+    String defaultTitle;
+    String defaultMessage;
+
+    switch (cleanStatus) {
+      case 'pending':
+        defaultTitle = 'Point Redemption Submitted';
+        defaultMessage = 'Permintaan tukar poin telah diterima.';
+        break;
+      case 'processing':
+        defaultTitle = 'Point Redemption Processing';
+        defaultMessage = 'Admin sedang memproses penukaran poin Anda.';
+        break;
+      case 'completed':
+        defaultTitle = 'Point Redemption Successful';
+        defaultMessage = 'Penukaran poin berhasil. Dana telah dikirim.';
+        break;
+      case 'rejected':
+      case 'cancelled':
+        defaultTitle = 'Point Redemption Rejected';
+        defaultMessage = 'Penukaran poin ditolak.';
+        break;
+      default:
+        defaultTitle = 'Pembaruan Tukar Poin';
+        defaultMessage = 'Status penukaran poin #$redemptionId kini $status.';
+    }
+
+    addNotification(
+      NotificationModel(
+        id: 'redemption_${cleanStatus}_$redemptionId',
+        title: title ?? defaultTitle,
+        message: message ?? defaultMessage,
+        time: 'Baru saja',
+        type: 'transfer',
+        isRead: false,
+      ),
+    );
+  }
+
   List<NotificationModel> _getFallbackNotifications() {
     return [
       NotificationModel(

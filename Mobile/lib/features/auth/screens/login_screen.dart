@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../core/constants/app_images.dart';
@@ -7,6 +8,7 @@ import '../widgets/auth_textfield.dart';
 import '../../../shared/widgets/app_asset_image.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/exit_app_dialog.dart';
+import '../../../shared/widgets/scale_tap.dart';
 import '../../../core/repositories/auth_repository.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
 
@@ -132,9 +134,9 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             _buildTopBanner(),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 32.0,
+              padding: EdgeInsets.symmetric(
+                horizontal: (MediaQuery.of(context).size.width * 0.06).clamp(16.0, 32.0),
+                vertical: (MediaQuery.of(context).size.height * 0.035).clamp(16.0, 32.0),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,9 +167,10 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
   Widget _buildTopBanner() {
+    final double bannerHeight = (MediaQuery.of(context).size.height * 0.33).clamp(180.0, 300.0);
     return Container(
       width: double.infinity,
-      height: 300,
+      height: bannerHeight,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.only(
@@ -255,21 +258,31 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildForgotPassword() {
     return Align(
       alignment: Alignment.centerLeft,
-      child: TextButton(
-        onPressed: () {
+      child: ScaleTap(
+        onTap: () {
           Navigator.pushNamed(context, AppRoutes.forgotPassword);
         },
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.zero,
-          minimumSize: const Size(0, 0),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: const Text(
-          'Lupa password?',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF43C97B),
+        scaleDown: 0.96,
+        duration: const Duration(milliseconds: 160),
+        executeOnTap: false,
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.pushNamed(context, AppRoutes.forgotPassword);
+          },
+          behavior: HitTestBehavior.opaque,
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 6.0),
+            child: Text(
+              'Lupa password?',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF43C97B),
+                shadows: [],
+              ),
+            ),
           ),
         ),
       ),

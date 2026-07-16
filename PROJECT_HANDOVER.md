@@ -1,8 +1,8 @@
 # PROJECT_HANDOVER.md — Bank Sampah Bersinar Technical & Architectural Handover
 **Project Name:** Sistem Informasi Bank Sampah Bersinar (Mobile Tugas Akhir — Citizen, Driver & Web Admin)  
 **Document Purpose:** Definitive Onboarding Guide & Comprehensive Audit Report for Human Developers and AI Assistants  
-**Single Source of Truth (SSOT) Version:** 2.0 (Post-UI Polish & Core Business Rule Lockdown)  
-**Last Updated:** July 2026  
+**Single Source of Truth (SSOT) Version:** 2.1 (Post-UI Polish, App Initializer Migration & Reward Redemption Lockdown)  
+**Last Updated:** July 16, 2026  
 
 ---
 
@@ -10,7 +10,7 @@
 This document serves as the **Single Source of Truth (SSOT)** and comprehensive technical handover for the **Bank Sampah Bersinar** ecosystem (`iTrashy`). It consolidates all previous documentation (`MASTER_PROJECT_PLAN.md`, `DEVELOPMENT_HANDOVER.md`, `FEATURE_INVENTORY.md`, `SCREEN_CATALOG.md`, `UI_REQUIREMENTS.md`) and reconciles them against the active production codebase.
 
 The system is composed of three interconnected sub-systems:
-1. **Citizen Application (`/Mobile`)**: Built with Flutter & Material Design 3. Serves households for waste pickup requests, AI waste scanning, real-time tracking, and eco-points accumulation.
+1. **Citizen Application (`/Mobile`)**: Built with Flutter & Material Design 3. Serves households for waste pickup requests, AI waste scanning, real-time tracking, eco-points accumulation, and point redemption (`Tukar Poin`).
 2. **Driver Application (`/Halaman-Driver`)**: Built with Flutter. Serves operational logistics personnel for task assignment, turn-by-turn navigation, and on-site initial weighing (`berat_driver_kg`).
 3. **Backend & Web Admin (`/bank_sampah`)**: Built with PHP Native (Modular Procedural REST API & MySQL `db_banksampah`). Serves as the central data engine, JWT/Bearer auth provider, and warehouse final validation panel (`berat_aktual_kg`).
 
@@ -19,7 +19,15 @@ The system is composed of three interconnected sub-systems:
 ## 1. DOCUMENTATION VS. IMPLEMENTATION RECONCILIATION
 During the rigorous inspection of the codebase vs. existing project documentation, several evolutions were discovered. Below is the explicit reconciliation establishing the **New Single Source of Truth**:
 
-### A. Order Status Workflow (6-Stage Backend vs. 7-Stage UI Timeline)
+### A. Application Initializer & Startup Flow (v2.1.0 Migration)
+- **What is Different:**
+  - Previous iterations relied on a simple `SplashScreen` plus a duplicate `SplashIntroScreen` with ad-hoc delay timers before navigating.
+  - The current architecture (`Mobile/lib/core/services/app_initializer_service.dart` & `Mobile/lib/features/auth/screens/splash_screen.dart`) establishes a true **Background Initialization Engine**. `AppInitializerService.instance.initializeApp()` runs 12 sequential/parallel system checks (Flutter bindings, Firebase, Google Auth availability, session restoration, user profile/photo sync, local storage setup, settings, cache prep, dashboard initial data prefetching, push notifications, and network connectivity).
+  - **Single Navigation Decision Point:** `SplashScreen` synchronizes the background initialization with its 2200ms visual animation using `Future.wait<dynamic>([initFuture, animFuture])`. Navigation occurs exactly once when both complete (`AppRoutes.main` or `AppRoutes.login`), eliminating double jumps (`Splash -> Login -> Dashboard`). Furthermore, `splash_intro_screen.dart` has been completely removed as dead/duplicate code.
+- **Why it is Different:** Guarantees a rock-solid, zero-flash startup experience while pre-warming user state and preventing unauthenticated routing glitches.
+- **New Single Source of Truth:** **`AppInitializerService` + Single-Transition `SplashScreen`** is the official SSOT.
+
+### B. Order Status Workflow (6-Stage Backend vs. 7-Stage UI Timeline)
 - **What is Different:**
   - `MASTER_PROJECT_PLAN.md` & `FEATURE_INVENTORY.md` document a **6-Stage Status ENUM**: `pending` → `accepted` → `on_the_way` → `picked_up` → `validating` → `completed`.
   - `DEVELOPMENT_HANDOVER.md` and the active code in `Mobile/lib/features/orders/screens/order_detail_screen.dart` (`_getStepIndex()`) render a **7-Stage Visual Timeline**:
@@ -33,7 +41,14 @@ During the rigorous inspection of the codebase vs. existing project documentatio
 - **Why it is Different:** The UI splits `pending` into two user-facing milestones (*Permintaan Dikirim* and *Menunggu Konfirmasi*) to give citizens better psychological visibility during high-volume pickup dispatch queues, while the database strictly maintains 6 atomic state transitions.
 - **New Single Source of Truth:** **The 6-Stage Database ENUM backed by the 7-Stage UI Presentation** is the official SSOT. Database migrations and API payloads must strictly use `pending`, `accepted`, `on_the_way`, `picked_up`, `validating`, and `completed`.
 
-### B. Citizen Registration & Mandatory Address Enforcement
+### C. Reward Redemption Module (`Tukar Poin`) & Nomenclature Standardization
+- **What is Different:**
+  - Older nomenclature inconsistently referred to point withdrawal as `Transfer Poin` or `Tukar Poin`.
+  - In v2.1.0, all terminology has been standardized strictly to **`Tukar Poin`**.
+  - `RedemptionDetailScreen` (`Mobile/lib/features/orders/screens/redemption_detail_screen.dart`) now renders a complete transaction table (Transaction Number `TRX-...`, Submission Date, Estimated Processing Time `1x24 Jam Kerja`, dynamic Conversion Rate `100 Poin = Rp ...`), a Material 3 Info Banner (`#EAF8EF`), color-coded Admin Notes (`_buildAdminNoteCard`), a 4-Stage Timeline with backend timestamps (`submitted_at`, `verified_at`, `processed_at`, `completed_at`), and conditional Proof of Transfer modal viewing (`_buildProofSection`) when `transfer_proof_url` is returned. Processing states strictly use green-themed indicators (`AppColors.primary`).
+- **New Single Source of Truth:** **`Tukar Poin` nomenclature + `RedemptionDetailScreen` comprehensive timeline/proof architecture** is the official SSOT.
+
+### D. Citizen Registration & Mandatory Address Enforcement
 - **What is Different:**
   - `UI_REQUIREMENTS.md` & `SCREEN_CATALOG.md` specify a 6-field registration form including `nama_lengkap` (Full Name) and `alamat` (Full Address).
   - The current implementation in `Mobile/lib/features/auth/screens/register_screen.dart` **removed `nama_lengkap` and `alamat` entirely**. Registration now requires only: `username`, `email`, `nomor_hp`, `password`, and `confirm_password`. Address defaults to an empty string (`''`).
@@ -41,14 +56,21 @@ During the rigorous inspection of the codebase vs. existing project documentatio
 - **Why it is Different:** This structural change reduces user onboarding friction (*time-to-first-value*) while guaranteeing 100% address accuracy when the user actually initiates a logistical transaction.
 - **New Single Source of Truth:** **Streamlined Identity (`username` primary) + Just-in-Time Mandatory Address Verification** is the official SSOT.
 
-### C. Profile Picture Synchronization & Profile Info Modal
+### E. Google Sign-In Authentication & Revocation Flow
+- **What is Different:**
+  - Standard Google Sign-In implementations often retain cached account credentials upon logout, causing subsequent logins to auto-select the previous account.
+  - In `Mobile/lib/core/services/google_auth_service.dart`, the logout sequence executes `FirebaseAuth.instance.signOut()`, `GoogleSignIn.signOut()`, and explicitly `GoogleSignIn.disconnect()`.
+- **Why it is Different:** `GoogleSignIn.disconnect()` revokes the OAuth session tokens on the device, guaranteeing that the next time the user taps "Login with Google", the Android system always displays the clean **Google Account Picker**.
+- **New Single Source of Truth:** **Full Revocation (`signOut + disconnect`)** is the official SSOT for Google authentication logout.
+
+### F. Profile Picture Synchronization & Profile Info Modal
 - **What is Different:**
   - Older specs treated the Profile Page as a static list and did not define cross-screen avatar broadcasting or windowed editing.
   - The implementation (`Mobile/lib/features/profile/screens/profile_screen.dart`) features **Broadcast-Driven Profile Synchronization**. Whenever a user updates their profile or avatar, `ProfileRepository().profileUpdateController` broadcasts to instantly refresh `HomeScreen`, `ProfileScreen`, and active dialogs. If unassigned, the system renders a clean Material `person` circular avatar (`never empty`). Furthermore, profile inspection is encapsulated in a windowed modal (`ProfileInfoDialog`).
 - **Why it is Different:** To maintain visual continuity across the M3 eco-fintech interface and prevent stale profile data across cached screens.
 - **New Single Source of Truth:** **Stream-Driven Broadcast Synchronization + Modal Profile Windows** is the official SSOT.
 
-### D. UI Polish & Motion Design System
+### G. UI Polish & Motion Design System
 - **What is Different:** The current implementation introduces a comprehensive **Material Design 3 Motion Pass** not detailed in `UI_REQUIREMENTS.md`:
   - **Shared Axis Page Transitions**: `AppPageTransitions` (`lib/core/navigation/app_page_transitions.dart`) applies 280ms `easeOutCubic` Shared Axis (`Fade + Slide Up`) and secondary scaling (`1.0 -> 0.98`) across all routes.
   - **Staggered Card Motion**: `StaggeredCardAnimation` (`lib/shared/widgets/staggered_animation.dart`) orchestrates sequential 50ms entry delays on `HomeScreen`.
@@ -67,12 +89,13 @@ During the rigorous inspection of the codebase vs. existing project documentatio
   - `lib/core/navigation/app_page_transitions.dart`: Shared Axis M3 motion upgrades.
   - `lib/core/repositories/auth_repository.dart` & `profile_repository.dart`: Broadcast stream controllers and token persistence.
   - `lib/core/services/api_service.dart`: Streamlined HTTP headers and error interceptors.
-  - `lib/features/auth/screens/login_screen.dart`, `register_screen.dart`, `splash_screen.dart`, `splash_intro_screen.dart`: UI Polish, responsive `LayoutBuilder` refactor, and streamlined registration fields.
-  - `lib/features/deposit/screens/checkout_screen.dart`, `deposit_option_screen.dart`, `manual_deposit_screen.dart`, `scan_screen.dart`: Address verification guards (`checkAndPrompt`) and `AppDialogTransitions` migration.
+  - `lib/core/services/google_auth_service.dart`: Added `disconnect()` call on logout to force account picker on next login.
+  - `lib/features/auth/screens/login_screen.dart`, `register_screen.dart`, `splash_screen.dart`: UI Polish, responsive `LayoutBuilder` refactor, streamlined registration fields, and synchronization of `AppInitializerService` with `splash_screen.dart`.
+  - `lib/features/deposit/screens/checkout_screen.dart`, `deposit_option_screen.dart`, `manual_deposit_screen.dart`, `scan_screen.dart`: Address verification guards (`checkAndPrompt`), `if (!mounted)` state checks, and `AppDialogTransitions` migration.
   - `lib/features/deposit/widgets/deposit_method_modal.dart`: Slide bottom sheet transition upgrade.
   - `lib/features/home/screens/home_screen.dart`: `StaggeredCardAnimation` wrapping across balance, actions, carousel, and education grids.
   - `lib/features/orders/screens/order_detail_screen.dart`: 7-stage timeline validation and M3 cancel dialog.
-  - `lib/features/profile/screens/profile_screen.dart`: Complete migration of 11 dialogs/bottom sheets to `AppDialogTransitions` and `ProfileInfoDialog` implementation.
+  - `lib/features/profile/screens/profile_screen.dart` & `transfer_point_page.dart`: Complete migration of 11 dialogs/bottom sheets to `AppDialogTransitions`, `ProfileInfoDialog` implementation, and nomenclature rename (`Transfer Poin` -> `Tukar Poin`).
   - `lib/shared/widgets/exit_app_dialog.dart`, `point_badge.dart`, `primary_button.dart`, `scale_tap.dart`: Micro-interaction enhancements (`AnimatedSwitcher`, `AnimatedScale`, ripple effects).
 - **Driver App (`Halaman-Driver/`)**:
   - `lib/screens/login_screen.dart` & `services/auth_service.dart`: Driver authentication and token alignment.
@@ -80,32 +103,30 @@ During the rigorous inspection of the codebase vs. existing project documentatio
   - `modules/api/auth_api.php` & `profile_api.php`: Support for `username`-primary registration and profile updates.
 
 ### B. Added / Untracked Core Files
+- `Mobile/lib/core/services/app_initializer_service.dart`: Centralized 12-step background startup engine.
+- `Mobile/lib/features/orders/screens/redemption_detail_screen.dart`: Full-featured reward redemption detail tracking screen (`Tukar Poin`).
 - `Mobile/lib/core/navigation/app_dialog_transitions.dart`: Centralized M3 Fade+Scale dialog and slide bottom sheet handler.
-- `Mobile/lib/core/services/google_auth_service.dart`: Google Sign-In OAuth handler.
 - `Mobile/lib/core/utils/address_verification_helper.dart`: Global interceptor for mandatory address checks.
 - `Mobile/lib/shared/widgets/skeleton_loader.dart` (`shimmer_loader.dart` & `staggered_animation.dart`): Reusable shimmer placeholder and staggered entrance controllers.
+- `Mobile/CHANGELOG.md`: Official project changelog.
 - `bank_sampah/check_pengguna_columns.php` & `bank_sampah/migrations/`: Schema validation helpers.
 
-### C. Unused, Debug & Dead Code (Identified for Clean-up Before Production)
-- **Root Directory (`/`)**: `test_api.dart`, `erd_bank_sampah.md` (superseded by SSOT docs).
-- **Backend Root (`bank_sampah/`)**:
-  - Test & Debug Scripts: `test.php`, `test_api.php`, `test_data.php`, `test_db.php`, `test_edukasi.php`, `test_pengguna.php`, `test_update.php`, `testdb.php`, `testdb2.php`, `testdb3.php`, `testdb4.php`, `testdb5.php`.
-  - Schema Inspection Scripts: `cek.php`, `check_db.php`, `check_orders.php`, `check_pengguna.php`, `check_pengguna_columns.php`, `check_tables.php`, `show_tables.php`.
-  - *Note:* These files must be removed or moved outside public web root prior to production deployment to prevent exposure of database credentials and schema definitions.
+### C. Removed / Dead Code Cleaned Up
+- `Mobile/lib/features/auth/screens/splash_intro_screen.dart`: Removed duplicate/deprecated splash onboarding screen.
 
 ---
 
-## 3. TECHNICAL DEBT & RISK AUDIT (DOCUMENTED ONLY)
-Per project guidelines, the following potential issues and architectural debts are documented for human developers and AI assistants to address in future sprints (`Do NOT automatically fix`):
+## 3. TECHNICAL DEBT & RISK AUDIT (RECONCILED)
+Per project guidelines, the following potential issues and architectural status are documented for human developers and AI assistants:
 
-| Category | Location / File | Description & Impact | Recommendation for Next Sprint |
+| Category | Location / File | Description & Impact | Current Status / Recommendation |
 | :--- | :--- | :--- | :--- |
-| **Security / SQLi** | `bank_sampah/modules/api/auth_api.php` (Line 343)<br>`detect.php`, `orders_api.php`, `jenis_sampah_api.php` | Raw `mysqli_query` executions using direct string interpolation (e.g., `WHERE username = '$username'`) instead of `mysqli_prepare` / Prepared Statements. High SQL Injection risk. | Refactor all query executions in `modules/api/*.php` to use PHP `mysqli_prepare()` with `$stmt->bind_param()` strictly. |
+| **Lint / Clean Code** | `Mobile/lib/...` (`register_screen.dart`, `scan_screen.dart`, `splash_screen.dart`) | Dart static analysis warnings regarding async context gaps and optional parameters. | **RESOLVED (0 Issues)**: All async gaps guarded by strict `if (!mounted)` state checks; optional parameters cleaned up and verified clean via `flutter analyze`. |
+| **Security / SQLi** | `bank_sampah/modules/api/auth_api.php` (Line 343)<br>`detect.php`, `orders_api.php`, `jenis_sampah_api.php` | Raw `mysqli_query` executions using direct string interpolation (e.g., `WHERE username = '$username'`) instead of `mysqli_prepare` / Prepared Statements. High SQL Injection risk. | Refactor all query executions in `modules/api/*.php` to use PHP `mysqli_prepare()` with `$stmt->bind_param()` strictly before public deployment. |
 | **Security / Exposure** | `bank_sampah/*.php` (`test_*.php`, `check_*.php`) | 19+ standalone test and schema-check scripts reside directly in the public web document root (`bank_sampah/`). | Move all debug tools to a private `/scripts/` folder outside the Laragon/Apache web root or delete before production. |
-| **Configuration** | `Mobile/lib/core/constants/api_config.dart`<br>`Halaman-Driver/lib/constants/api_config.dart` | `ApiConfig.baseUrl` is hardcoded to `http://192.168.167.68/tugasakhirsampah/bank_sampah/`. Will fail on physical devices on different networks or when deployed to production. | Implement Flutter Environment Variables (`--dart-define=API_URL=...` or `flutter_dotenv`) so builds adapt cleanly between local, staging, and production. |
+| **Configuration** | `Mobile/lib/core/constants/api_config.dart`<br>`Halaman-Driver/lib/constants/api_config.dart` | `ApiConfig.baseUrl` is hardcoded to `http://192.168.31.220/tugasakhirsampah/bank_sampah/`. Will fail on physical devices on different networks or when deployed to production. | Implement Flutter Environment Variables (`--dart-define=API_URL=...` or `flutter_dotenv`) so builds adapt cleanly between local, staging, and production. |
 | **Architecture / Duplication** | `Mobile/lib/` vs.<br>`Halaman-Driver/lib/` | Both Citizen and Driver Flutter apps maintain separate copies of `ApiService`, `WilayahService`, `PrimaryButton`, and `ApiConfig`. | Migrate to a Dart Monorepo with a shared internal package (`package:bank_sampah_core`) for unified HTTP clients, models, and shared M3 widgets. |
 | **Performance / Sync** | `Mobile/lib/features/orders/screens/order_detail_screen.dart`<br>`Halaman-Driver/screens/dashboard_screen.dart` | Order status and driver location updates currently rely on HTTP polling or local simulations (`DriverTrackingScreen`). | Integrate WebSocket (Pusher / Socket.io) or Firebase Cloud Messaging (FCM) data payloads for real-time order state pushes. |
-| **Lint / Clean Code** | `Mobile/lib/features/auth/screens/register_screen.dart` (Lines 528-530)<br>`checkout_screen.dart` (Lines 244, 248) | Minor Dart static analysis warnings: 3 unused optional parameters in `register_screen.dart` and `BuildContext across async gaps` in `checkout_screen.dart`. | Remove unused parameters and add `if (!context.mounted) return;` safety checks across async gaps. |
 | **Business Logic** | `bank_sampah/admin.php` | Web Admin validation panel is currently at ~60% completion. Needs atomic database transactions (`START TRANSACTION` / `COMMIT`) when recording `berat_aktual_kg` and updating `pengguna.saldo`. | Finalize `admin.php` warehouse validation endpoint with strict ACID compliance to lock the 3-stage weighing model. |
 
 ---

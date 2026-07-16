@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 
 void main() async {
-  final url = Uri.parse('http://192.168.167.68/tugasakhirsampah/bank_sampah/modules/api/driver_api.php?action=get_active_task');
+  final url = Uri.parse('http://192.168.31.220/tugasakhirsampah/bank_sampah/modules/api/driver_api.php?action=get_active_task');
   final response = await http.post(
     url,
     headers: {

@@ -120,12 +120,12 @@ class DriverTrackingScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.softBlue,
+                              color: const Color(0xFFEAF8EF),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
                               Icons.access_time,
-                              color: AppColors.primaryBlue,
+                              color: AppColors.primary,
                               size: 20,
                             ),
                           ),
@@ -149,7 +149,7 @@ class DriverTrackingScreen extends StatelessWidget {
                                   fontFamily: 'Plus Jakarta Sans',
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryBlue,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ],
@@ -165,7 +165,7 @@ class DriverTrackingScreen extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryBlue,
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 3),
                         boxShadow: const [
@@ -238,10 +238,10 @@ class DriverTrackingScreen extends StatelessWidget {
                                 children: [
                                   CircleAvatar(
                                     radius: 24,
-                                    backgroundColor: AppColors.softBlue,
+                                    backgroundColor: const Color(0xFFEAF8EF),
                                     child: const Icon(
                                       Icons.person,
-                                      color: AppColors.primaryBlue,
+                                      color: AppColors.primary,
                                       size: 28,
                                     ),
                                   ),
@@ -344,14 +344,14 @@ class DriverTrackingScreen extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
                                       colors: [
-                                        AppColors.primaryBlue,
-                                        AppColors.secondaryBlue,
+                                        AppColors.primary,
+                                        AppColors.secondary,
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(24),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.primaryBlue.withValues(
+                                        color: AppColors.primary.withValues(
                                           alpha: 0.2,
                                         ),
                                         blurRadius: 8,
@@ -441,7 +441,7 @@ class DriverTrackingScreen extends StatelessWidget {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.softBlue,
+                                  color: const Color(0xFFEAF8EF),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: const Text(
@@ -450,7 +450,7 @@ class DriverTrackingScreen extends StatelessWidget {
                                     fontFamily: 'Plus Jakarta Sans',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryBlue,
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -461,7 +461,7 @@ class DriverTrackingScreen extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.location_on_outlined,
-                                color: AppColors.primaryBlue,
+                                color: AppColors.primary,
                                 size: 20,
                               ),
                               SizedBox(width: 10),
@@ -498,10 +498,10 @@ class DriverTrackingScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.softBlue,
+                        color: const Color(0xFFEAF8EF),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.primaryBlue.withValues(alpha: 0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                         ),
                       ),
                       child: const Row(
@@ -509,7 +509,7 @@ class DriverTrackingScreen extends StatelessWidget {
                         children: [
                           Icon(
                             Icons.info_outline,
-                            color: AppColors.primaryBlue,
+                            color: AppColors.primary,
                             size: 20,
                           ),
                           SizedBox(width: 12),
@@ -569,7 +569,7 @@ class DriverTrackingScreen extends StatelessWidget {
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: isAccent ? AppColors.primaryBlue : AppColors.textDark,
+            color: isAccent ? AppColors.primary : AppColors.textDark,
           ),
         ),
       ],
@@ -581,7 +581,7 @@ class _MapRoutePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.primaryBlue
+      ..color = AppColors.primary
       ..strokeWidth = 4.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;

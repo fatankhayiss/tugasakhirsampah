@@ -135,10 +135,10 @@ class AuthRepository {
   /// Get locally saved user data.
   Future<Map<String, dynamic>?> getSavedUser() => _api.getUserData();
 
-  /// Logout — clear stored token and user data.
+  /// Logout — clear stored token, user data, Firebase session, and Google account session.
   Future<void> logout() async {
-    await GoogleAuthService.instance.signOut();
     await _api.clearAuth();
+    await GoogleAuthService.instance.signOut();
   }
 
   /// Alur Google Sign-In terintegrasi ke MySQL

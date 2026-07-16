@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 
 class PrimaryButton extends StatefulWidget {
@@ -6,6 +7,7 @@ class PrimaryButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
+  final bool isGreen;
 
   const PrimaryButton({
     super.key,
@@ -13,6 +15,7 @@ class PrimaryButton extends StatefulWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.isGreen = false,
   });
 
   @override
@@ -27,17 +30,19 @@ class _PrimaryButtonState extends State<PrimaryButton> {
     final bool isDisabled = widget.onPressed == null || widget.isLoading;
 
     return AnimatedScale(
-      scale: _isPressed ? 0.97 : 1.0,
-      duration: const Duration(milliseconds: 150),
+      scale: _isPressed ? 0.98 : 1.0,
+      duration: const Duration(milliseconds: 160),
       curve: Curves.easeOutCubic,
       child: AnimatedPhysicalModel(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         shape: BoxShape.rectangle,
         borderRadius: BorderRadius.circular(24),
-        elevation: isDisabled ? 0 : (_isPressed ? 2 : 6),
+        elevation: isDisabled ? 0 : 0,
         color: Colors.transparent,
-        shadowColor: AppColors.primaryBlue.withValues(alpha: 0.25),
+        shadowColor: widget.isGreen
+            ? AppColors.primary.withValues(alpha: 0.25)
+            : AppColors.primaryBlue.withValues(alpha: 0.25),
         child: Container(
           width: double.infinity,
           height: 56,
@@ -46,9 +51,13 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                 ? LinearGradient(
                     colors: [Colors.grey[300]!, Colors.grey[400]!],
                   )
-                : const LinearGradient(
-                    colors: [AppColors.primaryBlue, AppColors.secondaryBlue],
-                  ),
+                : (widget.isGreen
+                    ? const LinearGradient(
+                        colors: [AppColors.primary, AppColors.secondary],
+                      )
+                    : const LinearGradient(
+                        colors: [AppColors.primaryBlue, AppColors.secondaryBlue],
+                      )),
             borderRadius: BorderRadius.circular(24),
           ),
           child: Material(
@@ -56,7 +65,12 @@ class _PrimaryButtonState extends State<PrimaryButton> {
             child: InkWell(
               onTap: isDisabled ? null : widget.onPressed,
               onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
-              onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
+              onTapUp: isDisabled
+                  ? null
+                  : (_) {
+                      setState(() => _isPressed = false);
+                      HapticFeedback.selectionClick();
+                    },
               onTapCancel: isDisabled ? null : () => setState(() => _isPressed = false),
               borderRadius: BorderRadius.circular(24),
               splashColor: Colors.white.withValues(alpha: 0.2),

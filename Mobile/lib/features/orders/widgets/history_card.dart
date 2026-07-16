@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_images.dart';
+import '../../../core/navigation/app_page_transitions.dart';
 import '../../../shared/widgets/point_badge.dart';
+import '../../../shared/widgets/scale_tap.dart';
 import '../models/history_item_model.dart';
 import '../screens/order_detail_screen.dart';
 
@@ -15,45 +17,83 @@ class HistoryCard extends StatefulWidget {
 }
 
 class _HistoryCardState extends State<HistoryCard> {
-  bool _pressed = false;
+  Color _getBadgeBg(String? status) {
+    if (status == null) return const Color(0xFFDDF8E7);
+    final s = status.toLowerCase();
+    if (s.contains('batal') || s.contains('gagal') || s.contains('cancel')) {
+      return const Color(0xFFFEE2E2);
+    } else if (s.contains('proses') || s.contains('processing')) {
+      return const Color(0xFFDBEAFE);
+    } else if (s.contains('tunggu') || s.contains('pending')) {
+      return const Color(0xFFFEF3C7);
+    }
+    return const Color(0xFFDDF8E7);
+  }
+
+  Color _getBadgeText(String? status) {
+    if (status == null) return const Color(0xFF2DAA63);
+    final s = status.toLowerCase();
+    if (s.contains('batal') || s.contains('gagal') || s.contains('cancel')) {
+      return const Color(0xFFDC2626);
+    } else if (s.contains('proses') || s.contains('processing')) {
+      return const Color(0xFF1D4ED8);
+    } else if (s.contains('tunggu') || s.contains('pending')) {
+      return const Color(0xFFD97706);
+    }
+    return const Color(0xFF2DAA63);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return ScaleTap(
       onTap: () {
         if (widget.item.type == HistoryType.setor) {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => OrderDetailScreen(orderId: widget.item.id),
+            CustomPageRoute(
+              page: OrderDetailScreen(orderId: widget.item.id),
             ),
           );
         }
       },
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F7F4), // Premium soft eco background
+      scaleDown: 0.98,
+      duration: const Duration(milliseconds: 160),
+      enableHaptic: true,
+      executeOnTap: false,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F7F4), // Premium soft eco background
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          child: InkWell(
+            onTap: () {
+              if (widget.item.type == HistoryType.setor) {
+                Navigator.push(
+                  context,
+                  CustomPageRoute(
+                    page: OrderDetailScreen(orderId: widget.item.id),
+                  ),
+                );
+              }
+            },
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE2E8F0).withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // Header Row: White rounded icon container + right-aligned capsule status badge
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -84,15 +124,15 @@ class _HistoryCardState extends State<HistoryCard> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFDDF8E7), // Completed status green background
+                      color: _getBadgeBg(widget.item.statusLabel),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       widget.item.statusLabel ?? 'Selesai',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF2DAA63), // Completed status green text
+                        color: _getBadgeText(widget.item.statusLabel),
                       ),
                     ),
                   ),
@@ -185,6 +225,8 @@ class _HistoryCardState extends State<HistoryCard> {
                 ],
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),
