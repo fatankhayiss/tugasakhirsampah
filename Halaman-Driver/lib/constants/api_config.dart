@@ -1,7 +1,8 @@
 class ApiConfig {
   ApiConfig._();
-
-  static const String baseUrl = 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
+  // Jika menggunakan Server Online (Fatan/iTrashy): https://itrashy.triki.cloud/
+  // Jika menggunakan Device Fisik (Lokal): http://192.168.31.220/tugasakhirsampah/bank_sampah/
+  static const String baseUrl = 'https://itrashy.triki.cloud/';
 
   static const String authLogin = '${baseUrl}modules/api/auth_api.php?action=login';
   static const String authRegister = '${baseUrl}modules/api/auth_api.php?action=register';
