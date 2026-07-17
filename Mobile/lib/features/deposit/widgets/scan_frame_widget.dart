@@ -1,11 +1,11 @@
-﻿import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
+import 'package:flutter/material.dart';
 import 'scan_overlay_widget.dart';
 
 class ScanFrameWidget extends StatefulWidget {
   final Widget child;
+  final bool isBlue;
 
-  const ScanFrameWidget({super.key, required this.child});
+  const ScanFrameWidget({super.key, required this.child, this.isBlue = false});
 
   @override
   State<ScanFrameWidget> createState() => _ScanFrameWidgetState();
@@ -21,10 +21,10 @@ class _ScanFrameWidgetState extends State<ScanFrameWidget>
     super.initState();
     _lineController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 2200),
     )..repeat(reverse: true);
 
-    _lineAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _lineAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: _lineController, curve: Curves.easeInOut),
     );
   }
@@ -37,85 +37,86 @@ class _ScanFrameWidgetState extends State<ScanFrameWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Sesuai tema warna instruksi:
+    // Primary (Hijau Utama): #22C55E
+    // Border / Outline: #86EFAC
+    const primaryGreen = Color(0xFF22C55E);
+    const borderGreen = Color(0xFF86EFAC);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
-      child: AspectRatio(
-        aspectRatio: 3 / 4,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: borderGreen,
+          width: 2.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primaryGreen.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22), // 24 - 2 px border
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            // Camera or Empty State child
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
-                child: widget.child,
-              ),
-            ),
-            
-            // Frame borders and corner overlay
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(
-                    color: AppColors.neonGreen.withValues(alpha: 0.04),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.neonGreen.withValues(alpha: 0.04),
-                      blurRadius: 18,
-                      spreadRadius: -5,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            // Reusable overlay texts
-            const Positioned.fill(
-              child: ScanOverlayWidget(),
-            ),
+            // Camera preview / child
+            widget.child,
 
-            // Animated Scanner Line
-            AnimatedBuilder(
-              animation: _lineAnimation,
-              builder: (context, child) {
-                return Positioned(
-                  top: _lineAnimation.value * (MediaQuery.of(context).size.width * 4 / 3 - 80), // Approx height calc
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 120, // Gradual fade
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.neonGreen.withValues(alpha: 0.04),
-                          AppColors.neonGreen.withValues(alpha: 0.04),
-                          AppColors.neonGreen.withValues(alpha: 0.04),
-                        ],
-                        stops: const [0.0, 0.9, 1.0],
-                      ),
-                    ),
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
+            // Reusable overlay (empty / no text)
+            ScanOverlayWidget(isBlue: widget.isBlue),
+
+            // Animated Scanner Line (Garis scan hijau dengan animasi bergerak & glow)
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final height = constraints.maxHeight;
+                final scanBarHeight = 80.0;
+                return AnimatedBuilder(
+                  animation: _lineAnimation,
+                  builder: (context, child) {
+                    final topPosition = _lineAnimation.value * (height - scanBarHeight);
+                    return Positioned(
+                      top: topPosition.clamp(0.0, height > scanBarHeight ? height - scanBarHeight : 0.0),
+                      left: 0,
+                      right: 0,
                       child: Container(
-                        height: 2,
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: AppColors.neonGreen,
-                          boxShadow: [
-                          BoxShadow(
-                            color: AppColors.neonGreen,
-                            blurRadius: 18,
-                            spreadRadius: 2,
+                        height: scanBarHeight,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              primaryGreen.withValues(alpha: 0.0),
+                              primaryGreen.withValues(alpha: 0.12),
+                              primaryGreen.withValues(alpha: 0.38),
+                            ],
+                            stops: const [0.0, 0.7, 1.0],
                           ),
-                        ],
+                        ),
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: Container(
+                            height: 3.0,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: primaryGreen,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryGreen.withValues(alpha: 0.85),
+                                  blurRadius: 14,
+                                  spreadRadius: 3,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -125,7 +126,3 @@ class _ScanFrameWidgetState extends State<ScanFrameWidget>
     );
   }
 }
-
-
-
-

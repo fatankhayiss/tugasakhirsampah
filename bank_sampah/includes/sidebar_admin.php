@@ -54,6 +54,22 @@ $current_page = isset($current_page) ? $current_page : (isset($_GET['page']) ? $
             <span>Orders Penjemputan</span>
         </a>
     </li>
+    <li>
+        <a href="<?php echo BASE_URL; ?>index.php?page=reward/index" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200 <?php echo (strpos($current_page, 'reward/') === 0) ? 'active-nav-link' : ''; ?>">
+            <i class="fas fa-gift w-5"></i>
+            <span>Tukar Poin</span>
+            <?php
+            $q_pending = @mysqli_query($koneksi, "SELECT COUNT(*) as jml FROM reward_redemptions WHERE status = 'pending'");
+            if ($q_pending) {
+                $r_p = mysqli_fetch_assoc($q_pending);
+                if ($r_p && $r_p['jml'] > 0) {
+                    echo '<span class="ml-auto inline-block px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">' . $r_p['jml'] . '</span>';
+                }
+            }
+            ?>
+        </a>
+    </li>
     <li x-data="{ open: <?php echo (strpos($current_page, 'transaksi/') === 0) ? 'true' : 'false'; ?> }" @dropdown-opened.window="if ($event.detail !== 'transaksi') open = false">
             <button @click="open = !open; if (open) $dispatch('dropdown-opened', 'transaksi')" class="w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200">
             <div class="flex items-center space-x-3">

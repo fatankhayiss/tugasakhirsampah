@@ -4,6 +4,8 @@ import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/verification_code_screen.dart';
+import '../../features/auth/screens/reset_password_screen.dart';
+
 import '../../features/deposit/screens/manual_deposit_screen.dart';
 import '../../features/home/screens/main_navigation_screen.dart';
 import '../../features/deposit/screens/scan_screen.dart';
@@ -47,6 +49,14 @@ class AppRouter {
         return AppPageTransitions.fadeSlide(
           settings: settings,
           page: VerificationCodeScreen(email: email),
+        );
+      case AppRoutes.resetPassword:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        final email = args['email'] as String? ?? '';
+        final resetToken = args['reset_token'] as String? ?? '';
+        return AppPageTransitions.fadeSlide(
+          settings: settings,
+          page: ResetPasswordScreen(email: email, resetToken: resetToken),
         );
       case AppRoutes.main:
         return AppPageTransitions.fadeSlide(

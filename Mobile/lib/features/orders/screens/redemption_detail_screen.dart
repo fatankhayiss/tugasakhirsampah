@@ -41,6 +41,7 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
         } else if (widget.ongoingItem != null) {
           _data = {
             'id': widget.ongoingItem!.id,
+            'transaction_code': widget.ongoingItem!.transactionCode,
             'destination_type': widget.ongoingItem!.destination ?? 'E-Wallet',
             'provider': widget.ongoingItem!.provider ?? '-',
             'account_name': widget.ongoingItem!.accountName ?? '-',
@@ -49,10 +50,12 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
             'estimated_amount': widget.ongoingItem!.estimatedAmount ?? 0.0,
             'status': widget.ongoingItem!.rawStatus ?? (widget.ongoingItem!.status == OngoingStatus.pending ? 'pending' : 'processing'),
             'created_at': widget.ongoingItem!.date,
+            'admin_note': widget.ongoingItem!.adminNote,
           };
         } else if (widget.historyItem != null) {
           _data = {
             'id': widget.historyItem!.id,
+            'transaction_code': widget.historyItem!.transactionCode,
             'destination_type': widget.historyItem!.destination ?? 'E-Wallet',
             'provider': widget.historyItem!.provider ?? '-',
             'account_name': widget.historyItem!.accountName ?? '-',
@@ -109,6 +112,9 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
   }
 
   String _getOrFormatTrxNumber(Map<String, dynamic>? data, String id, String dateStr) {
+    if (data != null && data['transaction_code'] != null && data['transaction_code'].toString().trim().isNotEmpty) {
+      return data['transaction_code'].toString().trim();
+    }
     if (data != null && data['transaction_number'] != null && data['transaction_number'].toString().trim().isNotEmpty) {
       return data['transaction_number'].toString().trim();
     }

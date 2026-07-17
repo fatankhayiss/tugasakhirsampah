@@ -90,18 +90,25 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   List<HistoryItemModel> get _filteredHistory {
     final type = _selectedFilter.typeFilter;
-    if (type == null) return _allHistory;
-    var filtered = _allHistory.where((item) => item.type == type).toList();
-    if (type == HistoryType.pencairan && _selectedSubFilter != 'Semua') {
-      filtered = filtered.where((item) {
-        final st = item.rawStatus?.toLowerCase() ?? 'completed';
-        if (_selectedSubFilter == 'Pending') return st == 'pending';
-        if (_selectedSubFilter == 'Processing') return st == 'processing';
-        if (_selectedSubFilter == 'Completed') return st == 'completed';
-        if (_selectedSubFilter == 'Rejected') return st == 'rejected';
-        return true;
-      }).toList();
-    }
+    var filtered = type == null 
+        ? _allHistory 
+        : _allHistory.where((item) => item.type == type).toList();
+
+    // For Tukar Poin (pencairan), ensure proper card movement between Ongoing & History
+    filtered = filtered.where((item) {
+      if (item.type != HistoryType.pencairan) return true;
+      final st = item.rawStatus?.toLowerCase() ?? 'completed';
+      
+      if (_selectedSubFilter == 'Pending') return st == 'pending';
+      if (_selectedSubFilter == 'Processing') return st == 'processing';
+      if (_selectedSubFilter == 'Completed') return st == 'completed';
+      if (_selectedSubFilter == 'Rejected') return st == 'rejected';
+      
+      // If subfilter is 'Semua' (default), only show completed and rejected redemptions in History tab,
+      // because pending & processing redemptions belong in the Order -> Ongoing tab!
+      return st == 'completed' || st == 'rejected' || st == 'cancelled';
+    }).toList();
+
     return filtered;
   }
 

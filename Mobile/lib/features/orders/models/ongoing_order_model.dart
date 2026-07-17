@@ -59,6 +59,8 @@ class OngoingOrderModel {
   final String? accountName;
   final double? estimatedAmount;
   final String? rawStatus;
+  final String? transactionCode;
+  final String? adminNote;
 
   const OngoingOrderModel({
     required this.id,
@@ -75,5 +77,7 @@ class OngoingOrderModel {
     this.accountName,
     this.estimatedAmount,
     this.rawStatus,
+    this.transactionCode,
+    this.adminNote,
   });
 }

@@ -34,6 +34,22 @@ class ApiService {
     };
   }
 
+  Future<ApiResponse> get(String url) async {
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+      return _processResponse(response);
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+        statusCode: 500,
+      );
+    }
+  }
+
   Future<ApiResponse> post(String url, {Map<String, dynamic>? body}) async {
     try {
       final response = await http.post(

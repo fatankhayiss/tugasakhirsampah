@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/repositories/waste_repository.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
+import '../../../core/navigation/app_page_transitions.dart';
 import 'checkout_screen.dart';
+import 'scan_deposit_screen.dart';
 
 class ManualDepositScreen extends StatefulWidget {
-  const ManualDepositScreen({super.key});
+  final List<WasteItem>? initialCartItems;
+  final WasteItem? activeScannedItem;
+
+  const ManualDepositScreen({
+    super.key,
+    this.initialCartItems,
+    this.activeScannedItem,
+  });
 
   @override
   State<ManualDepositScreen> createState() => _ManualDepositScreenState();
@@ -18,11 +28,34 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
   List<WasteItem> availableItems = [];
   List<WasteItem> cartItems = [];
   bool isLoading = true;
+  WasteItem? _activeScannedItem;
+  final TextEditingController _topWeightController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    cartItems = widget.initialCartItems != null ? List<WasteItem>.from(widget.initialCartItems!) : [];
+    _activeScannedItem = widget.activeScannedItem;
+    if (_activeScannedItem != null) {
+      if (!cartItems.any((i) => i.id == _activeScannedItem!.id)) {
+        cartItems.add(_activeScannedItem!);
+      }
+      _topWeightController.text = _activeScannedItem!.weight.toStringAsFixed(
+        _activeScannedItem!.weight.truncateToDouble() == _activeScannedItem!.weight ? 1 : 2,
+      );
+    } else if (cartItems.any((i) => i.isScanned || i.imageUrl != null)) {
+      _activeScannedItem = cartItems.lastWhere((i) => i.isScanned || i.imageUrl != null);
+      _topWeightController.text = _activeScannedItem!.weight.toStringAsFixed(
+        _activeScannedItem!.weight.truncateToDouble() == _activeScannedItem!.weight ? 1 : 2,
+      );
+    }
     _loadWasteData();
+  }
+
+  @override
+  void dispose() {
+    _topWeightController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadWasteData() async {
@@ -73,6 +106,44 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
     ];
   }
 
+  Widget _buildItemImage(WasteItem item, {double? width, double? height, BoxFit fit = BoxFit.cover}) {
+    if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
+      if (item.imageUrl!.startsWith('http://') || item.imageUrl!.startsWith('https://')) {
+        return Image.network(
+          item.imageUrl!,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (c, e, s) => Container(
+            width: width,
+            height: height,
+            color: const Color(0xFFEAF1FB),
+            child: const Icon(Icons.broken_image, color: AppColors.primaryBlue),
+          ),
+        );
+      } else {
+        return Image.file(
+          File(item.imageUrl!),
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (c, e, s) => Container(
+            width: width,
+            height: height,
+            color: const Color(0xFFEAF1FB),
+            child: const Icon(Icons.broken_image, color: AppColors.primaryBlue),
+          ),
+        );
+      }
+    }
+    return Container(
+      width: width,
+      height: height,
+      color: const Color(0xFFEAF1FB),
+      child: const Icon(Icons.recycling, color: AppColors.primaryBlue, size: 24),
+    );
+  }
+
   void _openWeightBottomSheet(WasteItem item, {bool isEditing = false}) {
     double tempWeight = isEditing && item.weight > 0 ? item.weight : 1.0;
     final TextEditingController weightController = TextEditingController(
@@ -98,38 +169,26 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               final cleanText = text.replaceAll(',', '.');
               if (cleanText.contains('-')) {
                 setModalState(() {
-                  weightError = 'Berat tidak boleh negatif';
-                });
-                return;
-              }
-              if (cleanText.split('.').length > 2) {
-                setModalState(() {
-                  weightError = 'Format angka tidak valid';
+                  weightError = 'Berat sampah tidak boleh bernilai negatif';
                 });
                 return;
               }
               final parsed = double.tryParse(cleanText);
               if (parsed == null) {
                 setModalState(() {
-                  weightError = 'Format angka tidak valid (hanya angka dan desimal)';
+                  weightError = 'Format angka tidak valid';
                 });
                 return;
               }
               if (parsed <= 0) {
                 setModalState(() {
-                  weightError = 'Berat tidak boleh nol atau negatif';
+                  weightError = 'Berat sampah harus lebih dari 0 Kg';
                 });
                 return;
               }
-              if (parsed < 0.5) {
+              if (parsed > 1000) {
                 setModalState(() {
-                  weightError = 'Minimal berat sampah adalah 0.5 Kg';
-                });
-                return;
-              }
-              if (parsed > 100.0) {
-                setModalState(() {
-                  weightError = 'Maksimal berat sampah adalah 100 Kg';
+                  weightError = 'Berat maksimal adalah 1000 Kg';
                 });
                 return;
               }
@@ -139,348 +198,472 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               });
             }
 
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
               ),
-              padding: EdgeInsets.fromLTRB(
-                20,
-                20,
-                20,
-                MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 48,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    isEditing ? 'Ubah Berat ${item.name}' : 'Tambah ${item.name}',
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Masukkan perkiraan berat sampah (Kg)',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSoft,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Stepper Container with Manual Input
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: weightError != null ? const Color(0xFFEF4444) : AppColors.border,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildStepperBtn(
-                          icon: Icons.remove,
-                          onTap: () {
-                            double currentVal = double.tryParse(weightController.text.replaceAll(',', '.')) ?? tempWeight;
-                            if (currentVal.isNaN || currentVal < 0) currentVal = 0.5;
-                            if (currentVal > 0.5) {
-                              double newVal = (currentVal - 0.5).clamp(0.5, 100.0);
-                              weightController.text = newVal.toStringAsFixed(newVal.truncateToDouble() == newVal ? 1 : 2);
-                              validateAndUpdate(weightController.text);
-                            } else {
-                              validateAndUpdate(weightController.text);
-                            }
-                          },
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 48,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2.5),
                         ),
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              IntrinsicWidth(
-                                child: Container(
-                                  constraints: const BoxConstraints(minWidth: 50),
-                                  child: TextField(
-                                    controller: weightController,
-                                    focusNode: weightFocusNode,
-                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textDark,
-                                    ),
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                    ),
-                                    onChanged: (val) {
-                                      validateAndUpdate(val);
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'Kg',
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      isEditing ? 'Ubah Perkiraan Berat' : 'Perkiraan Berat',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.name,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
+                        color: AppColors.textSoft,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'BERAT SAMPAH (KG)',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSoft,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: weightController,
+                      focusNode: weightFocusNode,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      autofocus: true,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Contoh: 2.5',
+                        errorText: weightError,
+                        errorStyle: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        suffixText: 'Kg',
+                        suffixStyle: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryBlue,
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAF8),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Colors.redAccent),
+                        ),
+                      ),
+                      onChanged: validateAndUpdate,
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'CEPAT PILIH BERAT',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSoft,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [1.0, 2.0, 3.0, 5.0, 10.0].map((w) {
+                          final isSelected = tempWeight == w;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(
+                                '${w.toInt()} Kg',
                                 style: TextStyle(
                                   fontFamily: 'Plus Jakarta Sans',
-                                  fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textSoft,
+                                  color: isSelected ? Colors.white : AppColors.textDark,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        _buildStepperBtn(
-                          icon: Icons.add,
-                          onTap: () {
-                            double currentVal = double.tryParse(weightController.text.replaceAll(',', '.')) ?? tempWeight;
-                            if (currentVal.isNaN || currentVal < 0) currentVal = 0.5;
-                            double newVal = (currentVal + 0.5).clamp(0.5, 100.0);
-                            weightController.text = newVal.toStringAsFixed(newVal.truncateToDouble() == newVal ? 1 : 2);
-                            validateAndUpdate(weightController.text);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (weightError != null) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: Color(0xFFEF4444),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            weightError!,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFFEF4444),
+                              selected: isSelected,
+                              selectedColor: AppColors.primaryBlue,
+                              backgroundColor: const Color(0xFFF8FAF8),
+                              side: BorderSide(
+                                color: isSelected ? AppColors.primaryBlue : AppColors.border,
+                              ),
+                              onSelected: (selected) {
+                                if (selected) {
+                                  setModalState(() {
+                                    tempWeight = w;
+                                    weightController.text = w.toInt().toString();
+                                    weightError = null;
+                                  });
+                                }
+                              },
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEAF8EF),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.15),
+                          );
+                        }).toList(),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Estimasi Poin',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textDark,
-                          ),
+                    const SizedBox(height: 28),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF8EF),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.15),
                         ),
-                        Text(
-                          weightError != null ? '0 Poin' : '${(tempWeight * item.pricePerKg).toInt()} Poin',
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Estimasi Poin:',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSoft,
+                            ),
                           ),
-                        ),
-                      ],
+                          Text(
+                            '${(tempWeight * item.pricePerKg).toInt()} Poin',
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryBlue,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  PrimaryButton(
-                    text: 'Konfirmasi',
-                    isGreen: false,
-                    onPressed: weightError != null
-                        ? null
-                        : () {
-                            setState(() {
-                              final idx = cartItems.indexWhere(
-                                (i) => i.id == item.id,
+                    const SizedBox(height: 20),
+                    PrimaryButton(
+                      text: isEditing ? 'Simpan Perubahan' : 'Simpan',
+                      isGreen: false,
+                      onPressed: () {
+                        validateAndUpdate(weightController.text);
+                        if (weightError != null) return;
+                        setState(() {
+                          if (isEditing) {
+                            item.weight = tempWeight;
+                            if (_activeScannedItem?.id == item.id) {
+                              _topWeightController.text = tempWeight.toStringAsFixed(
+                                tempWeight.truncateToDouble() == tempWeight ? 1 : 2,
                               );
-                              if (idx >= 0) {
-                                if (isEditing) {
-                                  cartItems[idx].weight = tempWeight;
-                                } else {
-                                  cartItems[idx].weight += tempWeight;
-                                }
-                              } else {
-                                final newItem = WasteItem(
-                                  id: item.id,
-                                  name: item.name,
-                                  imageAsset: item.imageAsset,
-                                  pricePerKg: item.pricePerKg,
-                                  weight: tempWeight,
-                                );
-                                cartItems.add(newItem);
-                              }
-                            });
-                            Navigator.pop(ctx);
-                          },
-                  ),
-                ],
+                            }
+                          } else {
+                            final existingIndex = cartItems.indexWhere((i) => i.id == item.id);
+                            if (existingIndex >= 0) {
+                              cartItems[existingIndex].weight = tempWeight;
+                            } else {
+                              item.weight = tempWeight;
+                              cartItems.add(item);
+                            }
+                          }
+                        });
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ],
+                ),
               ),
             );
           },
         );
       },
-    ).whenComplete(() {
-      weightController.dispose();
-      weightFocusNode.dispose();
-    });
+    );
   }
 
-  Widget _buildStepperBtn({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+  void _showDeleteItemDialog(WasteItem item) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Hapus Item',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDark,
+          ),
         ),
-        child: Icon(icon, color: AppColors.primary, size: 22),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus hasil scan ini?',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 14,
+            color: AppColors.textSoft,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(foregroundColor: AppColors.textSoft),
+            child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              setState(() {
+                cartItems.removeWhere((i) => i.id == item.id);
+                if (_activeScannedItem?.id == item.id) {
+                  _activeScannedItem = cartItems.isNotEmpty ? cartItems.last : null;
+                  if (_activeScannedItem != null) {
+                    _topWeightController.text = _activeScannedItem!.weight.toStringAsFixed(
+                      _activeScannedItem!.weight.truncateToDouble() == _activeScannedItem!.weight ? 1 : 2,
+                    );
+                  }
+                }
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Hapus', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    double totalWeight = cartItems.fold(0, (sum, i) => sum + i.weight);
-    int totalEstPoints = cartItems.fold(
-      0,
-      (sum, i) => sum + i.totalPrice.toInt(),
-    );
+    final double totalWeight = cartItems.fold(0.0, (sum, item) => sum + item.weight);
+    final int totalEstPoints = cartItems.fold(0, (sum, item) => sum + item.totalPrice.toInt());
+    final bool isAiFlow = _activeScannedItem != null || cartItems.any((i) => i.isScanned || i.imageUrl != null);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAF8),
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
+        preferredSize: const Size.fromHeight(64),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            border: const Border(
-              bottom: BorderSide(color: AppColors.border, width: 0.5),
-            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 8,
+                blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: SafeArea(
-            top: true,
-            bottom: false,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: AppColors.textDark,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: AppColors.textDark,
+                    ),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const SizedBox(width: 4),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Pilih Sampah',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark,
+                  const SizedBox(width: 4),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        isAiFlow ? 'Setorkan Sampah' : 'Pilih Sampah',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Pilih jenis sampah yang akan dijemput',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSoft,
+                      Text(
+                        isAiFlow
+                            ? 'Lengkapi estimasi berat sampah hasil scan'
+                            : 'Pilih jenis sampah yang akan dijemput',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSoft,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+              child: CircularProgressIndicator(color: AppColors.primaryBlue),
             )
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
               children: [
-                const Text(
-                  'Kategori Sampah',
-                  style: TextStyle(
+                if (_activeScannedItem != null) ...[
+                  _buildScannedReviewSection(_activeScannedItem!),
+                ],
+
+                if (isAiFlow) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Daftar Sampah Dipindai',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.softBlue,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '${cartItems.length} Item',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryBlue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  if (cartItems.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.qr_code_scanner, color: AppColors.primaryBlue, size: 36),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Belum ada sampah yang dipindai.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSoft,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...cartItems.map((item) => _buildSelectedCard(item)),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          CustomPageRoute(
+                            page: ScanDepositScreen(existingCartItems: cartItems),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primaryBlue),
+                      label: const Text(
+                        'Scan Lagi',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                ],
+
+                // Manual Category Section
+                Text(
+                  isAiFlow ? 'Atau Tambah Kategori Manual' : 'Kategori Sampah',
+                  style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -489,7 +672,8 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                 ),
                 const SizedBox(height: 14),
                 ...availableItems.map((item) => _buildCategoryCard(item)),
-                if (cartItems.isNotEmpty) ...[
+
+                if (!isAiFlow && cartItems.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -527,26 +711,29 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                   const SizedBox(height: 14),
                   ...cartItems.map((item) => _buildSelectedCard(item)),
                 ],
+
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEAF8EF),
+                    color: isAiFlow ? AppColors.softBlue : const Color(0xFFEAF8EF),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+                      color: isAiFlow
+                          ? AppColors.primaryBlue.withValues(alpha: 0.2)
+                          : AppColors.primary.withValues(alpha: 0.2),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: AppColors.primary,
+                        color: isAiFlow ? AppColors.primaryBlue : AppColors.primary,
                         size: 20,
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
+                      const SizedBox(width: 12),
+                      const Expanded(
                         child: Text(
                           'Estimasi poin hanya sebagai informasi awal. Poin resmi akan dihitung berdasarkan berat aktual setelah divalidasi oleh petugas Bank Sampah.',
                           style: TextStyle(
@@ -584,7 +771,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildSummaryCol('KATEGORI', '${cartItems.length}'),
+                  _buildSummaryCol('JUMLAH ITEM', '${cartItems.length} Item'),
                   Container(
                     height: 28,
                     width: 1,
@@ -592,7 +779,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                   ),
                   _buildSummaryCol(
                     'TOTAL BERAT',
-                    '${totalWeight.toStringAsFixed(1)} kg',
+                    '${totalWeight.toStringAsFixed(1)} Kg',
                   ),
                   Container(
                     height: 28,
@@ -601,18 +788,27 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                   ),
                   _buildSummaryCol(
                     'EST. POIN',
-                    '$totalEstPoints',
+                    '$totalEstPoints Poin',
                     isAccent: true,
                   ),
                 ],
               ),
               const SizedBox(height: 18),
               PrimaryButton(
-                text: 'Lanjutkan Penjemputan',
+                text: isAiFlow ? 'Setorkan Sampah' : 'Lanjutkan Penjemputan',
                 isGreen: false,
-                onPressed: cartItems.isEmpty
+                onPressed: cartItems.isEmpty || (_activeScannedItem != null && _activeScannedItem!.weight <= 0)
                     ? null
                     : () {
+                        if (cartItems.any((i) => i.weight <= 0)) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Pastikan berat semua sampah lebih dari 0 Kg.'),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                          return;
+                        }
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -625,6 +821,257 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildScannedReviewSection(WasteItem item) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Hasil Pemindaian AI',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDark,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: _buildItemImage(item, fit: BoxFit.cover),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'JENIS SAMPAH',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSoft,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.name,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (item.confidence != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        item.confidence!,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(color: AppColors.border, height: 1),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Kategori',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      color: AppColors.textSoft,
+                    ),
+                  ),
+                  Text(
+                    item.category ?? 'Plastik',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Estimasi Poin',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      color: AppColors.textSoft,
+                    ),
+                  ),
+                  Text(
+                    '${item.pricePerKg.toInt()} Poin / Kg',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryBlue,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: item.weight <= 0 ? Colors.redAccent : AppColors.primaryBlue.withValues(alpha: 0.3),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'BERAT SAMPAH (KG)',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSoft,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _topWeightController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Contoh: 1.5',
+                  hintStyle: const TextStyle(color: AppColors.textSoft, fontWeight: FontWeight.w400),
+                  suffixText: 'Kg',
+                  suffixStyle: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryBlue,
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAF8),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+                  ),
+                ),
+                onChanged: (val) {
+                  final cleanText = val.replaceAll(',', '.');
+                  final w = double.tryParse(cleanText) ?? 0.0;
+                  setState(() {
+                    item.weight = w;
+                  });
+                },
+              ),
+              if (item.weight <= 0)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Berat sampah wajib diisi dan lebih dari 0 Kg',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
     );
   }
 
@@ -653,7 +1100,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF8EF),
+                  color: AppColors.softGreen,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
@@ -723,6 +1170,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
   }
 
   Widget _buildSelectedCard(WasteItem item) {
+    final bool isScanned = item.isScanned || item.imageUrl != null;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -741,17 +1189,22 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFFEAF8EF),
+              color: isScanned ? AppColors.softBlue : const Color(0xFFEAF8EF),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.check_circle_outline,
-              color: AppColors.primary,
-              size: 22,
-            ),
+            child: isScanned
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _buildItemImage(item, width: 48, height: 48),
+                  )
+                : const Icon(
+                    Icons.check_circle_outline,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -769,7 +1222,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${item.weight.toStringAsFixed(1)} kg • ${item.totalPrice.toInt()} Poin',
+                  '${item.weight.toStringAsFixed(1)} Kg • ${item.totalPrice.toInt()} Poin',
                   style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 13,
@@ -781,12 +1234,23 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.edit_outlined,
-              color: AppColors.textSoft,
+              color: isScanned ? AppColors.primaryBlue : AppColors.textSoft,
               size: 20,
             ),
-            onPressed: () => _openWeightBottomSheet(item, isEditing: true),
+            onPressed: () {
+              if (isScanned) {
+                setState(() {
+                  _activeScannedItem = item;
+                  _topWeightController.text = item.weight.toStringAsFixed(
+                    item.weight.truncateToDouble() == item.weight ? 1 : 2,
+                  );
+                });
+              } else {
+                _openWeightBottomSheet(item, isEditing: true);
+              }
+            },
           ),
           IconButton(
             icon: const Icon(
@@ -794,9 +1258,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               color: Color(0xFFEF4444),
               size: 20,
             ),
-            onPressed: () {
-              setState(() => cartItems.removeWhere((i) => i.id == item.id));
-            },
+            onPressed: () => _showDeleteItemDialog(item),
           ),
         ],
       ),
@@ -828,7 +1290,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: isAccent ? AppColors.primary : AppColors.textDark,
+            color: isAccent ? AppColors.primaryBlue : AppColors.textDark,
           ),
         ),
       ],

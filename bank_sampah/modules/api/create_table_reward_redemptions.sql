@@ -3,6 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS reward_redemptions (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  transaction_code VARCHAR(50) NULL UNIQUE COMMENT 'Unique Transaction Code e.g. RDM-20260716-000001',
   user_id INT NOT NULL,
   destination_type VARCHAR(50) NOT NULL COMMENT 'Bank Account or E-Wallet',
   provider VARCHAR(100) NOT NULL COMMENT 'e.g., BCA, Mandiri, GoPay, OVO, DANA',
@@ -13,9 +14,11 @@ CREATE TABLE IF NOT EXISTS reward_redemptions (
   estimated_amount DOUBLE NOT NULL COMMENT 'Estimated money amount in Rupiah (redeem_point * conversion_rate)',
   status VARCHAR(50) DEFAULT 'pending' COMMENT 'pending, processing, completed, rejected',
   admin_note TEXT COMMENT 'Notes from admin upon verification or rejection',
+  admin_id INT NULL COMMENT 'ID of admin processing/verifying request',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   processed_at DATETIME NULL,
   completed_at DATETIME NULL,
   INDEX idx_user_id (user_id),
-  INDEX idx_status (status)
+  INDEX idx_status (status),
+  INDEX idx_transaction_code (transaction_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

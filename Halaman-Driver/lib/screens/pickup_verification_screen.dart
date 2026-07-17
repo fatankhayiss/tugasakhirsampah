@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../constants/api_config.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-const _primary = Color(0xFF006D36);
-const _mint = Color(0xFF4ADE80);
-const _bg = Color(0xFFF9FAFB);
-const _surface = Colors.white;
-const _surfaceVariant = Color(0xFFE7E7E7);
-const _textMuted = Color(0xFF6D7B6D);
 
 class PickupVerificationScreen extends StatefulWidget {
   const PickupVerificationScreen({super.key});
@@ -33,75 +27,68 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
 
     if (task == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
-        body: const Center(child: Text('Data tidak ditemukan')),
+        backgroundColor: DriverColors.background,
+        appBar: AppBar(
+          backgroundColor: DriverColors.background,
+          elevation: 0,
+          title: const Text('Error', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark)),
+        ),
+        body: const Center(
+          child: Text('Data pesanan tidak ditemukan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted)),
+        ),
       );
     }
 
+    final statusStr = task['status']?.toString().toLowerCase() ?? 'on_the_way';
+    final isAlreadyPickedUp = statusStr == 'picked_up' || statusStr == 'diangkut';
+
     return Scaffold(
-      backgroundColor: _bg,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            floating: false,
-            snap: false,
-            backgroundColor: _bg,
-            elevation: 0,
-            toolbarHeight: 72,
-            automaticallyImplyLeading: false,
-            title: Row(
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back, color: _primary),
-                ),
-                const Text(
-                  'Verifikasi Penjemputan',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.notifications_none, color: _primary),
-                ),
-              ],
-            ),
+      backgroundColor: DriverColors.background,
+      appBar: AppBar(
+        backgroundColor: DriverColors.background,
+        elevation: 0,
+        centerTitle: false,
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back_rounded, color: DriverColors.textDark),
+        ),
+        title: Text(
+          isAlreadyPickedUp ? 'Penyelesaian di Bank Sampah' : 'Verifikasi & Timbang Sampah',
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: DriverColors.textDark,
           ),
-          SliverSafeArea(
-            top: false,
-            sliver: SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCustomerCard(task),
-                    const SizedBox(height: 16),
-                    _DynamicMapCard(task: task),
-                    const SizedBox(height: 16),
-                    _buildWeightInput(task),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCustomerCard(task),
+            const SizedBox(height: 16),
+            _DynamicMapCard(task: task),
+            const SizedBox(height: 16),
+            _buildWeightInput(task, isAlreadyPickedUp),
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
           decoration: BoxDecoration(
-            color: _surface.withValues(alpha: 0.95),
-            border: Border(
-              top: BorderSide(color: _surfaceVariant.withValues(alpha: 0.4)),
-            ),
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -109,58 +96,80 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE7E8E9),
-                    foregroundColor: _textMuted,
+                    backgroundColor: Colors.white,
+                    foregroundColor: DriverColors.textMuted,
+                    side: const BorderSide(color: DriverColors.border),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: const Text(
-                    'Batalkan',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'Kembali',
+                    style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 flex: 2,
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     final weightStr = _weightController.text.trim();
-                    final finalWeight = weightStr.isNotEmpty ? '$weightStr Kg' : (task['estimasi_berat'] ?? '0 Kg');
+                    final finalWeight = weightStr.isNotEmpty ? '$weightStr Kg' : (task['berat_aktual'] ?? task['estimasi_berat'] ?? '0 Kg');
                     task['berat_aktual'] = finalWeight;
+                    final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
+                    final nextStatus = isAlreadyPickedUp ? 'completed' : 'picked_up';
 
                     showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (_) => const Center(child: CircularProgressIndicator()),
+                      builder: (_) => const Center(child: CircularProgressIndicator(color: DriverColors.primary)),
                     );
-                    final res = await ApiService().updateOrderStatus(task['id_order'], 'picked_up', beratAktual: finalWeight);
-                    if (context.mounted) Navigator.of(context).pop();
-                    if (res['success']) {
-                      task['status'] = 'picked_up';
+
+                    final res = await ApiService().updateOrderStatus(orderId, nextStatus, beratAktual: finalWeight);
+                    if (context.mounted) Navigator.of(context).pop(); // pop loading dialog
+
+                    if (res['success'] == true) {
+                      task['status'] = nextStatus;
                       if (context.mounted) {
-                        Navigator.of(context).pushReplacementNamed('/complete-pickup', arguments: task);
+                        if (nextStatus == 'completed') {
+                          Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            content: Text('Tugas berhasil diselesaikan! Poin & saldo telah diperbarui.'),
+                            backgroundColor: DriverColors.badgeCompleted,
+                          ));
+                        } else {
+                          Navigator.of(context).pop(); // Go back or refresh
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            content: Text('Verifikasi sukses: Sampah telah diangkut ke kendaraan!'),
+                            backgroundColor: DriverColors.primary,
+                          ));
+                        }
                       }
                     } else {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? 'Gagal')));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(res['message']?.toString() ?? 'Gagal memperbarui verifikasi'),
+                          backgroundColor: DriverColors.badgeCancelled,
+                        ));
                       }
                     }
                   },
-                  icon: const Icon(Icons.check_circle, size: 20),
-                  label: const Text(
-                    'Konfirmasi Sampah Diangkut',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  icon: Icon(isAlreadyPickedUp ? Icons.task_alt_rounded : Icons.check_circle_outline_rounded, size: 22),
+                  label: Text(
+                    isAlreadyPickedUp ? 'Selesaikan Tugas & Setor' : 'Konfirmasi Diangkut',
+                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 14),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _mint,
-                    foregroundColor: const Color(0xFF0B4F2A),
+                    backgroundColor: DriverColors.primary,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 4,
+                    shadowColor: DriverColors.primary.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -173,7 +182,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
 
   Widget _buildCustomerCard(Map<String, dynamic> task) {
     final nama = task['nama_warga'] ?? 'Warga';
-    final inisial = nama.toString().substring(0, nama.toString().length > 1 ? 2 : 1).toUpperCase();
+    final inisial = nama.toString().isNotEmpty ? nama.toString().substring(0, nama.toString().length > 1 ? 2 : 1).toUpperCase() : 'W';
     final alamat = task['alamat_jemput'] ?? '-';
     
     final jenisStr = task['jenis_sampah']?.toString() ?? 'Campuran';
@@ -181,18 +190,12 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
     final berat = task['estimasi_berat'] ?? '0 Kg';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _surfaceVariant),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: Colors.white,
+        borderRadius: DriverStyles.cardRadius,
+        border: Border.all(color: DriverColors.border),
+        boxShadow: DriverStyles.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,13 +204,13 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: const Color(0xFFE7E8E9),
+                backgroundColor: DriverColors.softBlue,
                 child: Text(
                   inisial,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: DriverColors.primary, fontSize: 16),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,40 +218,51 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                     Text(
                       nama,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: DriverColors.textDark,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       alamat,
-                      style: const TextStyle(color: _textMuted, fontSize: 12),
+                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _mint,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(Icons.call, color: Colors.white),
-              ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          const Divider(color: DriverColors.border, height: 1),
+          const SizedBox(height: 16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              ...categories.map((cat) => _Tag(
-                text: cat,
-                bg: const Color(0xFFE8F5E9),
-                fg: const Color(0xFF2E7D32),
+              ...categories.map((cat) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: DriverColors.softBlue,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  cat,
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.primary, fontWeight: FontWeight.w700, fontSize: 12),
+                ),
               )),
-              _Tag(text: '$berat Est.', bg: const Color(0xFFE7E8E9), fg: _textMuted),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Estimasi: $berat',
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark, fontWeight: FontWeight.w600, fontSize: 12),
+                ),
+              ),
             ],
           ),
         ],
@@ -256,131 +270,123 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
     );
   }
 
-  Widget _buildWeightInput(Map<String, dynamic> task) {
+  Widget _buildWeightInput(Map<String, dynamic> task, bool isAlreadyPickedUp) {
     final estStr = task['estimasi_berat'] ?? '0 kg';
     final estNumStr = estStr.toString().replaceAll(RegExp(r'[^0-9.]'), '');
     final estVal = double.tryParse(estNumStr) ?? 0.0;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Input Berat Aktual',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            Text('Estimasi: $estStr', style: const TextStyle(color: _textMuted)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Stack(
-          children: [
-            TextField(
-              controller: _weightController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                hintText: estVal > 0 ? estVal.toStringAsFixed(2) : '0.00',
-                filled: true,
-                fillColor: const Color(0xFFF3F4F5),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 18,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            const Positioned(
-              right: 20,
-              top: 18,
-              child: Text(
-                'kg',
-                style: TextStyle(
-                  color: _textMuted,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  if (estVal > 0) {
-                    _weightController.text = (estVal * 1.5).toStringAsFixed(2);
-                  }
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE7E8E9),
-                  foregroundColor: _textMuted,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text('Muatan Penuh'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  if (estVal > 0) {
-                    _weightController.text = estVal.toStringAsFixed(2);
-                  }
-                },
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE7E8E9),
-                  foregroundColor: _textMuted,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text('Sesuai Estimasi'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _Tag extends StatelessWidget {
-  const _Tag({required this.text, required this.bg, required this.fg});
-
-  final String text;
-  final Color bg;
-  final Color fg;
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
+        color: Colors.white,
+        borderRadius: DriverStyles.cardRadius,
+        border: Border.all(color: DriverColors.border),
+        boxShadow: DriverStyles.cardShadow,
       ),
-      child: Text(
-        text,
-        style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isAlreadyPickedUp ? 'Konfirmasi Timbangan Akhir' : 'Timbangan Aktual Sampah',
+                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w800, color: DriverColors.textDark),
+              ),
+              Text('Est: $estStr', style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Stack(
+            children: [
+              TextField(
+                controller: _weightController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: estVal > 0 ? estVal.toStringAsFixed(2) : '0.00',
+                  hintStyle: const TextStyle(color: DriverColors.textMuted),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: DriverColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: DriverColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: DriverColors.primary, width: 2),
+                  ),
+                ),
+                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 22, fontWeight: FontWeight.w800, color: DriverColors.textDark),
+              ),
+              const Positioned(
+                right: 20,
+                top: 20,
+                child: Text(
+                  'Kg',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    color: DriverColors.textMuted,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    if (estVal > 0) {
+                      _weightController.text = (estVal * 1.2).toStringAsFixed(2);
+                    } else {
+                      _weightController.text = '5.00';
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: DriverColors.softBlue,
+                    foregroundColor: DriverColors.primary,
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Muatan +20%', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 13)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    if (estVal > 0) {
+                      _weightController.text = estVal.toStringAsFixed(2);
+                    } else {
+                      _weightController.text = '2.50';
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    foregroundColor: DriverColors.textDark,
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('Sesuai Estimasi', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 13)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
-
 
 class _DynamicMapCard extends StatelessWidget {
   final Map<String, dynamic> task;
@@ -398,24 +404,18 @@ class _DynamicMapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Telkom University Bandung Coordinates
     const double lat = -6.974028;
     const double lng = 107.630348;
 
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: DriverStyles.cardRadius,
+        border: Border.all(color: DriverColors.border),
+        boxShadow: DriverStyles.cardShadow,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: DriverStyles.cardRadius,
         child: Stack(
           children: [
             FlutterMap(
@@ -435,12 +435,15 @@ class _DynamicMapCard extends StatelessWidget {
                   markers: [
                     Marker(
                       point: const LatLng(lat, lng),
-                      width: 40,
-                      height: 40,
-                      child: const Icon(
-                        Icons.school, // Changed to a school/building icon to represent Telkom Univ
-                        color: Colors.red,
-                        size: 40,
+                      width: 44,
+                      height: 44,
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: DriverColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.location_on_rounded, color: Colors.white, size: 26),
                       ),
                     ),
                   ],
@@ -450,27 +453,25 @@ class _DynamicMapCard extends StatelessWidget {
             Positioned(
               left: 16,
               bottom: 16,
-              child: InkWell(
-                onTap: _openGoogleMaps,
+              child: Material(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _surface,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 4)),
-                    ]
-                  ),
-                  child: Row(
-                    children: const [
-                      Icon(Icons.directions, color: _primary, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Buka di Google Maps',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: _primary),
-                      ),
-                    ],
+                elevation: 4,
+                child: InkWell(
+                  onTap: _openGoogleMaps,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.directions_rounded, color: DriverColors.primary, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Buka Navigasi Maps',
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: DriverColors.primary, fontSize: 13),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

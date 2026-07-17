@@ -14,7 +14,7 @@ class AuthRepository {
     return LoginContent(
       headerImage: AppImages.loginBanner,
       welcomeText: 'Welcome!',
-      emailPlaceholder: 'Email Address',
+      emailPlaceholder: 'Email / Username / Nomor Telepon',
       passwordPlaceholder: 'Password',
       forgotPasswordText: 'Lupa password?',
       loginButtonText: 'Login',
@@ -43,10 +43,14 @@ class AuthRepository {
   }
 
   /// Login via API — returns user data map on success. Throws Exception on failure.
-  Future<Map<String, dynamic>?> login(String username, String password) async {
+  Future<Map<String, dynamic>?> login(String username, String password, {String? loginType}) async {
+    final body = {'username': username, 'password': password};
+    if (loginType != null) {
+      body['login_type'] = loginType;
+    }
     final response = await _api.post(
       ApiConfig.authLogin,
-      body: {'username': username, 'password': password},
+      body: body,
     );
 
     if (response.success && response.data != null) {
@@ -61,6 +65,31 @@ class AuthRepository {
 
     throw Exception(response.message);
   }
+
+  /// Request password reset OTP via API — returns ApiResponse directly for status inspection.
+  Future<ApiResponse> forgotPassword(String email) async {
+    return await _api.post(
+      ApiConfig.authForgotPassword,
+      body: {'email': email},
+    );
+  }
+
+  /// Verify 6-digit OTP code sent to email.
+  Future<ApiResponse> verifyOtp(String email, String otpCode) async {
+    return await _api.post(
+      ApiConfig.authVerifyOtp,
+      body: {'email': email, 'otp_code': otpCode},
+    );
+  }
+
+  /// Reset password securely after verifying OTP token.
+  Future<ApiResponse> resetPassword(String email, String resetToken, String newPassword) async {
+    return await _api.post(
+      ApiConfig.authResetPassword,
+      body: {'email': email, 'reset_token': resetToken, 'new_password': newPassword},
+    );
+  }
+
 
   /// Register via API — returns user data map on success. Throws Exception on failure.
   Future<Map<String, dynamic>?> register(

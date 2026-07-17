@@ -1,7 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../constants/api_config.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,19 +14,22 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnim;
+  late Animation<double> _scaleAnim;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
     );
     _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
     _controller.forward();
 
-    // Simulate loading, then check auth status.
-    Timer(const Duration(seconds: 3), () async {
+    Timer(const Duration(seconds: 2, milliseconds: 500), () async {
       if (!mounted) return;
       final authService = AuthService();
       final isLoggedIn = await authService.isLoggedIn();
@@ -47,91 +50,81 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF4ADE80), // Mint green from design
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Stack(
-                children: [
-                  // Top content (logo + texts)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    child: Column(
-                      children: [
-                        const Spacer(flex: 1),
-                        Center(
-                          child: Image.asset(
-                            'assets/splash/logo.png',
-                            width: 96,
-                            height: 96,
-                            fit: BoxFit.contain,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              DriverColors.primary,
+              DriverColors.secondary,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnim,
+            child: ScaleTransition(
+              scale: _scaleAnim,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 110,
+                      height: 110,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'iTrashy',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 22,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text(
-                            'Smart Waste Management Made Easy',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const Spacer(flex: 2),
-                      ],
-                    ),
-                  ),
-
-                  // Full-width illustration anchored to bottom and taking half the screen height
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: SizedBox(
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight * 0.5,
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(18),
                       child: Image.asset(
-                        'assets/splash/illustration.png',
-                        fit: BoxFit.fitWidth,
-                        alignment: Alignment.bottomCenter,
+                        'assets/splash/logo.png',
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.local_shipping_rounded,
+                          size: 54,
+                          color: DriverColors.primary,
+                        ),
                       ),
                     ),
-                  ),
-
-                  // Progress indicator above the bottom edge
-                  Positioned(
-                    bottom: constraints.maxHeight * 0.06,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                    const SizedBox(height: 28),
+                    const Text(
+                      'iTrashy Driver',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 26,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Portal Mitra Penjemputan Sampah',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        color: Colors.white70,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

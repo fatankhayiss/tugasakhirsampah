@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/wilayah_service.dart';
+import '../constants/api_config.dart';
 
-const _primary = Color(0xFF006D36);
-const _bg = Color(0xFFF9FAFB);
+const _primary = DriverColors.primary;
+const _bg = DriverColors.background;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});

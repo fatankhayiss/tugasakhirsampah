@@ -67,22 +67,36 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    final usernameOrPhone = _emailController.text.trim();
+    final identifier = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (usernameOrPhone.isEmpty || password.isEmpty) {
+    if (identifier.isEmpty) {
       _showAlertDialog(
         'Peringatan',
-        'Username / Nomor HP dan Password wajib diisi.',
+        'Email, Username, atau Nomor Telepon wajib diisi.',
       );
       return;
+    }
+    if (password.isEmpty) {
+      _showAlertDialog(
+        'Peringatan',
+        'Password wajib diisi.',
+      );
+      return;
+    }
+
+    String loginType = 'username';
+    if (identifier.contains('@')) {
+      loginType = 'email';
+    } else if (RegExp(r'^[0-9+]+$').hasMatch(identifier)) {
+      loginType = 'phone';
     }
 
     setState(() => _isLoading = true);
 
     try {
       final repo = AuthRepository();
-      await repo.login(usernameOrPhone, password);
+      await repo.login(identifier, password, loginType: loginType);
       
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.main);
@@ -240,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildEmailField() {
     return AuthTextField(
       controller: _emailController,
-      hintText: 'Username / Nomor HP',
+      hintText: 'Email / Username / Nomor Telepon',
       prefixIcon: Icons.person_outline_rounded,
       keyboardType: TextInputType.text,
     );

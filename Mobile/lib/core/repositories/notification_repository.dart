@@ -180,20 +180,20 @@ class NotificationRepository extends ChangeNotifier {
 
     switch (cleanStatus) {
       case 'pending':
-        defaultTitle = 'Point Redemption Submitted';
-        defaultMessage = 'Permintaan tukar poin telah diterima.';
+        defaultTitle = 'Tukar Poin Diterima';
+        defaultMessage = 'Tukar poin Anda telah diterima.';
         break;
       case 'processing':
-        defaultTitle = 'Point Redemption Processing';
+        defaultTitle = 'Tukar Poin Diproses';
         defaultMessage = 'Admin sedang memproses penukaran poin Anda.';
         break;
       case 'completed':
-        defaultTitle = 'Point Redemption Successful';
-        defaultMessage = 'Penukaran poin berhasil. Dana telah dikirim.';
+        defaultTitle = 'Tukar Poin Berhasil';
+        defaultMessage = 'Penukaran poin berhasil.';
         break;
       case 'rejected':
       case 'cancelled':
-        defaultTitle = 'Point Redemption Rejected';
+        defaultTitle = 'Tukar Poin Ditolak';
         defaultMessage = 'Penukaran poin ditolak.';
         break;
       default:

@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
-
-const _primary = Color(0xFF006D36);
-const _mint = Color(0xFF4ADE80);
-const _bg = Color(0xFFF9FAFB);
-const _surface = Colors.white;
-const _surfaceVariant = Color(0xFFE7E7E7);
-const _textMuted = Color(0xFF6D7B6D);
+import '../services/api_service.dart';
+import '../constants/api_config.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -16,439 +11,324 @@ class ScheduleScreen extends StatefulWidget {
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
   int _currentIndex = 1;
-  int _selectedDay = 1;
+  List<dynamic> _schedules = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSchedules();
+  }
+
+  Future<void> _fetchSchedules() async {
+    setState(() => _isLoading = true);
+    final response = await ApiService.instance.get(ApiConfig.driverSchedules);
+    if (response.success && response.data is List) {
+      setState(() {
+        _schedules = response.data as List;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _schedules = [];
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            floating: false,
-            snap: false,
-            backgroundColor: _bg,
-            elevation: 0,
-            toolbarHeight: 84,
-            automaticallyImplyLeading: false,
-            title: Row(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: const Color(0xFFE7E8E9),
-                  child: const Text(
-                    'LS',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+      backgroundColor: DriverColors.background,
+      body: RefreshIndicator(
+        onRefresh: _fetchSchedules,
+        color: DriverColors.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              floating: false,
+              snap: false,
+              backgroundColor: DriverColors.background,
+              elevation: 0,
+              toolbarHeight: 84,
+              automaticallyImplyLeading: false,
+              title: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: DriverColors.primary,
+                    child: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 20),
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Driver Dashboard',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Jadwal Penjemputan',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: DriverColors.textDark,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.notifications_none, color: _primary),
-                ),
-              ],
-            ),
-          ),
-          SliverSafeArea(
-            top: false,
-            sliver: SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 12),
-                    _buildDateSelector(),
-                    const SizedBox(height: 16),
-                    _buildScheduledInfo(),
-                    const SizedBox(height: 12),
-                    _buildPickupCardActive(),
-                    const SizedBox(height: 12),
-                    _buildPickupCard(
-                      'Ibu Siti Aminah',
-                      '10:00 - 11:00 WIB',
-                      'Gg. Kelinci No. 12, Tebet, Jakarta Timur',
-                      'Residu',
-                      Icons.delete,
-                      const Color(0xFFE2DFDE),
-                      const Color(0xFF636262),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildPickupCard(
-                      'Bapak Ridwan Hakim',
-                      '13:00 - 14:30 WIB',
-                      'Apartemen Green Park Tower B No. 204',
-                      'Organik',
-                      Icons.compost,
-                      const Color(0xFF5FD9AA),
-                      const Color(0xFF005D42),
-                      dimmed: true,
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: _fetchSchedules,
+                    icon: const Icon(Icons.refresh_rounded, color: DriverColors.primary),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            SliverSafeArea(
+              top: false,
+              sliver: SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                sliver: _isLoading
+                    ? const SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: CircularProgressIndicator(color: DriverColors.primary),
+                          ),
+                        ),
+                      )
+                    : _schedules.isEmpty
+                        ? SliverToBoxAdapter(
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(32),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: DriverStyles.cardRadius,
+                                border: Border.all(color: DriverColors.border),
+                                boxShadow: DriverStyles.cardShadow,
+                              ),
+                              child: Column(
+                                children: const [
+                                  Icon(Icons.event_busy_rounded, size: 56, color: DriverColors.textMuted),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Belum ada jadwal penjemputan',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: DriverColors.textDark,
+                                    ),
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    'Daftar pesanan yang dijadwalkan untuk penjemputan akan muncul di sini.',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 13,
+                                      color: DriverColors.textMuted,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final item = _schedules[index];
+                                final statusColor = DriverStyles.getStatusColor(item['status'] as String?);
+                                final statusLabel = DriverStyles.getStatusLabel(item['status'] as String?);
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: DriverStyles.cardRadius,
+                                    border: Border.all(color: DriverColors.border),
+                                    boxShadow: DriverStyles.cardShadow,
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    borderRadius: DriverStyles.cardRadius,
+                                    child: InkWell(
+                                      borderRadius: DriverStyles.cardRadius,
+                                      onTap: () {
+                                        Navigator.of(context).pushNamed(
+                                          '/pickup-detail',
+                                          arguments: item,
+                                        );
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(10),
+                                                      decoration: BoxDecoration(
+                                                        color: DriverColors.softBlue,
+                                                        borderRadius: BorderRadius.circular(12),
+                                                      ),
+                                                      child: const Icon(Icons.calendar_today_rounded, color: DriverColors.primary, size: 20),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          item['nama_warga'] ?? 'Warga',
+                                                          style: const TextStyle(
+                                                            fontFamily: 'Plus Jakarta Sans',
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.w700,
+                                                            color: DriverColors.textDark,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        Text(
+                                                          'ID: #${item['id_order']}',
+                                                          style: const TextStyle(
+                                                            fontFamily: 'Plus Jakarta Sans',
+                                                            fontSize: 12,
+                                                            color: DriverColors.textMuted,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: statusColor.withValues(alpha: 0.15),
+                                                    borderRadius: BorderRadius.circular(16),
+                                                  ),
+                                                  child: Text(
+                                                    statusLabel,
+                                                    style: TextStyle(
+                                                      fontFamily: 'Plus Jakarta Sans',
+                                                      color: statusColor,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            const Divider(color: DriverColors.border, height: 1),
+                                            const SizedBox(height: 16),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.location_on_outlined, color: DriverColors.primary, size: 20),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    item['alamat_jemput'] ?? '-',
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Plus Jakarta Sans',
+                                                      fontSize: 14,
+                                                      color: DriverColors.textDark,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    const Icon(Icons.access_time_rounded, color: DriverColors.primary, size: 20),
+                                                    const SizedBox(width: 10),
+                                                    Text(
+                                                      '${item['tanggal_order'] ?? ''} (${item['waktu_jemput_dari'] ?? '08:00'} - ${item['waktu_jemput_sampai'] ?? '17:00'})',
+                                                      style: const TextStyle(
+                                                        fontFamily: 'Plus Jakarta Sans',
+                                                        fontSize: 13,
+                                                        color: DriverColors.textDark,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Text(
+                                                  '${item['estimasi_berat'] ?? '0'} kg',
+                                                  style: const TextStyle(
+                                                    fontFamily: 'Plus Jakarta Sans',
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: DriverColors.primary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              childCount: _schedules.length,
+                            ),
+                          ),
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (i) {
-            if (i == _currentIndex) return;
-            if (i == 0) {
-              Navigator.of(context).pushReplacementNamed('/dashboard');
-              return;
-            }
-            if (i == 2) {
-              Navigator.of(context).pushReplacementNamed('/alerts');
-              return;
-            }
-            if (i == 3) {
-              Navigator.of(context).pushReplacementNamed('/profile');
-              return;
-            }
-            setState(() => _currentIndex = i);
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: _primary,
-          unselectedItemColor: Colors.black54,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month),
-              label: 'Schedule',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_none),
-              label: 'Alerts',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              label: 'Profile',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Jadwal Penjemputan',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-        ),
-        Row(
-          children: const [
-            Text(
-              'Oktober',
-              style: TextStyle(color: _primary, fontWeight: FontWeight.w600),
-            ),
-            SizedBox(width: 4),
-            Icon(Icons.expand_more, size: 18, color: _primary),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateSelector() {
-    final days = const [
-      ('Sen', '14'),
-      ('Sel', '15'),
-      ('Rab', '16'),
-      ('Kam', '17'),
-      ('Jum', '18'),
-    ];
-
-    return SizedBox(
-      height: 92,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: days.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final isSelected = index == _selectedDay;
-          return InkWell(
-            onTap: () => setState(() => _selectedDay = index),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              width: 64,
-              decoration: BoxDecoration(
-                color: isSelected ? _mint : const Color(0xFFE1E3E4),
-                borderRadius: BorderRadius.circular(20),
-                border:
-                    isSelected ? Border.all(color: _primary, width: 2) : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    days[index].$1,
-                    style: TextStyle(
-                      color: isSelected ? _primary : _textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    days[index].$2,
-                    style: TextStyle(
-                      color: isSelected ? _primary : Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildScheduledInfo() {
-    return Row(
-      children: const [
-        Icon(Icons.event_note, color: _textMuted, size: 18),
-        SizedBox(width: 8),
-        Text(
-          '8 Penjemputan Dijadwalkan',
-          style: TextStyle(color: _textMuted, fontWeight: FontWeight.w600),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPickupCardActive() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _surfaceVariant),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Row(
-                    children: [
-                      _Dot(),
-                      SizedBox(width: 6),
-                      Text(
-                        'Aktif Sekarang',
-                        style: TextStyle(
-                          color: _primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'Bapak Ahmad Subarjo',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-              _Chip(
-                label: 'Anorganik',
-                icon: Icons.recycling,
-                bg: Color(0xFFE9F8EF),
-                fg: _primary,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          _IconText(icon: Icons.schedule, text: '08:00 - 09:30 WIB'),
-          const SizedBox(height: 8),
-          _IconText(
-            icon: Icons.location_on,
-            text:
-                'Jl. Melati No. 45, Kompleks Perumahan Griya Indah, Jakarta Selatan',
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.navigation),
-                  label: const Text('Navigasi'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.all(12),
-                ),
-                child: const Icon(Icons.call, color: _textMuted),
-              ),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (i) {
+              if (i == _currentIndex) return;
+              if (i == 0) {
+                Navigator.of(context).pushReplacementNamed('/dashboard');
+                return;
+              }
+              if (i == 2) {
+                Navigator.of(context).pushReplacementNamed('/alerts');
+                return;
+              }
+              if (i == 3) {
+                Navigator.of(context).pushReplacementNamed('/profile');
+                return;
+              }
+              setState(() => _currentIndex = i);
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: DriverColors.primary,
+            unselectedItemColor: DriverColors.textMuted,
+            selectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 12),
+            unselectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w500, fontSize: 12),
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Beranda'),
+              BottomNavigationBarItem(icon: Icon(Icons.calendar_month_rounded), label: 'Jadwal'),
+              BottomNavigationBarItem(icon: Icon(Icons.notifications_none_rounded), label: 'Notifikasi'),
+              BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profil'),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPickupCard(
-    String name,
-    String time,
-    String address,
-    String tag,
-    IconData tagIcon,
-    Color tagBg,
-    Color tagFg, {
-    bool dimmed = false,
-  }) {
-    return Opacity(
-      opacity: dimmed ? 0.7 : 1,
-      child: Container(
-        decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: _surfaceVariant),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                _Chip(label: tag, icon: tagIcon, bg: tagBg, fg: tagFg),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _IconText(icon: Icons.schedule, text: time),
-            const SizedBox(height: 8),
-            _IconText(icon: Icons.location_on, text: address),
-          ],
         ),
       ),
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.icon,
-    required this.bg,
-    required this.fg,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color bg;
-  final Color fg;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: fg),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: fg,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _IconText extends StatelessWidget {
-  const _IconText({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: _primary, size: 18),
-        const SizedBox(width: 8),
-        Expanded(child: Text(text, style: const TextStyle(color: _textMuted))),
-      ],
     );
   }
 }

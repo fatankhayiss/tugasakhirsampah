@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_images.dart';
-import '../../../shared/widgets/point_badge.dart';
 import '../../../core/models/notification_model.dart';
 import '../../../core/repositories/notification_repository.dart';
+import '../../../core/repositories/order_repository.dart';
+import '../../../core/repositories/profile_repository.dart';
 
 class TransferPointPage extends StatefulWidget {
   const TransferPointPage({super.key});
@@ -13,32 +15,103 @@ class TransferPointPage extends StatefulWidget {
   State<TransferPointPage> createState() => _TransferPointPageState();
 }
 
-class _TransferPointPageState extends State<TransferPointPage> {
-  String? selectedTransferMethod;
+class _TransferPointPageState extends State<TransferPointPage>
+    with SingleTickerProviderStateMixin {
+  int _currentBalance = 0;
+  bool _isLoadingBalance = true;
+  String? _selectedCategory; // 'Bank' or 'E-Wallet'
+  String? _selectedProvider;
+
   final _amountController = TextEditingController();
   final _accountController = TextEditingController();
   final _nameController = TextEditingController();
 
+  late AnimationController _entryAnimController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  double _cardScale = 1.0;
+
   final List<Map<String, dynamic>> _banks = [
-    {'name': 'BCA', 'icon': Icons.account_balance},
-    {'name': 'Mandiri', 'icon': Icons.account_balance},
-    {'name': 'BNI', 'icon': Icons.account_balance},
-    {'name': 'BRI', 'icon': Icons.account_balance},
+    {'name': 'BCA', 'icon': Icons.account_balance_rounded},
+    {'name': 'BRI', 'icon': Icons.account_balance_rounded},
+    {'name': 'BNI', 'icon': Icons.account_balance_rounded},
+    {'name': 'Mandiri', 'icon': Icons.account_balance_rounded},
+    {'name': 'BSI', 'icon': Icons.account_balance_rounded},
   ];
 
   final List<Map<String, dynamic>> _ewallets = [
-    {'name': 'GoPay', 'icon': Icons.wallet_rounded},
-    {'name': 'OVO', 'icon': Icons.wallet_rounded},
-    {'name': 'DANA', 'icon': Icons.wallet_rounded},
-    {'name': 'ShopeePay', 'icon': Icons.wallet_rounded},
+    {'name': 'DANA', 'icon': Icons.account_balance_wallet_rounded},
+    {'name': 'GoPay', 'icon': Icons.account_balance_wallet_rounded},
+    {'name': 'OVO', 'icon': Icons.account_balance_wallet_rounded},
+    {'name': 'ShopeePay', 'icon': Icons.account_balance_wallet_rounded},
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _entryAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _entryAnimController,
+      curve: Curves.easeOutCubic,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(_fadeAnimation);
+    _entryAnimController.forward();
+
+    _loadBalance();
+    _amountController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
+    _entryAnimController.dispose();
     _amountController.dispose();
     _accountController.dispose();
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadBalance() async {
+    if (!mounted) return;
+    setState(() => _isLoadingBalance = true);
+    try {
+      final profile = await ProfileRepository().getProfile();
+      if (mounted) {
+        setState(() {
+          _currentBalance = profile.totalPoints;
+          _isLoadingBalance = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingBalance = false);
+      }
+    }
+  }
+
+  void _triggerCardScale() {
+    setState(() => _cardScale = 0.98);
+    Future.delayed(const Duration(milliseconds: 140), () {
+      if (mounted) setState(() => _cardScale = 1.0);
+    });
+  }
+
+  String _formatNumber(int value) {
+    return value.toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
+  }
+
+  String _formatRupiah(int value) {
+    return 'Rp${_formatNumber(value)}';
   }
 
   @override
@@ -47,12 +120,16 @@ class _TransferPointPageState extends State<TransferPointPage> {
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
+        child: RefreshIndicator(
+          onRefresh: _loadBalance,
+          color: AppColors.primary,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24.0,
                     vertical: 16.0,
@@ -60,46 +137,40 @@ class _TransferPointPageState extends State<TransferPointPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildBalanceCard(),
-                      const SizedBox(height: 32),
-                      const Text(
-                        'Pilih Metode Pencairan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark,
+                      _buildSummaryCard(),
+                      const SizedBox(height: 28),
+                      _buildDestinationSelection(),
+                      if (_selectedCategory != null) ...[
+                        const SizedBox(height: 28),
+                        _buildProviderGrid(),
+                        const SizedBox(height: 28),
+                        _buildTransferRules(),
+                        const SizedBox(height: 28),
+                        Text(
+                          'Detail Formulir ${_selectedCategory == 'Bank' ? 'Bank' : 'E-Wallet'}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTransferGrid('BANK', _banks),
-                      const SizedBox(height: 24),
-                      _buildTransferGrid('E-WALLET', _ewallets),
-                      const SizedBox(height: 32),
-                      _buildTransferRules(),
-                      const SizedBox(height: 32),
-                      const Text(
-                        'Detail Transfer',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDetailForm(),
-                      const SizedBox(height: 24),
-                      _buildHelperInfo(),
-                      const SizedBox(height: 16),
-                      _buildWarningCard(),
-                      // Add extra spacing at the bottom so content isn't hidden under the button
+                        const SizedBox(height: 16),
+                        _buildDetailForm(),
+                        const SizedBox(height: 20),
+                        _buildLiveEstimationCard(),
+                        const SizedBox(height: 24),
+                        _buildHelperInfo(),
+                        const SizedBox(height: 16),
+                        _buildWarningCard(),
+                      ],
                       const SizedBox(height: 40),
                     ],
                   ),
                 ),
               ),
-            ),
-            _buildBottomButton(),
-          ],
+              _buildBottomButton(),
+            ],
+          ),
         ),
       ),
     );
@@ -119,170 +190,357 @@ class _TransferPointPageState extends State<TransferPointPage> {
         style: TextStyle(
           color: AppColors.textDark,
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Plus Jakarta Sans',
         ),
       ),
     );
   }
 
-  Widget _buildBalanceCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.secondary],
-            begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(
-            right: 16,
-            bottom: 8,
-            child: Opacity(
-              opacity: 0.10,
-              child: Image.asset(
-                AppImages.pointLogo,
-                width: 120,
-                height: 120,
-                fit: BoxFit.contain,
+  Widget _buildSummaryCard() {
+    return AnimatedScale(
+      scale: _cardScale,
+      duration: const Duration(milliseconds: 140),
+      curve: Curves.easeOutCubic,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF34C759), Color(0xFF1B8E5F)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1B8E5F).withValues(alpha: 0.22),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: _triggerCardScale,
+                child: Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    Positioned(
+                      right: -18,
+                      top: 0,
+                      bottom: 0,
+                      child: Center(
+                        child: Opacity(
+                          opacity: 0.10,
+                          child: Image.asset(
+                            AppImages.pointLogo,
+                            width: 145,
+                            height: 145,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Saldo Poin',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _isLoadingBalance
+                              ? _buildBalanceShimmer()
+                              : TweenAnimationBuilder<int>(
+                                  tween: IntTween(begin: 0, end: _currentBalance),
+                                  duration: const Duration(milliseconds: 600),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, value, child) {
+                                    return Text(
+                                      '${_formatNumber(value)} Poin',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
+                                        fontFamily: 'Plus Jakarta Sans',
+                                        letterSpacing: -0.5,
+                                      ),
+                                    );
+                                  },
+                                ),
+                          const SizedBox(height: 18),
+                          Divider(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            height: 1,
+                            thickness: 1,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Minimal Penukaran',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            '25.000 Poin',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Plus Jakarta Sans',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Saldo Poin Anda',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const PointBadge.balanceAmount(
-                amount: '7.500',
-                logoSize: 22,
-                suffix: 'Poin',
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Poin akan dicairkan langsung ke saldo tujuan Anda.',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 13,
-                  height: 1.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTransferGrid(String title, List<Map<String, dynamic>> items) {
+  Widget _buildBalanceShimmer() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.15, end: 0.35),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeInOut,
+      builder: (context, opacity, child) {
+        return Container(
+          height: 34,
+          width: 160,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: opacity),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDestinationSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Pilih Tujuan Pencairan',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDark,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildDestinationCard(
+                title: 'Bank',
+                subtitle: 'Transfer ke Rekening Bank',
+                icon: Icons.account_balance_rounded,
+                isSelected: _selectedCategory == 'Bank',
+                onTap: () {
+                  setState(() {
+                    if (_selectedCategory != 'Bank') {
+                      _selectedCategory = 'Bank';
+                      _selectedProvider = null;
+                      _accountController.clear();
+                      _nameController.clear();
+                    }
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildDestinationCard(
+                title: 'E-Wallet',
+                subtitle: 'DANA, GoPay, OVO, dll',
+                icon: Icons.account_balance_wallet_rounded,
+                isSelected: _selectedCategory == 'E-Wallet',
+                onTap: () {
+                  setState(() {
+                    if (_selectedCategory != 'E-Wallet') {
+                      _selectedCategory = 'E-Wallet';
+                      _selectedProvider = null;
+                      _accountController.clear();
+                      _nameController.clear();
+                    }
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDestinationCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.softGreen : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 2.0 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : AppColors.softGreen,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : AppColors.primary,
+                size: 26,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? AppColors.primary : AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSoft,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProviderGrid() {
+    final items = _selectedCategory == 'Bank' ? _banks : _ewallets;
+    final isEWallet = _selectedCategory == 'E-Wallet';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
+          'Pilih Provider ${_selectedCategory == 'Bank' ? 'Bank' : 'E-Wallet'}',
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textSoft,
-            letterSpacing: 0.5,
+            color: AppColors.textDark,
           ),
         ),
         const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: isEWallet ? 2 : 3,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
+            childAspectRatio: isEWallet ? 1.6 : 1.15,
           ),
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
-            final isSelected = selectedTransferMethod == item['name'];
+            final isSelected = _selectedProvider == item['name'];
 
             return GestureDetector(
               onTap: () {
                 setState(() {
-                  selectedTransferMethod = item['name'];
+                  _selectedProvider = item['name'];
                 });
               },
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeOutCubic,
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.softGreen : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color:
-                        isSelected
-                            ? AppColors.primary
-                            : AppColors.border,
-                    width: isSelected ? 1.5 : 1,
+                    color: isSelected ? AppColors.primary : AppColors.border,
+                    width: isSelected ? 1.5 : 1.0,
                   ),
-                  boxShadow:
-                      isSelected
-                          ? [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.04),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ]
-                          : [],
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [],
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    AnimatedScale(
-                      scale: isSelected ? 1.15 : 1.0,
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutBack,
-                      child: Icon(
-                        item['icon'],
-                        color:
-                            isSelected
-                                ? AppColors.primary
-                                : AppColors.textSoft,
-                        size: 28,
-                      ),
+                    Icon(
+                      item['icon'],
+                      color: isSelected ? AppColors.primary : AppColors.textSoft,
+                      size: 24,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       item['name'],
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color:
-                            isSelected
-                                ? AppColors.primary
-                                : AppColors.textDark,
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color: isSelected ? AppColors.primary : AppColors.textDark,
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -296,47 +554,35 @@ class _TransferPointPageState extends State<TransferPointPage> {
 
   Widget _buildTransferRules() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.softGreen,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.04)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: const [
-              Icon(Icons.info_outline, color: AppColors.primary, size: 18),
+              Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 20),
               SizedBox(width: 8),
               Text(
-                'Ketentuan Transfer',
+                'Ketentuan Penukaran',
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.primary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildRuleRow('Transfer Bank', 'min. 2.500 Poin'),
+          const SizedBox(height: 12),
+          _buildRuleRow('Minimal Penukaran', '25.000 Poin'),
           const SizedBox(height: 8),
-          _buildRuleRow('GoPay / OVO / DANA', 'min. 1.000 Poin'),
+          _buildRuleRow('Kurs Konversi', '1 Poin = Rp 1'),
           const SizedBox(height: 8),
-          _buildRuleRow('ShopeePay', 'min. 1.500 Poin'),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: Colors.black12, height: 1),
-          ),
-          const Text(
-            'Minimal transfer ditentukan berdasarkan biaya admin dan proses pencairan.',
-            style: TextStyle(
-              fontSize: 10,
-              color: AppColors.textSoft,
-              height: 1.4,
-            ),
-          ),
+          _buildRuleRow('Waktu Proses', '1x24 Jam Kerja'),
         ],
       ),
     );
@@ -359,7 +605,7 @@ class _TransferPointPageState extends State<TransferPointPage> {
           style: const TextStyle(
             fontSize: 12,
             color: AppColors.textDark,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
@@ -367,40 +613,119 @@ class _TransferPointPageState extends State<TransferPointPage> {
   }
 
   Widget _buildDetailForm() {
+    final isBank = _selectedCategory == 'Bank';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTextFieldLabel('Masukkan Jumlah Poin'),
+        _buildTextFieldLabel('Nama Pemilik ${isBank ? 'Rekening' : 'Akun E-Wallet'}'),
+        _buildCustomTextField(
+          controller: _nameController,
+          hintText: isBank ? 'Masukkan nama pemilik rekening' : 'Masukkan nama pemilik akun',
+          icon: Icons.person_outline_rounded,
+          keyboardType: TextInputType.name,
+        ),
+        const SizedBox(height: 20),
+        _buildTextFieldLabel(isBank ? 'Nomor Rekening Bank' : 'Nomor Telepon E-Wallet'),
+        _buildCustomTextField(
+          controller: _accountController,
+          hintText: isBank ? 'Contoh: 1234567890' : 'Contoh: 081234567890',
+          icon: isBank ? Icons.credit_card_outlined : Icons.phone_android_rounded,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        ),
+        const SizedBox(height: 20),
+        _buildTextFieldLabel('Jumlah Poin yang Ditukar (Minimal 25.000 Poin)'),
         _buildCustomTextField(
           controller: _amountController,
-          hintText: 'Masukkan jumlah poin',
-          prefixWidget: Image.asset(
-            AppImages.pointLogo,
-            width: 20,
-            height: 20,
-            fit: BoxFit.contain,
+          hintText: 'Contoh: 25000',
+          prefixWidget: Padding(
+            padding: const EdgeInsets.only(left: 14, right: 8),
+            child: Image.asset(
+              AppImages.pointLogo,
+              width: 22,
+              height: 22,
+              fit: BoxFit.contain,
+            ),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
-        const SizedBox(height: 20),
-        _buildTextFieldLabel('Nomor Rekening / E-Wallet'),
-        _buildCustomTextField(
-          controller: _accountController,
-          hintText: 'Contoh: 08123456789',
-          icon: Icons.credit_card_outlined,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        ),
-        const SizedBox(height: 20),
-        _buildTextFieldLabel('Nama Penerima'),
-        _buildCustomTextField(
-          controller: _nameController,
-          hintText: 'Masukkan nama penerima',
-          icon: Icons.person_outline,
-          keyboardType: TextInputType.name,
-        ),
       ],
+    );
+  }
+
+  Widget _buildLiveEstimationCard() {
+    final pts = int.tryParse(_amountController.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    final estAmount = _formatRupiah(pts);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.softGreen,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Estimasi Pencairan',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSoft,
+                    ),
+                  ),
+                  Text(
+                    '${_formatNumber(pts)} Poin',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'Nilai Rupiah (1 Poin = Rp1)',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSoft,
+                ),
+              ),
+              Text(
+                estAmount,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -411,7 +736,7 @@ class _TransferPointPageState extends State<TransferPointPage> {
         text,
         style: const TextStyle(
           fontSize: 13,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           color: AppColors.textDark,
         ),
       ),
@@ -434,9 +759,9 @@ class _TransferPointPageState extends State<TransferPointPage> {
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -444,7 +769,7 @@ class _TransferPointPageState extends State<TransferPointPage> {
         controller: controller,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(
@@ -452,15 +777,7 @@ class _TransferPointPageState extends State<TransferPointPage> {
             fontSize: 14,
             fontWeight: FontWeight.w400,
           ),
-          prefixIcon: prefixWidget != null
-              ? Padding(
-                  padding: const EdgeInsets.only(left: 14, right: 8),
-                  child: prefixWidget,
-                )
-              : Icon(icon, color: AppColors.textSoft, size: 20),
-          prefixIconConstraints: prefixWidget != null
-              ? const BoxConstraints(minWidth: 40, minHeight: 24)
-              : null,
+          prefixIcon: prefixWidget ?? (icon != null ? Icon(icon, color: AppColors.textSoft, size: 20) : null),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -479,15 +796,16 @@ class _TransferPointPageState extends State<TransferPointPage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
-        Icon(Icons.verified, color: AppColors.primary, size: 18),
+        Icon(Icons.verified_rounded, color: AppColors.primary, size: 18),
         SizedBox(width: 8),
         Expanded(
           child: Text(
-            'Poin akan diproses otomatis dalam beberapa menit.',
+            'Permintaan yang dikirim akan berstatus Pending dan segera diperiksa oleh Admin.',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.primary,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
             ),
           ),
         ),
@@ -500,8 +818,8 @@ class _TransferPointPageState extends State<TransferPointPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.softGreen,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.04)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.08)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,7 +828,7 @@ class _TransferPointPageState extends State<TransferPointPage> {
           SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Pastikan nomor tujuan sudah benar sebelum melakukan tukar poin.',
+              'Pastikan informasi nama dan nomor tujuan sudah benar. Kesalahan input sepenuhnya menjadi tanggung jawab pemohon.',
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSoft,
@@ -532,59 +850,231 @@ class _TransferPointPageState extends State<TransferPointPage> {
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 18,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
       child: InkWell(
-        onTap: () {
-          if (selectedTransferMethod == null ||
-              _amountController.text.isEmpty ||
-              _accountController.text.isEmpty) {
+        onTap: () async {
+          if (_selectedCategory == null) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Lengkapi tujuan dan detail transfer'),
+                content: Text('Silakan pilih tujuan pencairan (Bank / E-Wallet) terlebih dahulu.'),
+                backgroundColor: Colors.orange,
               ),
             );
             return;
           }
 
-          // Push success notification
-          NotificationRepository().addNotification(
-            NotificationModel(
-              id: 'transfer_${DateTime.now().millisecondsSinceEpoch}',
-              title: 'Penukaran poin ke saldo berhasil',
-              message: 'Pencairan ${_amountController.text} Poin berhasil dikirim ke nomor ${_accountController.text} via $selectedTransferMethod.',
-              time: 'Baru saja',
-              type: 'transfer',
-              isRead: false,
+          if (_selectedProvider == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Silakan pilih provider $_selectedCategory terlebih dahulu.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+
+          if (_nameController.text.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Nama pemilik wajib diisi.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+
+          if (_accountController.text.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${_selectedCategory == 'Bank' ? 'Nomor rekening bank' : 'Nomor telepon e-wallet'} wajib diisi.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+
+          if (_amountController.text.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Jumlah poin yang ditukar wajib diisi.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
+
+          final pts = int.tryParse(_amountController.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+          if (pts < 25000) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+                    SizedBox(width: 8),
+                    Text(
+                      'Minimum Redemption',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                    ),
+                  ],
+                ),
+                content: const Text(
+                  'Minimal penukaran poin adalah 25.000 poin (Rp25.000).\n\nSilakan masukkan minimal 25.000 poin untuk melanjutkan.',
+                  style: TextStyle(fontSize: 14, height: 1.5, color: AppColors.textDark),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+
+          if (pts > _currentBalance) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.error_outline_rounded, color: Colors.red, size: 24),
+                    SizedBox(width: 8),
+                    Text(
+                      'Saldo Tidak Cukup',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                    ),
+                  ],
+                ),
+                content: Text(
+                  'Saldo poin Anda saat ini (${_formatNumber(_currentBalance)} Poin) tidak mencukupi untuk menukar ${_formatNumber(pts)} Poin.',
+                  style: const TextStyle(fontSize: 14, height: 1.5, color: AppColors.textDark),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+
+          final destType = _selectedCategory == 'Bank' ? 'Bank Account' : 'E-Wallet';
+
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
             ),
           );
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Penukaran poin berhasil diproses dan dikirim!'),
-              backgroundColor: AppColors.secondary,
-            ),
+          final result = await OrderRepository.instance.createRedemptionRequest(
+            destinationType: destType,
+            provider: _selectedProvider!,
+            accountName: _nameController.text.trim(),
+            accountNumber: _accountController.text.trim(),
+            redeemPoint: pts,
           );
 
-          Navigator.pop(context);
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.pop(context); // Dismiss loading spinner
+          }
+
+          if (result != null) {
+            final trxCode = result['transaction_code']?.toString() ??
+                result['transaction_number']?.toString() ??
+                'RDM-NEW';
+
+            NotificationRepository().addNotification(
+              NotificationModel(
+                id: 'transfer_${DateTime.now().millisecondsSinceEpoch}',
+                title: 'Tukar Poin Diterima',
+                message: 'Permintaan penukaran $pts Poin dengan kode $trxCode telah dikirim dan dalam status Menunggu (Pending).',
+                time: 'Baru saja',
+                type: 'transfer',
+                isRead: false,
+              ),
+            );
+
+            await _loadBalance();
+
+            if (!mounted) return;
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 26),
+                    SizedBox(width: 8),
+                    Text(
+                      'Berhasil',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                    ),
+                  ],
+                ),
+                content: const Text(
+                  'Permintaan penukaran poin berhasil dikirim.\n\nPermintaan Anda akan diproses oleh Admin.',
+                  style: TextStyle(fontSize: 14, height: 1.5, color: AppColors.textDark),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx); // Close dialog
+                      Navigator.pop(context); // Navigate back
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Gagal memproses penukaran poin. Pastikan saldo poin Anda mencukupi dan koneksi stabil.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
         },
         borderRadius: BorderRadius.circular(24),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        child: Container(
           height: 55,
           width: double.infinity,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [AppColors.primaryBlue, AppColors.secondaryBlue],
+              colors: [AppColors.primary, AppColors.secondary],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.04),
+                color: AppColors.primary.withValues(alpha: 0.18),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -594,15 +1084,16 @@ class _TransferPointPageState extends State<TransferPointPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
               Text(
-                'Cairkan Poin Sekarang',
+                'Tukarkan Poin',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
+                  fontFamily: 'Plus Jakarta Sans',
                 ),
               ),
               SizedBox(width: 8),
-              Icon(Icons.send_rounded, color: Colors.white, size: 20),
+              Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
             ],
           ),
         ),
@@ -610,10 +1101,3 @@ class _TransferPointPageState extends State<TransferPointPage> {
     );
   }
 }
-
-
-
-
-
-
-

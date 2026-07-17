@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-
-const _primary = Color(0xFF006D36);
-const _mint = Color(0xFF4ADE80);
-const _bg = Color(0xFFF9FAFB);
+import '../constants/api_config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,12 +9,38 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _authService = AuthService();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    );
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _showAlertDialog({
     required String title,
@@ -30,16 +53,26 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           icon: Icon(icon, color: iconColor, size: 48),
           title: Text(
             title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w700,
+              fontSize: 18,
+              color: DriverColors.textDark,
+            ),
             textAlign: TextAlign.center,
           ),
           content: Text(
             description,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              color: DriverColors.textMuted,
+            ),
             textAlign: TextAlign.center,
           ),
           actions: [
@@ -50,12 +83,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: iconColor,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Text('Mengerti', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('Mengerti', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -70,10 +103,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (username.isEmpty) {
       _showAlertDialog(
-        title: 'Username belum diisi',
-        description: 'Silakan masukkan Username atau Nomor HP.',
+        title: 'Akun belum diisi',
+        description: 'Silakan masukkan Email, Username, atau Nomor Telepon.',
         icon: Icons.error_outline,
-        iconColor: Colors.red,
+        iconColor: Colors.redAccent,
       );
       return;
     }
@@ -83,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
         title: 'Password belum diisi',
         description: 'Silakan masukkan password akun Anda.',
         icon: Icons.error_outline,
-        iconColor: Colors.red,
+        iconColor: Colors.redAccent,
       );
       return;
     }
@@ -94,207 +127,241 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final response = await _authService.login(username, password);
 
+    if (!mounted) return;
     setState(() {
       _isLoading = false;
     });
 
-    if (!mounted) return;
-
     if (response.success && response.data != null) {
       Navigator.of(context).pushReplacementNamed('/dashboard');
     } else {
-      final message = response.message.toLowerCase();
-      final statusCode = response.statusCode;
-
-      if (statusCode == 404 || message.contains('tidak ditemukan')) {
-        _showAlertDialog(
-          title: 'Akun Driver tidak ditemukan.',
-          description: 'Pastikan akun telah dibuat oleh Admin.',
-          icon: Icons.error_outline,
-          iconColor: Colors.red,
-        );
-      } else if (statusCode == 401 || message.contains('password salah') || message.contains('salah')) {
-        _showAlertDialog(
-          title: 'Password salah.',
-          description: 'Kata sandi yang Anda masukkan tidak sesuai.',
-          icon: Icons.error_outline,
-          iconColor: Colors.red,
-        );
-      } else if (statusCode == 403 && message.contains('aktif')) {
-        _showAlertDialog(
-          title: 'Akun Driver belum aktif.',
-          description: 'Silakan hubungi Admin.',
-          icon: Icons.error_outline,
-          iconColor: Colors.red,
-        );
-      } else if (statusCode == 500 || message.contains('koneksi') || message.contains('timeout') || message.contains('server')) {
-        _showAlertDialog(
-          title: 'Tidak dapat terhubung ke server.',
-          description: 'Periksa koneksi internet Anda atau coba sesaat lagi.',
-          icon: Icons.error_outline,
-          iconColor: Colors.red,
-        );
-      } else {
-        _showAlertDialog(
-          title: 'Login Gagal',
-          description: response.message,
-          icon: Icons.error_outline,
-          iconColor: Colors.red,
-        );
-      }
+      _showAlertDialog(
+        title: 'Login Gagal',
+        description: response.message,
+        icon: Icons.highlight_off_rounded,
+        iconColor: Colors.redAccent,
+      );
     }
-  }
-
-  void _showForgotPasswordInfo() {
-    _showAlertDialog(
-      title: 'Lupa Password?',
-      description: 'Untuk keamanan sistem, perubahan atau reset password Driver hanya dapat dilakukan oleh Web Admin. Silakan hubungi Admin kantor.',
-      icon: Icons.info_outline,
-      iconColor: Colors.blue,
-    );
-  }
-
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: DriverColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 60),
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child: SlideTransition(
+            position: _slideAnim,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  Container(
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
-                      color: _mint.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+                      color: DriverColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(18),
                     ),
+                    alignment: Alignment.center,
                     child: const Icon(
-                      Icons.local_shipping,
-                      size: 64,
-                      color: _primary,
+                      Icons.local_shipping_rounded,
+                      color: DriverColors.primary,
+                      size: 34,
                     ),
                   ),
-                ),
-                const SizedBox(height: 32),
-                const Text(
-                  'Selamat Datang',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: _primary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Masuk ke akun driver Anda',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-                TextField(
-                  controller: _usernameController,
-                  decoration: InputDecoration(
-                    labelText: 'Username atau Nomor HP',
-                    prefixIcon: const Icon(
-                      Icons.person_outline,
-                      color: _primary,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _primary, width: 2),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Masuk sebagai Driver',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: DriverColors.textDark,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline, color: _primary),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: _primary, width: 2),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Silakan masuk untuk melihat tugas penjemputan dan mengelola pesanan hari ini.',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      color: DriverColors.textMuted,
+                      height: 1.5,
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _showForgotPasswordInfo,
-                    style: TextButton.styleFrom(
-                      foregroundColor: _primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  const SizedBox(height: 36),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: DriverColors.border),
+                      boxShadow: DriverStyles.cardShadow,
                     ),
-                    child: const Text(
-                      'Lupa Password?',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child:
-                      _isLoading
-                          ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'AKUN DRIVER',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: DriverColors.textMuted,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _usernameController,
+                          keyboardType: TextInputType.text,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: DriverColors.textDark,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Email / Username / Nomor Telepon',
+                            hintStyle: const TextStyle(color: DriverColors.textMuted, fontWeight: FontWeight.w400),
+                            prefixIcon: const Icon(Icons.person_outline_rounded, color: DriverColors.primary),
+                            filled: true,
+                            fillColor: DriverColors.background,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: DriverColors.border),
                             ),
-                          )
-                          : const Text(
-                            'Masuk',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: DriverColors.border),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: DriverColors.primary, width: 2),
                             ),
                           ),
-                ),
-              ],
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'PASSWORD',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: DriverColors.textMuted,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: DriverColors.textDark,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Masukkan password',
+                            hintStyle: const TextStyle(color: DriverColors.textMuted, fontWeight: FontWeight.w400),
+                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: DriverColors.primary),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                color: DriverColors.textMuted,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            filled: true,
+                            fillColor: DriverColors.background,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: DriverColors.border),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: DriverColors.border),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: DriverColors.primary, width: 2),
+                            ),
+                          ),
+                          onSubmitted: (_) => _login(),
+                        ),
+                        const SizedBox(height: 28),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: DriverColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Masuk',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Belum terdaftar sebagai Driver?',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          color: DriverColors.textMuted,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pushNamed('/register'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: DriverColors.primary,
+                        ),
+                        child: const Text(
+                          'Daftar Sekarang',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

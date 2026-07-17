@@ -115,7 +115,7 @@ class OrderRepository {
     } catch (_) {}
     return {
       'current_point': 0,
-      'conversion_rate': 10,
+      'conversion_rate': 1,
       'current_money_conversion': 0.0,
     };
   }
@@ -182,6 +182,8 @@ class OrderRepository {
             accountName: item['account_name']?.toString(),
             estimatedAmount: amt,
             rawStatus: rawStatus,
+            transactionCode: item['transaction_code']?.toString() ?? item['transaction_number']?.toString(),
+            adminNote: item['admin_note']?.toString(),
           );
         }).toList();
       }
@@ -291,6 +293,7 @@ class OrderRepository {
               estimatedAmount: amt,
               adminNote: item['admin_note']?.toString(),
               rawStatus: rawStatus,
+              transactionCode: item['transaction_code']?.toString() ?? item['transaction_number']?.toString(),
             ),
           );
         }

@@ -390,6 +390,254 @@ try {
         }
     }
 
+    // =====================
+    // FORGOT PASSWORD
+    // =====================
+    elseif ($action === 'forgot_password') {
+        $input_json = json_decode(file_get_contents('php://input'), true);
+        $email = isset($_POST['email']) ? trim($_POST['email']) : (isset($input_json['email']) ? trim($input_json['email']) : '');
+
+        if (empty($email)) {
+            api_respond(false, 'Email wajib diisi.', null, 400);
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            api_respond(false, 'Format email tidak valid.', null, 400);
+        }
+
+        $query = "SELECT id_pengguna, email, google_uid, password, nama_lengkap FROM pengguna WHERE email = ? LIMIT 1";
+        $stmt = mysqli_prepare($koneksi, $query);
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $user = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+
+        if (!$user) {
+            api_respond(false, 'Email tidak ditemukan.', null, 404);
+        }
+
+        // Jika akun terdaftar via Google Login, tolak permintaan reset password & kembalikan kode GOOGLE_ACCOUNT
+        if (!empty($user['google_uid'])) {
+            api_respond(false, 'This account uses Google Sign-In. Please continue using Google to sign in.', ['code' => 'GOOGLE_ACCOUNT'], 400);
+        }
+
+        // Pastikan tabel password_resets ada dengan kolom email, otp_code, dan reset_token
+        mysqli_query($koneksi, "CREATE TABLE IF NOT EXISTS `password_resets` (
+          `id` INT(11) NOT NULL AUTO_INCREMENT,
+          `user_id` INT(11) NOT NULL,
+          `email` VARCHAR(255) NULL,
+          `token` VARCHAR(255) NOT NULL,
+          `otp_code` VARCHAR(10) NULL,
+          `reset_token` VARCHAR(255) NULL,
+          `created_at` DATETIME NOT NULL,
+          `expired_at` DATETIME NOT NULL,
+          `used` TINYINT(1) NOT NULL DEFAULT 0,
+          PRIMARY KEY (`id`),
+          KEY `idx_user_id` (`user_id`),
+          KEY `idx_email` (`email`),
+          KEY `idx_expired_at` (`expired_at`),
+          CONSTRAINT `fk_password_resets_user` FOREIGN KEY (`user_id`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+
+        try { @mysqli_query($koneksi, "ALTER TABLE `password_resets` ADD COLUMN `email` VARCHAR(255) NULL AFTER `user_id`"); } catch (Throwable $e) {}
+        try { @mysqli_query($koneksi, "ALTER TABLE `password_resets` ADD COLUMN `otp_code` VARCHAR(10) NULL AFTER `token`"); } catch (Throwable $e) {}
+        try { @mysqli_query($koneksi, "ALTER TABLE `password_resets` ADD COLUMN `reset_token` VARCHAR(255) NULL AFTER `otp_code`"); } catch (Throwable $e) {}
+
+        // Resend generates a new OTP. Old OTP becomes invalid.
+        $stmt_inv = mysqli_prepare($koneksi, "UPDATE password_resets SET used = 1 WHERE user_id = ? AND used = 0");
+        mysqli_stmt_bind_param($stmt_inv, "i", $user['id_pengguna']);
+        mysqli_stmt_execute($stmt_inv);
+        mysqli_stmt_close($stmt_inv);
+
+        $otp_code = sprintf("%06d", mt_rand(100000, 999999));
+        $token = bin2hex(random_bytes(32));
+        $created_at = date('Y-m-d H:i:s');
+        $expired_at = date('Y-m-d H:i:s', time() + 300); // EXACTLY 5 MINUTES
+
+        $insert_reset = "INSERT INTO password_resets (user_id, email, token, otp_code, created_at, expired_at, used) VALUES (?, ?, ?, ?, ?, ?, 0)";
+        $stmt_reset = mysqli_prepare($koneksi, $insert_reset);
+        mysqli_stmt_bind_param($stmt_reset, "isssss", $user['id_pengguna'], $email, $token, $otp_code, $created_at, $expired_at);
+        mysqli_stmt_execute($stmt_reset);
+        mysqli_stmt_close($stmt_reset);
+
+        error_log("[OTP_DEBUG] OTP Generated -> Code: {$otp_code} for user_id: {$user['id_pengguna']} ({$email})");
+        error_log("[OTP_DEBUG] Database Insert -> Stored in password_resets for {$email}. Expiration: {$expired_at} (300 seconds)");
+
+        require_once __DIR__ . '/../../config/mail.php';
+        $subject = "Kode Verifikasi Reset Password";
+        $html_body = "
+        <!DOCTYPE html>
+        <html lang='id'>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background-color: #F8FAF9; color: #1E293B; margin: 0; padding: 20px; }
+                .container { max-width: 520px; margin: 0 auto; background-color: #FFFFFF; border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+                .header { text-align: center; margin-bottom: 24px; }
+                .header h2 { color: #2E9E5B; font-size: 24px; margin: 0; font-weight: 800; }
+                .otp-box { background-color: #EBF8F2; border: 2px dashed #34C759; border-radius: 12px; padding: 22px; text-align: center; margin: 24px 0; }
+                .otp-code { font-size: 34px; font-weight: 800; color: #1B8E5F; letter-spacing: 8px; margin: 0; }
+                .text { font-size: 15px; line-height: 1.6; color: #475569; margin: 12px 0; }
+                .footer { margin-top: 32px; font-size: 12px; color: #94A3B8; text-align: center; border-top: 1px solid #F1F5F9; padding-top: 16px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h2>I-Trashy Security</h2>
+                </div>
+                <p class='text'>Halo,</p>
+                <p class='text'>Gunakan kode OTP berikut untuk mereset password akun Anda.</p>
+                <div class='otp-box'>
+                    <p class='otp-code'>{$otp_code}</p>
+                </div>
+                <p class='text'><strong>Kode berlaku selama 5 menit.</strong></p>
+                <p class='text'>Jika Anda tidak meminta reset password, abaikan email ini.</p>
+                <div class='footer'>
+                    &copy; " . date('Y') . " Bank Sampah I-Trashy. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>";
+
+        $alt_body = "Halo,\r\n\r\nGunakan kode OTP berikut untuk mereset password akun Anda.\r\n\r\n{$otp_code}\r\n\r\nKode berlaku selama 5 menit.\r\nJika Anda tidak meminta reset password, abaikan email ini.";
+
+        $send_result = send_smtp_email($email, $user['nama_lengkap'] ?: 'User', $subject, $html_body, $alt_body);
+
+        if (!$send_result['success']) {
+            // Hapus atau tandai record OTP batal jika pengiriman email gagal
+            mysqli_query($koneksi, "UPDATE password_resets SET used = 1 WHERE user_id = {$user['id_pengguna']} AND used = 0");
+            error_log("[SMTP_ERROR] Forgot Password flow aborted: SMTP delivery failed to {$email}: " . $send_result['error']);
+            api_respond(false, 'Gagal mengirim email OTP: ' . $send_result['error'], ['smtp_error' => $send_result['error']], 500);
+        }
+
+        api_respond(true, 'Kode verifikasi berhasil dikirim ke email ' . $email . '.', [
+            'email' => $email,
+            'expires_in_seconds' => 300
+        ]);
+    }
+
+    // =====================
+    // VERIFY OTP
+    // =====================
+    elseif ($action === 'verify_otp') {
+        $input_json = json_decode(file_get_contents('php://input'), true);
+        $email = isset($_POST['email']) ? trim($_POST['email']) : (isset($input_json['email']) ? trim($input_json['email']) : '');
+        $otp_code = isset($_POST['otp_code']) ? trim($_POST['otp_code']) : (isset($_POST['otp']) ? trim($_POST['otp']) : (isset($input_json['otp_code']) ? trim($input_json['otp_code']) : (isset($input_json['otp']) ? trim($input_json['otp']) : '')));
+
+        if (empty($email) || empty($otp_code)) {
+            api_respond(false, 'Email dan kode verifikasi wajib diisi.', null, 400);
+        }
+
+        $query = "SELECT id_pengguna FROM pengguna WHERE email = ? LIMIT 1";
+        $stmt = mysqli_prepare($koneksi, $query);
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $user = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+
+        if (!$user) {
+            api_respond(false, 'Email tidak ditemukan.', null, 404);
+        }
+
+        $query_reset = "SELECT * FROM password_resets WHERE user_id = ? AND (otp_code = ? OR token = ?) ORDER BY id DESC LIMIT 1";
+        $stmt_r = mysqli_prepare($koneksi, $query_reset);
+        mysqli_stmt_bind_param($stmt_r, "iss", $user['id_pengguna'], $otp_code, $otp_code);
+        mysqli_stmt_execute($stmt_r);
+        $res_r = mysqli_stmt_get_result($stmt_r);
+        $record = mysqli_fetch_assoc($res_r);
+        mysqli_stmt_close($stmt_r);
+
+        if (!$record) {
+            error_log("[OTP_VERIFY_LOG] Failed: Invalid OTP code ({$otp_code}) for user_id: {$user['id_pengguna']}");
+            api_respond(false, 'Kode verifikasi tidak valid.', null, 400);
+        }
+
+        if ((int)$record['used'] === 1) {
+            error_log("[OTP_VERIFY_LOG] Failed: OTP code ({$otp_code}) already used for user_id: {$user['id_pengguna']}");
+            api_respond(false, 'Kode verifikasi tidak valid atau sudah digunakan.', null, 400);
+        }
+
+        if (strtotime($record['expired_at']) < time()) {
+            error_log("[OTP_VERIFY_LOG] Failed: OTP code ({$otp_code}) expired on {$record['expired_at']} (Current time: " . date('Y-m-d H:i:s') . ")");
+            api_respond(false, 'Kode verifikasi telah kedaluwarsa.', ['expired' => true], 400);
+        }
+
+        $reset_token = bin2hex(random_bytes(32));
+        $update_reset = "UPDATE password_resets SET used = 1, reset_token = ? WHERE id = ?";
+        $stmt_up = mysqli_prepare($koneksi, $update_reset);
+        mysqli_stmt_bind_param($stmt_up, "si", $reset_token, $record['id']);
+        mysqli_stmt_execute($stmt_up);
+        mysqli_stmt_close($stmt_up);
+
+        error_log("[OTP_VERIFY_LOG] Success: OTP code ({$otp_code}) verified for user_id: {$user['id_pengguna']} ({$email}). Reset token generated.");
+
+        api_respond(true, 'Kode verifikasi benar.', [
+            'email' => $email,
+            'reset_token' => $reset_token
+        ]);
+    }
+
+    // =====================
+    // RESET PASSWORD
+    // =====================
+    elseif ($action === 'reset_password') {
+        $input_json = json_decode(file_get_contents('php://input'), true);
+        $email = isset($_POST['email']) ? trim($_POST['email']) : (isset($input_json['email']) ? trim($input_json['email']) : '');
+        $reset_token = isset($_POST['reset_token']) ? trim($_POST['reset_token']) : (isset($input_json['reset_token']) ? trim($input_json['reset_token']) : '');
+        $new_password = isset($_POST['new_password']) ? $_POST['new_password'] : (isset($_POST['password']) ? $_POST['password'] : (isset($input_json['new_password']) ? $input_json['new_password'] : (isset($input_json['password']) ? $input_json['password'] : '')));
+
+        if (empty($email) || empty($new_password)) {
+            api_respond(false, 'Email dan password baru wajib diisi.', null, 400);
+        }
+        if (strlen($new_password) < 8) {
+            api_respond(false, 'Password minimal 8 karakter.', null, 400);
+        }
+
+        $query = "SELECT id_pengguna FROM pengguna WHERE email = ? LIMIT 1";
+        $stmt = mysqli_prepare($koneksi, $query);
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $user = mysqli_fetch_assoc($result);
+        mysqli_stmt_close($stmt);
+
+        if (!$user) {
+            api_respond(false, 'Email tidak ditemukan.', null, 404);
+        }
+
+        $query_token = "SELECT * FROM password_resets WHERE user_id = ? AND (reset_token = ? OR (reset_token IS NOT NULL AND reset_token != '')) AND used = 1 ORDER BY id DESC LIMIT 1";
+        $stmt_t = mysqli_prepare($koneksi, $query_token);
+        mysqli_stmt_bind_param($stmt_t, "is", $user['id_pengguna'], $reset_token);
+        mysqli_stmt_execute($stmt_t);
+        $res_t = mysqli_stmt_get_result($stmt_t);
+        $reset_record = mysqli_fetch_assoc($res_t);
+        mysqli_stmt_close($stmt_t);
+
+        if (!$reset_record || (!empty($reset_token) && $reset_record['reset_token'] !== $reset_token)) {
+            api_respond(false, 'Sesi pemulihan password tidak valid atau telah berakhir. Silakan ulangi proses lupa password.', null, 400);
+        }
+
+        $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
+        $update_user = "UPDATE pengguna SET password = ?, api_token = NULL WHERE id_pengguna = ?";
+        $stmt_u = mysqli_prepare($koneksi, $update_user);
+        mysqli_stmt_bind_param($stmt_u, "si", $hashed_password, $user['id_pengguna']);
+        mysqli_stmt_execute($stmt_u);
+        mysqli_stmt_close($stmt_u);
+
+        $delete_resets = "DELETE FROM password_resets WHERE user_id = ?";
+        $stmt_del = mysqli_prepare($koneksi, $delete_resets);
+        mysqli_stmt_bind_param($stmt_del, "i", $user['id_pengguna']);
+        mysqli_stmt_execute($stmt_del);
+        mysqli_stmt_close($stmt_del);
+
+        error_log("[RESET_PASSWORD_LOG] Success: Password successfully updated and hashed for user_id: {$user['id_pengguna']} ({$email})");
+
+        api_respond(true, 'Password berhasil diperbarui.');
+    }
+
     else {
         api_respond(false, 'Action tidak valid. Gunakan: login atau register', null, 400);
     }

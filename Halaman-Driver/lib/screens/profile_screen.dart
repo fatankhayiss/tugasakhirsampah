@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-
-const _primary = Color(0xFF006D36);
-const _mint = Color(0xFF4ADE80);
-const _bg = Color(0xFFF9FAFB);
-const _surface = Colors.white;
-const _surfaceVariant = Color(0xFFE7E7E7);
-const _textMuted = Color(0xFF6D7B6D);
+import '../services/api_service.dart';
+import '../constants/api_config.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -19,6 +14,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _currentIndex = 3;
   final _authService = AuthService();
   Map<String, dynamic>? _userData;
+  bool _isLoading = false;
   
   @override
   void initState() {
@@ -27,113 +23,146 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUser() async {
+    setState(() => _isLoading = true);
     final user = await _authService.getSavedUser();
     setState(() {
       _userData = user;
     });
+
+    final res = await ApiService.instance.get(ApiConfig.driverProfile);
+    if (res.success && res.data != null && res.data is Map<String, dynamic>) {
+      if (user != null) {
+        final updated = Map<String, dynamic>.from(user)..addAll(res.data);
+        await _authService.saveUser(updated);
+        if (mounted) {
+          setState(() {
+            _userData = updated;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _userData = res.data;
+          });
+        }
+      }
+    }
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            floating: false,
-            snap: false,
-            backgroundColor: _bg,
-            elevation: 0,
-            toolbarHeight: 84,
-            automaticallyImplyLeading: false,
-            title: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE7E8E9),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFBCCABB)),
+      backgroundColor: DriverColors.background,
+      body: RefreshIndicator(
+        onRefresh: _loadUser,
+        color: DriverColors.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              floating: false,
+              snap: false,
+              backgroundColor: DriverColors.background,
+              elevation: 0,
+              toolbarHeight: 84,
+              automaticallyImplyLeading: false,
+              title: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: DriverColors.primary,
+                    child: const Icon(Icons.person_rounded, color: Colors.white, size: 20),
                   ),
-                  child: const Icon(Icons.person, color: _textMuted),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Driver Dashboard',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Profil Saya',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: DriverColors.textDark,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.notifications_none, color: _textMuted),
-                ),
-              ],
+                  const Spacer(),
+                  IconButton(
+                    onPressed: _loadUser,
+                    icon: const Icon(Icons.refresh_rounded, color: DriverColors.primary),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SliverSafeArea(
-            top: false,
-            sliver: SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHero(),
-                    const SizedBox(height: 40),
-                    _buildIdentitySection(),
-                    const SizedBox(height: 28),
-                    _buildVehicleSection(),
-                    const SizedBox(height: 28),
-                    _buildQuickActions(),
-                    const SizedBox(height: 24),
-                  ],
+            SliverSafeArea(
+              top: false,
+              sliver: SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHero(),
+                      const SizedBox(height: 48),
+                      _buildIdentitySection(),
+                      const SizedBox(height: 24),
+                      _buildVehicleSection(),
+                      const SizedBox(height: 24),
+                      _buildQuickActions(),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (i) {
-            if (i == _currentIndex) return;
-            if (i == 0) {
-              Navigator.of(context).pushReplacementNamed('/dashboard');
-              return;
-            }
-            if (i == 1) {
-              Navigator.of(context).pushReplacementNamed('/schedule');
-              return;
-            }
-            if (i == 2) {
-              Navigator.of(context).pushReplacementNamed('/alerts');
-              return;
-            }
-            setState(() => _currentIndex = i);
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: _primary,
-          unselectedItemColor: Colors.black54,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month),
-              label: 'Schedule',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_none),
-              label: 'Alerts',
-            ),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          ],
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (i) {
+              if (i == _currentIndex) return;
+              if (i == 0) {
+                Navigator.of(context).pushReplacementNamed('/dashboard');
+                return;
+              }
+              if (i == 1) {
+                Navigator.of(context).pushReplacementNamed('/schedule');
+                return;
+              }
+              if (i == 2) {
+                Navigator.of(context).pushReplacementNamed('/alerts');
+                return;
+              }
+              setState(() => _currentIndex = i);
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: DriverColors.primary,
+            unselectedItemColor: DriverColors.textMuted,
+            selectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 12),
+            unselectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w500, fontSize: 12),
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Beranda'),
+              BottomNavigationBarItem(icon: Icon(Icons.calendar_month_rounded), label: 'Jadwal'),
+              BottomNavigationBarItem(icon: Icon(Icons.notifications_none_rounded), label: 'Notifikasi'),
+              BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profil'),
+            ],
+          ),
         ),
       ),
     );
@@ -141,18 +170,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildHero() {
     return SizedBox(
-      height: 180,
+      height: 170,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                colors: [_mint.withValues(alpha: 0.25), _bg],
+              borderRadius: DriverStyles.cardRadius,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E3A8A), DriverColors.primary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              boxShadow: DriverStyles.cardShadow,
             ),
           ),
           Positioned(
@@ -164,39 +194,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 120,
-                    height: 120,
+                    width: 110,
+                    height: 110,
                     decoration: BoxDecoration(
-                      color: _surface,
-                      borderRadius: BorderRadius.circular(60),
-                      border: Border.all(color: _surface, width: 4),
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 16,
-                          offset: const Offset(0, 8),
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: const CircleAvatar(
-                      backgroundColor: Color(0xFFB9D7D0),
-                      child: Icon(Icons.person, size: 56, color: Colors.white),
-                    ),
-                  ),
-                  Positioned(
-                    right: -6,
-                    bottom: -6,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _primary,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _surface, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.photo_camera,
-                        color: Colors.white,
+                    child: CircleAvatar(
+                      backgroundColor: DriverColors.softBlue,
+                      child: Text(
+                        _userData?['nama_lengkap'] != null && (_userData!['nama_lengkap'] as String).isNotEmpty
+                            ? (_userData!['nama_lengkap'] as String).substring(0, 2).toUpperCase()
+                            : 'DR',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: DriverColors.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -213,44 +236,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Text(
-              'Identitas',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-            ),
-            const Spacer(),
-            TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.edit, size: 18, color: _primary),
-              label: const Text(
-                'Edit',
-                style: TextStyle(color: _primary, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
+        const Text(
+          'Informasi Pribadi',
+          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: DriverColors.textDark),
         ),
+        const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            color: Colors.white,
+            borderRadius: DriverStyles.cardRadius,
+            border: Border.all(color: DriverColors.border),
+            boxShadow: DriverStyles.cardShadow,
           ),
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _InfoRow(label: 'NAMA LENGKAP', value: _userData?['nama_lengkap'] ?? '-'),
-              const Divider(height: 28, color: _surfaceVariant),
-              _InfoRow(label: 'USERNAME / EMAIL', value: _userData?['username'] ?? '-'),
-              const Divider(height: 28, color: _surfaceVariant),
-              _InfoRow(label: 'NO TELEPON', value: _userData?['no_telepon'] ?? '-'),
+              const Divider(height: 28, color: DriverColors.border),
+              _InfoRow(label: 'EMAIL / USERNAME', value: _userData?['email'] ?? _userData?['username'] ?? '-'),
+              const Divider(height: 28, color: DriverColors.border),
+              _InfoRow(label: 'NO. TELEPON', value: _userData?['no_telepon'] ?? '-'),
             ],
           ),
         ),
@@ -263,21 +269,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Kendaraan',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              'Kendaraan Operasional',
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: DriverColors.textDark),
             ),
-            const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _mint.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(999),
+                color: DriverColors.badgeCompleted.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
-                'Aktif',
-                style: TextStyle(color: _primary, fontWeight: FontWeight.w600),
+                'Aktif Operasional',
+                style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.badgeCompleted, fontSize: 12, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -285,15 +291,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            color: Colors.white,
+            borderRadius: DriverStyles.cardRadius,
+            border: Border.all(color: DriverColors.border),
+            boxShadow: DriverStyles.cardShadow,
           ),
           padding: const EdgeInsets.all(20),
           child: Stack(
@@ -303,26 +304,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 top: 0,
                 child: Icon(
                   _getVehicleIcon(_userData?['tipe_kendaraan']),
-                  size: 72,
-                  color: Colors.black.withValues(alpha: 0.08),
+                  size: 76,
+                  color: DriverColors.primary.withValues(alpha: 0.08),
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _InfoRow(label: 'VEHICLE TYPE', value: _userData?['jenis_kendaraan'] ?? 'Belum terdaftar'),
-                  const Divider(height: 28, color: _surfaceVariant),
+                  _InfoRow(
+                    label: 'TIPE / JENIS KENDARAAN',
+                    value: (_userData?['tipe_kendaraan'] ?? _userData?['jenis_kendaraan'] ?? 'Belum terdaftar').toString().toUpperCase(),
+                  ),
+                  const Divider(height: 28, color: DriverColors.border),
                   Row(
                     children: [
                       Expanded(
                         child: _InfoRow(
-                          label: 'LICENSE PLATE',
-                          value: _userData?['plat_nomor'] ?? '-',
+                          label: 'PLAT NOMOR',
+                          value: (_userData?['plat_nomor'] ?? '-').toString().toUpperCase(),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _InfoRow(label: 'CAPACITY', value: '${_userData?['kapasitas_berat'] ?? 0} Kg'),
+                        child: _InfoRow(
+                          label: 'KAPASITAS ANGKUT',
+                          value: '${_userData?['kapasitas_berat'] ?? '0'} Kg',
+                        ),
                       ),
                     ],
                   ),
@@ -339,32 +346,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         Expanded(
-          child: InkWell(
-            onTap: () => Navigator.of(context).pushNamed('/history'),
-            borderRadius: BorderRadius.circular(20),
-            child: _QuickActionCard(
-              title: 'History',
-              icon: Icons.history,
-              color: _mint.withValues(alpha: 0.35),
-              iconColor: _primary,
+          child: Material(
+            color: Colors.white,
+            borderRadius: DriverStyles.cardRadius,
+            child: InkWell(
+              onTap: () => Navigator.of(context).pushNamed('/history'),
+              borderRadius: DriverStyles.cardRadius,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  borderRadius: DriverStyles.cardRadius,
+                  border: Border.all(color: DriverColors.border),
+                  boxShadow: DriverStyles.cardShadow,
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: DriverColors.softBlue,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.history_rounded, color: DriverColors.primary),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text('Riwayat Selesai', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 13, color: DriverColors.textDark)),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: InkWell(
-            onTap: () async {
-              await _authService.logout();
-              if (mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-              }
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: const _QuickActionCard(
-              title: 'Logout',
-              icon: Icons.logout,
-              color: Color(0xFFFFDAD6),
-              iconColor: Color(0xFFBA1A1A),
+          child: Material(
+            color: Colors.white,
+            borderRadius: DriverStyles.cardRadius,
+            child: InkWell(
+              onTap: () async {
+                await _authService.logout();
+                if (mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                }
+              },
+              borderRadius: DriverStyles.cardRadius,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  borderRadius: DriverStyles.cardRadius,
+                  border: Border.all(color: DriverColors.border),
+                  boxShadow: DriverStyles.cardShadow,
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFE5E5),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.logout_rounded, color: DriverColors.badgeCancelled),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text('Keluar / Logout', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 13, color: DriverColors.badgeCancelled)),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -373,11 +422,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   IconData _getVehicleIcon(String? type) {
-    if (type == null) return Icons.directions_car;
+    if (type == null) return Icons.local_shipping_rounded;
     final t = type.toLowerCase();
-    if (t == 'motor') return Icons.two_wheeler;
-    if (t == 'truk' || t == 'truck') return Icons.local_shipping;
-    return Icons.directions_car;
+    if (t.contains('motor')) return Icons.two_wheeler_rounded;
+    if (t.contains('truk') || t.contains('truck') || t.contains('pick')) return Icons.local_shipping_rounded;
+    return Icons.local_shipping_rounded;
   }
 }
 
@@ -395,59 +444,24 @@ class _InfoRow extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: _textMuted,
-            fontSize: 12,
-            letterSpacing: 1.2,
-            fontWeight: FontWeight.w600,
+            fontFamily: 'Plus Jakarta Sans',
+            color: DriverColors.textMuted,
+            fontSize: 11,
+            letterSpacing: 0.8,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: DriverColors.textDark,
+          ),
         ),
       ],
-    );
-  }
-}
-
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.iconColor,
-  });
-
-  final String title;
-  final IconData icon;
-  final Color color;
-  final Color iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F5),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(icon, color: iconColor),
-          ),
-          const SizedBox(height: 10),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        ],
-      ),
     );
   }
 }

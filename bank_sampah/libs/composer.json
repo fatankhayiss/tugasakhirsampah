@@ -1,0 +1,7 @@
+{
+    "require": {
+        "phpmailer/phpmailer": "^7.1",
+        "phpoffice/phpspreadsheet": "3.9.0",
+        "guzzlehttp/guzzle": "^7.14"
+    }
+}

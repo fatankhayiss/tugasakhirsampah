@@ -1,32 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../../core/constants/app_colors.dart';
+import 'dart:convert';
 import '../../../core/navigation/app_dialog_transitions.dart';
+import '../../../core/navigation/app_page_transitions.dart';
+import '../../../core/repositories/detect_repository.dart';
+import '../../../core/models/waste_item.dart';
 import '../widgets/permission_modal_widget.dart';
 import '../widgets/scan_frame_widget.dart';
 import '../widgets/camera_button_widget.dart';
-import 'dart:convert';
-import '../../../core/repositories/detect_repository.dart';
-import '../../../core/navigation/app_page_transitions.dart';
-import 'detection_result_screen.dart';
+import 'manual_deposit_screen.dart';
+
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key});
+  final List<WasteItem>? existingCartItems;
+
+  const ScanScreen({super.key, this.existingCartItems});
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen> {
+class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateMixin {
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
   bool _isPermissionGranted = false;
   bool _isPermissionDenied = false;
   bool _isUploading = false;
+  late AnimationController _fadeSlideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    _fadeSlideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _fadeSlideController, curve: Curves.easeOut);
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _fadeSlideController, curve: Curves.easeOut));
+    _fadeSlideController.forward();
+
     _checkCameraPermission();
   }
 
@@ -103,39 +120,116 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   void dispose() {
     _cameraController?.dispose();
+    _fadeSlideController.dispose();
     super.dispose();
   }
 
   Future<void> _handleCapture() async {
+    if (_isUploading || !_isCameraInitialized) return;
     setState(() {
       _isUploading = true;
     });
 
     try {
       final xFile = await _cameraController!.takePicture();
-      
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Memindai gambar AI...'),
-          backgroundColor: AppColors.neonGreen,
-          duration: Duration(seconds: 2),
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(24),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Color(0xFF22C55E)),
+              SizedBox(height: 20),
+              Text(
+                'Foto berhasil diambil.',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Memproses identifikasi AI...',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  color: Color(0xFF6B7280),
+                ),
+              ),
+            ],
+          ),
         ),
       );
-      
+
       final repo = DetectRepository();
       final resp = await repo.uploadFile(xFile.path);
+
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
 
       if (resp.statusCode == 200) {
         try {
           final parsed = jsonDecode(resp.body) as Map<String, dynamic>;
           if (parsed['success'] == true && parsed.containsKey('data')) {
             final data = Map<String, dynamic>.from(parsed['data']);
+            
+            final uploadedUrl = data['uploaded_file'] as String? ?? xFile.path;
+            final detections = (data['detections'] as List<dynamic>?) ?? [];
+            String name = 'Sampah Terdeteksi';
+            String category = 'Plastik';
+            String confidence = '95%';
+            double price = 250.0;
+
+            if (detections.isNotEmpty) {
+              final first = detections.first as Map<String, dynamic>;
+              name = first['nama_sampah']?.toString() ?? first['label']?.toString() ?? name;
+              category = first['kategori']?.toString() ?? category;
+              if (first['confidence'] != null) {
+                final confVal = double.tryParse(first['confidence'].toString()) ?? 0.95;
+                confidence = '${(confVal * 100).toInt()}%';
+              }
+              if (first['harga'] != null) {
+                price = double.tryParse(first['harga'].toString()) ?? price;
+              } else if (category.toLowerCase().contains('kertas') || category.toLowerCase().contains('kardus')) {
+                price = 150.0;
+              } else if (category.toLowerCase().contains('logam') || category.toLowerCase().contains('kaleng')) {
+                price = 300.0;
+              }
+            } else if (data['label'] != null) {
+              name = data['label'].toString();
+              category = data['kategori']?.toString() ?? category;
+            }
+
+            final newItem = WasteItem(
+              id: 'scan_${DateTime.now().millisecondsSinceEpoch}',
+              name: name,
+              imageAsset: 'water_bottle',
+              pricePerKg: price,
+              weight: 1.0,
+              imageUrl: uploadedUrl,
+              category: category,
+              confidence: confidence,
+              isScanned: true,
+            );
+
             if (!mounted) return;
             Navigator.pushReplacement(
               context,
               CustomPageRoute(
-                page: DetectionResultScreen(responseData: data),
+                page: ManualDepositScreen(
+                  initialCartItems: widget.existingCartItems,
+                  activeScannedItem: newItem,
+                ),
               ),
             );
             return;
@@ -146,20 +240,13 @@ class _ScanScreenState extends State<ScanScreen> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal mengenali gambar (Kode: ${resp.statusCode})'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      _showRecognitionErrorDialog();
     } catch (e) {
+      if (mounted && _isUploading) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error kamera: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      _showRecognitionErrorDialog();
     } finally {
       if (mounted) {
         setState(() {
@@ -169,70 +256,131 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
+  void _showRecognitionErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Tidak dapat mengenali sampah.',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        content: const Text(
+          'Silakan ambil foto kembali dengan pencahayaan yang jelas.',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 14,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF6B7280)),
+            child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (_isCameraInitialized && !_isUploading) {
+                _handleCapture();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF22C55E),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Scan Lagi', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Sesuai desain UI perbaikan:
+    // Background halaman: #FFFFFF (putih)
+    // Primary Green: #22C55E
+    // Teks Instruksi: #6B7280 (abu-abu gelap)
+    const primaryGreen = Color(0xFF22C55E);
+    const textGray = Color(0xFF6B7280);
+
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
-        child: ClipRRect(
-          child: Container(
-            color: Colors.transparent,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: AppColors.neonGreen),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Scan Sampah',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
+        child: Container(
+          color: Colors.white,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: primaryGreen),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'Scan Sampah',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        color: Color(0xFF1F2937),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(width: 48), // Balance for arrow_back
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 48), // Balance spacing for centered title
+                ],
               ),
             ),
           ),
         ),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            Expanded(
-              child: _buildMainContent(),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Expanded(
+                  child: _buildMainContent(),
+                ),
+                const SizedBox(height: 28),
+                CameraButtonWidget(
+                  isBlue: false,
+                  onTap: () {
+                    if (_isUploading || !_isCameraInitialized) return;
+                    _handleCapture();
+                  },
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _isUploading ? 'SEDANG MENGANALISA...' : 'ARAHKAN KAMERA KE SAMPAH',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    color: textGray,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
             ),
-            const SizedBox(height: 32),
-            CameraButtonWidget(
-              onTap: () {
-                if (_isUploading || !_isCameraInitialized) return;
-                _handleCapture();
-              },
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _isUploading ? 'SEDANG MENGANALISA...' : 'ARAHKAN KAMERA KE SAMPAH',
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 2,
-              ),
-            ),
-            const SizedBox(height: 32),
-          ],
+          ),
         ),
       ),
     );
@@ -243,7 +391,7 @@ class _ScanScreenState extends State<ScanScreen> {
       return _buildEmptyState(
         icon: Icons.videocam_off_outlined,
         title: 'Akses Kamera Ditolak',
-        subtitle: 'Izinkan akses kamera di pengaturan perangkat',
+        subtitle: 'Izinkan akses kamera di pengaturan perangkat agar AI dapat mendeteksi sampah',
         actionLabel: 'Buka Pengaturan',
         onAction: () => openAppSettings(),
       );
@@ -251,30 +399,30 @@ class _ScanScreenState extends State<ScanScreen> {
 
     if (!_isPermissionGranted) {
       return _buildEmptyState(
-        icon: Icons.photo_camera,
-        title: 'Camera Preview',
-        subtitle: 'Fitur prediksi AI akan ditampilkan di sini',
+        icon: Icons.photo_camera_rounded,
+        title: 'Siap Melakukan Scan',
+        subtitle: 'Fitur prediksi AI akan ditampilkan pada kamera live preview ini',
       );
     }
 
     if (!_isCameraInitialized || _cameraController == null) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(color: AppColors.neonGreen),
-            const SizedBox(height: 16),
+            CircularProgressIndicator(color: Color(0xFF22C55E)),
+            SizedBox(height: 16),
             Text(
               'Mengaktifkan Kamera...',
-              style: TextStyle(color: AppColors.neonGreen.withValues(alpha: 0.04)),
+              style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
             ),
           ],
         ),
       );
     }
 
-    // Live Camera
     return ScanFrameWidget(
+      isBlue: false,
       child: CameraPreview(_cameraController!),
     );
   }
@@ -287,17 +435,19 @@ class _ScanScreenState extends State<ScanScreen> {
     VoidCallback? onAction,
   }) {
     return ScanFrameWidget(
+      isBlue: false,
       child: Container(
-        color: AppColors.darkBackground,
+        color: const Color(0xFFF8FAFC),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppColors.neonGreen, size: 64),
+            Icon(icon, color: const Color(0xFF22C55E), size: 64),
             const SizedBox(height: 16),
             Text(
               title,
               style: const TextStyle(
-                color: Colors.white,
+                fontFamily: 'Plus Jakarta Sans',
+                color: Color(0xFF1F2937),
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -308,7 +458,7 @@ class _ScanScreenState extends State<ScanScreen> {
               child: Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white60, fontSize: 13),
+                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: Color(0xFF6B7280), fontSize: 13),
               ),
             ),
             if (actionLabel != null && onAction != null) ...[
@@ -316,16 +466,13 @@ class _ScanScreenState extends State<ScanScreen> {
               ElevatedButton(
                 onPressed: onAction,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.neonGreen.withValues(alpha: 0.04),
-                  side: const BorderSide(color: AppColors.neonGreen),
+                  backgroundColor: const Color(0xFF22C55E),
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                child: Text(
-                  actionLabel,
-                  style: const TextStyle(color: AppColors.neonGreen),
-                ),
+                child: Text(actionLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
               ),
             ]
           ],
@@ -334,6 +481,3 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 }
-
-
-

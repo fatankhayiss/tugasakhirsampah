@@ -62,6 +62,7 @@ class HistoryItemModel {
   final double? estimatedAmount;
   final String? adminNote;
   final String? rawStatus;
+  final String? transactionCode;
 
   const HistoryItemModel({
     required this.id,
@@ -78,5 +79,6 @@ class HistoryItemModel {
     this.estimatedAmount,
     this.adminNote,
     this.rawStatus,
+    this.transactionCode,
   });
 }

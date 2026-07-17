@@ -1,35 +1,60 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'package:camera/camera.dart';
-
-import 'package:mobile_user/core/repositories/detect_repository.dart';
-import 'package:mobile_user/features/deposit/screens/detection_result_screen.dart';
-import 'package:mobile_user/core/navigation/app_page_transitions.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:convert';
+import '../../../core/navigation/app_page_transitions.dart';
+import '../../../core/repositories/detect_repository.dart';
+import '../../../core/models/waste_item.dart';
+import '../widgets/scan_frame_widget.dart';
+import '../widgets/camera_button_widget.dart';
+import 'manual_deposit_screen.dart';
 
 class ScanDepositScreen extends StatefulWidget {
-  const ScanDepositScreen({super.key});
+  final List<WasteItem>? existingCartItems;
+
+  const ScanDepositScreen({super.key, this.existingCartItems});
 
   @override
   State<ScanDepositScreen> createState() => _ScanDepositScreenState();
 }
 
-class _ScanDepositScreenState extends State<ScanDepositScreen> {
+class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTickerProviderStateMixin {
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
+  bool _isPermissionDenied = false;
   bool _isUploading = false;
+  late AnimationController _fadeSlideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    _fadeSlideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _fadeAnimation = CurvedAnimation(parent: _fadeSlideController, curve: Curves.easeOut);
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _fadeSlideController, curve: Curves.easeOut));
+    _fadeSlideController.forward();
+
     _initializeCamera();
   }
 
   Future<void> _initializeCamera() async {
     try {
+      final status = await Permission.camera.request();
+      if (!status.isGranted) {
+        if (mounted) setState(() => _isPermissionDenied = true);
+        return;
+      }
+
       final cameras = await availableCameras();
       if (!mounted || cameras.isEmpty) return;
       
-      // Gunakan kamera belakang (kamera utama)
       final backCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
@@ -37,7 +62,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
 
       _cameraController = CameraController(
         backCamera,
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
         enableAudio: false,
       );
 
@@ -45,8 +70,10 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
       if (!mounted) return;
       setState(() {
         _isCameraInitialized = true;
+        _isPermissionDenied = false;
       });
     } catch (e) {
+      if (mounted) setState(() => _isPermissionDenied = true);
       debugPrint('Error menginisialisasi kamera: $e');
     }
   }
@@ -54,204 +81,331 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> {
   @override
   void dispose() {
     _cameraController?.dispose();
+    _fadeSlideController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleCapture() async {
+    if (_isUploading || !_isCameraInitialized) return;
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      final xFile = await _cameraController!.takePicture();
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(24),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Color(0xFF22C55E)),
+              SizedBox(height: 20),
+              Text(
+                'Foto berhasil diambil.',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Memproses identifikasi AI...',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  color: Color(0xFF6B7280),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final repo = DetectRepository();
+      final resp = await repo.uploadFile(xFile.path);
+
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      if (resp.statusCode == 200) {
+        try {
+          final parsed = jsonDecode(resp.body) as Map<String, dynamic>;
+          if (parsed['success'] == true && parsed.containsKey('data')) {
+            final data = Map<String, dynamic>.from(parsed['data']);
+            
+            final uploadedUrl = data['uploaded_file'] as String? ?? xFile.path;
+            final detections = (data['detections'] as List<dynamic>?) ?? [];
+            String name = 'Sampah Terdeteksi';
+            String category = 'Plastik';
+            String confidence = '95%';
+            double price = 250.0;
+
+            if (detections.isNotEmpty) {
+              final first = detections.first as Map<String, dynamic>;
+              name = first['nama_sampah']?.toString() ?? first['label']?.toString() ?? name;
+              category = first['kategori']?.toString() ?? category;
+              if (first['confidence'] != null) {
+                final confVal = double.tryParse(first['confidence'].toString()) ?? 0.95;
+                confidence = '${(confVal * 100).toInt()}%';
+              }
+              if (first['harga'] != null) {
+                price = double.tryParse(first['harga'].toString()) ?? price;
+              } else if (category.toLowerCase().contains('kertas') || category.toLowerCase().contains('kardus')) {
+                price = 150.0;
+              } else if (category.toLowerCase().contains('logam') || category.toLowerCase().contains('kaleng')) {
+                price = 300.0;
+              }
+            } else if (data['label'] != null) {
+              name = data['label'].toString();
+              category = data['kategori']?.toString() ?? category;
+            }
+
+            final newItem = WasteItem(
+              id: 'scan_${DateTime.now().millisecondsSinceEpoch}',
+              name: name,
+              imageAsset: 'water_bottle',
+              pricePerKg: price,
+              weight: 1.0,
+              imageUrl: uploadedUrl,
+              category: category,
+              confidence: confidence,
+              isScanned: true,
+            );
+
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              CustomPageRoute(
+                page: ManualDepositScreen(
+                  initialCartItems: widget.existingCartItems,
+                  activeScannedItem: newItem,
+                ),
+              ),
+            );
+            return;
+          }
+        } catch (e) {
+          debugPrint('JSON parse error: $e');
+        }
+      }
+
+      if (!mounted) return;
+      _showRecognitionErrorDialog();
+    } catch (e) {
+      if (mounted && _isUploading) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      if (!mounted) return;
+      _showRecognitionErrorDialog();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  void _showRecognitionErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Tidak dapat mengenali sampah.',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        content: const Text(
+          'Silakan ambil foto kembali dengan pencahayaan yang jelas.',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 14,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF6B7280)),
+            child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (_isCameraInitialized && !_isUploading) {
+                _handleCapture();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF22C55E),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Scan Lagi', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final scanFrameSize = (MediaQuery.of(context).size.width * 0.72).clamp(220.0, 340.0);
+    const primaryGreen = Color(0xFF22C55E);
+    const textGray = Color(0xFF6B7280);
+
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        title: const Text(
-          'Scan Sampah',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          // Live Camera Preview
-          if (_isCameraInitialized && _cameraController != null)
-            SizedBox(
-              width: double.infinity,
-              height: double.infinity,
-              child: CameraPreview(_cameraController!),
-            )
-          else
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          color: Colors.white,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
                 children: [
-                  const CircularProgressIndicator(color: Color(0xFF4AC08D)),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Membuka Kamera...',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 14,
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded, color: primaryGreen),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                ],
-              ),
-            ),
-            
-          // Dark Overlay with Cutout
-          if (_isCameraInitialized)
-            ColorFiltered(
-              colorFilter: ColorFilter.mode(
-                Colors.black.withValues(alpha: 0.6),
-                BlendMode.srcOut,
-              ),
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.black,
-                      backgroundBlendMode: BlendMode.dstOut,
-                    ),
-                  ),
-                  Center(
-                    child: Container(
-                      width: scanFrameSize,
-                      height: scanFrameSize,
-                      decoration: BoxDecoration(
-                        color: Colors.white, // This part will be transparent due to dstOut
-                        borderRadius: BorderRadius.circular(24),
+                  const Expanded(
+                    child: Text(
+                      'Scan Sampah',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        color: Color(0xFF1F2937),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
-
-          // Scan Frame (Green Border)
-          if (_isCameraInitialized)
-            Center(
-              child: Container(
-                width: scanFrameSize,
-                height: scanFrameSize,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF4AC08D), width: 3),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-            ),
-
-          // Bottom Actions
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
+          ),
+        ),
+      ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: SafeArea(
             child: Column(
               children: [
-                Container(
-                  width: 70,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
-                  ),
-                  child: Material(
-                    color: _isUploading ? Colors.grey : const Color(0xFF4AC08D),
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: (_isUploading || !_isCameraInitialized) ? null : () async {
-                        setState(() {
-                          _isUploading = true;
-                        });
-                        
-                        try {
-                          // Ambil foto menggunakan kamera
-                          final xFile = await _cameraController!.takePicture();
-                          
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Memindai gambar...'),
-                              backgroundColor: Color(0xFF4AC08D),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                          
-                          // Upload foto asli ke backend
-                          final repo = DetectRepository();
-                          final resp = await repo.uploadFile(xFile.path);
-
-                          if (resp.statusCode == 200) {
-                            try {
-                              final parsed = jsonDecode(resp.body) as Map<String, dynamic>;
-                              if (parsed['success'] == true && parsed.containsKey('data')) {
-                                final data = Map<String, dynamic>.from(parsed['data']);
-                                if (!context.mounted) return;
-                                Navigator.pushReplacement(
-                                  context,
-                                  CustomPageRoute(
-                                    page: DetectionResultScreen(responseData: data),
-                                  ),
-                                );
-                                return;
-                              }
-                            } catch (e) {
-                              debugPrint('JSON parse error: $e');
-                            }
-                          }
-
-                          // Jika gagal parsing atau respons tidak 200
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Gagal mengenali gambar (Kode: ${resp.statusCode})'),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        } catch (e) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error kamera: $e'),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        } finally {
-                          if (mounted) {
-                            setState(() {
-                              _isUploading = false;
-                            });
-                          }
-                        }
-                      },
-                      child: _isUploading 
-                          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                          : const SizedBox(),
-                    ),
-                  ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: _buildMainContent(),
+                ),
+                const SizedBox(height: 28),
+                CameraButtonWidget(
+                  isBlue: false,
+                  onTap: _handleCapture,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _isUploading ? 'Sedang Menganalisa...' : 'Arahkan kamera ke sampah',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 14,
+                  _isUploading ? 'SEDANG MENGANALISA...' : 'ARAHKAN KAMERA KE SAMPAH',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    color: textGray,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
                   ),
                 ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    if (_isPermissionDenied) {
+      return ScanFrameWidget(
+        isBlue: false,
+        child: Container(
+          color: const Color(0xFFF8FAFC),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.videocam_off_outlined, color: Color(0xFF22C55E), size: 64),
+              const SizedBox(height: 16),
+              const Text(
+                'Akses Kamera Ditolak',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  color: Color(0xFF1F2937),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'Izinkan akses kamera di pengaturan perangkat agar AI dapat mengenali sampah.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: Color(0xFF6B7280), fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => openAppSettings(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF22C55E),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                child: const Text('Buka Pengaturan', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!_isCameraInitialized || _cameraController == null) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF22C55E)),
+            SizedBox(height: 16),
+            Text(
+              'Mengaktifkan Kamera...',
+              style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ScanFrameWidget(
+      isBlue: false,
+      child: CameraPreview(_cameraController!),
     );
   }
 }

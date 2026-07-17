@@ -27,49 +27,86 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  Future<void> _handleSendRecoveryEmail() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      AppDialogTransitions.showFadeScaleDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Peringatan',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: AppColors.textDark,
-              shadows: [],
-            ),
+  void _showM3Dialog({
+    required String title,
+    required String message,
+    String buttonText = 'OK',
+    VoidCallback? onPressed,
+    bool barrierDismissible = true,
+  }) {
+    AppDialogTransitions.showFadeScaleDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+        contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: AppColors.textDark,
           ),
-          content: const Text(
-            'Harap masukkan alamat email pemulihan Anda yang terdaftar.',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              color: AppColors.textSoft,
-              height: 1.4,
-              shadows: [],
-            ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 14,
+            color: AppColors.textSoft,
+            height: 1.5,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'OK',
-                style: TextStyle(
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                if (onPressed != null) onPressed();
+              },
+              child: Text(
+                buttonText,
+                style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   fontSize: 15,
-                  shadows: [],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleSendRecoveryEmail() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      _showM3Dialog(
+        title: 'Gagal',
+        message: 'Harap masukkan alamat email pemulihan Anda yang terdaftar.',
+      );
+      return;
+    }
+
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+      _showM3Dialog(
+        title: 'Gagal',
+        message: 'Format alamat email yang Anda masukkan tidak valid.',
       );
       return;
     }
@@ -78,49 +115,116 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isSendingEmail = true);
 
     try {
-      await Future.delayed(const Duration(milliseconds: 1200));
+      final repo = AuthRepository();
+      final response = await repo.forgotPassword(email);
       if (!mounted) return;
-      AppDialogTransitions.showFadeScaleDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Email Terkirim',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: AppColors.textDark,
-              shadows: [],
-            ),
-          ),
-          content: Text(
-            'Instruksi dan link pemulihan kata sandi telah dikirimkan ke alamat email $email.',
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              color: AppColors.textSoft,
-              height: 1.4,
-              shadows: [],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'OK',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                  shadows: [],
-                ),
+
+      final isGoogleAccount = (response.data is Map && response.data['code'] == 'GOOGLE_ACCOUNT') ||
+          response.message.toLowerCase().contains('google sign-in');
+
+      if (isGoogleAccount) {
+        AppDialogTransitions.showFadeScaleDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+            contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+            title: const Text(
+              'Google Account Detected',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: AppColors.textDark,
               ),
             ),
-          ],
-        ),
-      );
+            content: const Text(
+              'This account uses Google Sign-In. Please continue using Google to sign in.',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 14,
+                color: AppColors.textSoft,
+                height: 1.5,
+              ),
+            ),
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _handleGoogleSignIn();
+                  },
+                  child: const Text(
+                    'Sign in with Google',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else if (response.success) {
+        if (!mounted) return;
+        _showM3Dialog(
+          title: 'Berhasil',
+          message: 'Kode OTP berhasil dikirim ke email Anda.',
+          buttonText: 'OK',
+          barrierDismissible: false,
+          onPressed: () {
+            Navigator.pushNamed(context, AppRoutes.verification, arguments: email);
+          },
+        );
+      } else {
+        final lowerMsg = response.message.toLowerCase();
+        if (lowerMsg.contains('tidak ditemukan')) {
+          _showM3Dialog(
+            title: 'Gagal',
+            message: 'Email tidak ditemukan.',
+          );
+        } else if (lowerMsg.contains('smtp') || lowerMsg.contains('gagal mengirim')) {
+          _showM3Dialog(
+            title: 'Gagal Mengirim OTP',
+            message: response.message,
+          );
+        } else {
+          _showM3Dialog(
+            title: 'Gagal',
+            message: response.message.isNotEmpty ? response.message : 'Gagal mengirimkan instruksi reset password.',
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final errorStr = e.toString().replaceAll('Exception: ', '');
+      final lowerErr = errorStr.toLowerCase();
+      if (lowerErr.contains('socket') || lowerErr.contains('network') || lowerErr.contains('koneksi') || lowerErr.contains('connection')) {
+        _showM3Dialog(
+          title: 'Terjadi Kesalahan',
+          message: 'Periksa koneksi internet Anda lalu coba lagi.',
+        );
+      } else {
+        _showM3Dialog(
+          title: 'Terjadi Kesalahan',
+          message: errorStr,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isSendingEmail = false);
@@ -140,43 +244,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      AppDialogTransitions.showFadeScaleDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Peringatan',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: AppColors.textDark,
-            ),
-          ),
-          content: Text(
-            e.toString().replaceAll('Exception: ', ''),
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              color: AppColors.textSoft,
-              height: 1.4,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'OK',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          ],
-        ),
+      _showM3Dialog(
+        title: 'Peringatan',
+        message: e.toString().replaceAll('Exception: ', ''),
       );
     } finally {
       if (mounted) {
@@ -247,7 +317,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     fontWeight: FontWeight.w700,
                     color: AppColors.textDark,
                     letterSpacing: -0.02,
-                    shadows: [],
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -257,13 +326,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8.0),
                   child: Text(
-                    'Masukkan alamat email Anda yang terdaftar untuk menerima link atau instruksi pemulihan kata sandi.',
+                    'Masukkan alamat email Anda yang terdaftar untuk menerima kode OTP pemulihan kata sandi.',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
                       height: 1.5,
                       color: AppColors.textSoft,
-                      shadows: [],
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -279,11 +347,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Primary Recovery Send Button
+                // Primary Recovery Send Button (Blue color enforced via isGreen: false)
                 PrimaryButton(
-                  text: 'Kirim Link Pemulihan',
+                  text: 'Kirim OTP',
                   onPressed: _handleSendRecoveryEmail,
                   isLoading: _isSendingEmail,
+                  isGreen: false,
                 ),
                 const SizedBox(height: 28),
 
@@ -291,15 +360,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Row(
                   children: [
                     Expanded(child: Divider(color: AppColors.border, thickness: 1)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'Atau masuk dengan',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,
                           color: AppColors.textSoft,
-                          shadows: [],
                         ),
                       ),
                     ),
@@ -312,7 +380,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 _buildGoogleRecoveryButton(),
                 const SizedBox(height: 32),
 
-                // Back to Login Link with touch feedback (no shadow, Login turned green)
+                // Back to Login Link with touch feedback (Login using blue CTA color)
                 _buildBackToLogin(),
               ],
             ),
@@ -393,7 +461,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
                                   letterSpacing: 0.5,
-                                  shadows: [],
                                 ),
                               ),
                             ],
@@ -416,7 +483,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
                                   letterSpacing: 0.5,
-                                  shadows: [],
                                 ),
                               ),
                             ],
@@ -455,7 +521,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 14,
                   color: AppColors.textSoft,
-                  shadows: [],
                 ),
               ),
               Text(
@@ -464,8 +529,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                  shadows: [],
+                  color: AppColors.primaryBlue,
                 ),
               ),
             ],
@@ -475,3 +539,4 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 }
+
