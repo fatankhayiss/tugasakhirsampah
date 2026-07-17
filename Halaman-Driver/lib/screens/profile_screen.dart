@@ -89,8 +89,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const Spacer(),
                   IconButton(
-                    onPressed: _loadUser,
-                    icon: const Icon(Icons.refresh_rounded, color: DriverColors.primary),
+                    onPressed: _isLoading ? null : _loadUser,
+                    icon: _isLoading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: DriverColors.primary))
+                        : const Icon(Icons.refresh_rounded, color: DriverColors.primary),
                   ),
                 ],
               ),

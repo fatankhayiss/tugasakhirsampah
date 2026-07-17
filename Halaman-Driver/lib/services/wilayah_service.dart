@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class WilayahService {
   static const String baseUrl = 'https://www.emsifa.com/api-wilayah-indonesia/api';
@@ -15,7 +16,7 @@ class WilayahService {
         }).toList();
       }
     } catch (e) {
-      print('Error getProvinces: $e');
+      debugPrint('Error getProvinces: $e');
     }
     return [];
   }
@@ -31,7 +32,7 @@ class WilayahService {
         }).toList();
       }
     } catch (e) {
-      print('Error getRegencies: $e');
+      debugPrint('Error getRegencies: $e');
     }
     return [];
   }
@@ -47,7 +48,7 @@ class WilayahService {
         }).toList();
       }
     } catch (e) {
-      print('Error getDistricts: $e');
+      debugPrint('Error getDistricts: $e');
     }
     return [];
   }

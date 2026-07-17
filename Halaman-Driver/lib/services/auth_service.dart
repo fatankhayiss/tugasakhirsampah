@@ -48,5 +48,13 @@ class AuthService {
 
   Future<Map<String, dynamic>?> getSavedUser() => _api.getUserData();
 
+  Future<Map<String, dynamic>?> readUser() => _api.getUserData();
+
+  Future<void> saveUser(Map<String, dynamic> userData) => _api.saveUserData(userData);
+
+  Future<void> updateUser(Map<String, dynamic> userData) => _api.saveUserData(userData);
+
+  Future<void> deleteUser() => _api.clearAuth();
+
   Future<void> logout() => _api.clearAuth();
 }
