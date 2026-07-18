@@ -1,11 +1,11 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/education_model.dart';
-import '../../../core/navigation/app_page_transitions.dart';
 
 class VideoDetailScreen extends StatefulWidget {
   final VideoModel video;
@@ -17,8 +17,6 @@ class VideoDetailScreen extends StatefulWidget {
 }
 
 class _VideoDetailScreenState extends State<VideoDetailScreen> {
-  bool _isBookmarked = false;
-
   // Gunakan video URL dari model (dari database), fallback ke sample URL
   late final String _videoUrl;
 
@@ -59,50 +57,6 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _isBookmarked = !_isBookmarked;
-              });
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  content: Text(
-                    _isBookmarked
-                        ? 'Video disimpan ke penanda'
-                        : 'Video dihapus dari penanda',
-                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans'),
-                  ),
-                  backgroundColor: AppColors.secondary,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            icon: Icon(
-              _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              color: _isBookmarked ? AppColors.secondary : AppColors.textDark,
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  content: Text(
-                    'Tautan video berhasil disalin!',
-                    style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
-                  ),
-                  backgroundColor: AppColors.secondary,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            icon: const Icon(LucideIcons.share_2, color: AppColors.textDark),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
@@ -131,6 +85,27 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          widget.video.kategori.toUpperCase(),
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     widget.video.title,
                     style: const TextStyle(
@@ -209,549 +184,151 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
 }
 
 /// Dynamic Stateful Premium Video Player with full controls overlay and seamless fullscreen support.
-class PremiumVideoPlayer extends StatefulWidget {
+class PremiumVideoPlayer extends StatelessWidget {
   final String videoUrl;
   final String thumbnailAsset;
   final String? thumbnailUrl;
-  final VideoPlayerController? externalController;
-  final bool isFullscreenMode;
 
   const PremiumVideoPlayer({
     super.key,
     required this.videoUrl,
     required this.thumbnailAsset,
     this.thumbnailUrl,
-    this.externalController,
-    this.isFullscreenMode = false,
   });
 
+  bool _isYouTubeUrl(String url) {
+    final Uri uri = Uri.tryParse(url) ?? Uri();
+    return uri.host.contains('youtube.com') || uri.host.contains('youtu.be');
+  }
+
   @override
-  State<PremiumVideoPlayer> createState() => _PremiumVideoPlayerState();
+  Widget build(BuildContext context) {
+    if (_isYouTubeUrl(videoUrl)) {
+      return _YoutubeVideoPlayer(videoUrl: videoUrl);
+    } else {
+      return _ChewieVideoPlayer(videoUrl: videoUrl);
+    }
+  }
 }
 
-class _PremiumVideoPlayerState extends State<PremiumVideoPlayer> {
-  VideoPlayerController? _controller;
-  bool _isPlayStarted = false;
-  bool _isInitialized = false;
-  bool _isPlaying = false;
-  bool _showControls = true;
-  bool _isMuted = false;
-  double _volume = 1.0;
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
-  Timer? _controlsTimer;
+class _ChewieVideoPlayer extends StatefulWidget {
+  final String videoUrl;
+  const _ChewieVideoPlayer({required this.videoUrl});
 
-  late String _currentThumbnail;
+  @override
+  State<_ChewieVideoPlayer> createState() => _ChewieVideoPlayerState();
+}
+
+class _ChewieVideoPlayerState extends State<_ChewieVideoPlayer> {
+  late VideoPlayerController _videoPlayerController;
+  ChewieController? _chewieController;
 
   @override
   void initState() {
     super.initState();
-    _currentThumbnail = widget.thumbnailAsset;
+    _initializePlayer();
+  }
 
-    // Use passed controller in case of fullscreen routing hand-off
-    if (widget.externalController != null) {
-      _controller = widget.externalController;
-      _isPlayStarted = true;
-      _isInitialized = _controller!.value.isInitialized;
-      _isPlaying = _controller!.value.isPlaying;
-      _volume = _controller!.value.volume;
-      _isMuted = _volume == 0.0;
-      _position = _controller!.value.position;
-      _duration = _controller!.value.duration;
-      _controller!.addListener(_videoListener);
-      _startControlsTimeout();
-    }
+  Future<void> _initializePlayer() async {
+    _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    await _videoPlayerController.initialize();
+    _chewieController = ChewieController(
+      videoPlayerController: _videoPlayerController,
+      autoPlay: false,
+      looping: false,
+      aspectRatio: 16 / 9,
+      errorBuilder: (context, errorMessage) {
+        return Center(
+          child: Text(
+            errorMessage,
+            style: const TextStyle(color: Colors.white),
+          ),
+        );
+      },
+    );
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _controlsTimer?.cancel();
-    if (_controller != null) {
-      _controller!.removeListener(_videoListener);
-      // Only dispose if this widget owns and initialized the controller!
-      if (widget.externalController == null) {
-        _controller!.pause();
-        _controller!.dispose();
-      }
-    }
+    _videoPlayerController.dispose();
+    _chewieController?.dispose();
     super.dispose();
   }
 
-  void _videoListener() {
-    if (!mounted || _controller == null) return;
-    setState(() {
-      _position = _controller!.value.position;
-      _duration = _controller!.value.duration;
-      _isPlaying = _controller!.value.isPlaying;
-      _isInitialized = _controller!.value.isInitialized;
-    });
-  }
-
-  Future<void> _initializeAndPlay() async {
-    setState(() {
-      _isPlayStarted = true;
-    });
-
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-    _controller!.addListener(_videoListener);
-
-    try {
-      await _controller!.initialize();
-      await _controller!.play();
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-          _isPlaying = true;
-          _duration = _controller!.value.duration;
-        });
-        _startControlsTimeout();
-      }
-    } catch (e) {
-      debugPrint('Error initializing video: $e');
-    }
-  }
-
-  void _togglePlay() {
-    if (_controller == null || !_isInitialized) return;
-    if (_isPlaying) {
-      _controller!.pause();
-    } else {
-      _controller!.play();
-      _startControlsTimeout();
-    }
-    _resetControlsTimeout();
-  }
-
-  void _skip(int seconds) {
-    if (_controller == null || !_isInitialized) return;
-    final newPosition = _position + Duration(seconds: seconds);
-    if (newPosition < Duration.zero) {
-      _controller!.seekTo(Duration.zero);
-    } else if (newPosition > _duration) {
-      _controller!.seekTo(_duration);
-    } else {
-      _controller!.seekTo(newPosition);
-    }
-    _resetControlsTimeout();
-  }
-
-  void _setVolume(double val) {
-    if (_controller == null || !_isInitialized) return;
-    setState(() {
-      _volume = val;
-      _isMuted = val == 0.0;
-    });
-    _controller!.setVolume(val);
-    _resetControlsTimeout();
-  }
-
-  void _toggleMute() {
-    if (_controller == null || !_isInitialized) return;
-    if (_isMuted) {
-      _setVolume(1.0);
-    } else {
-      _setVolume(0.0);
-    }
-  }
-
-  void _startControlsTimeout() {
-    _controlsTimer?.cancel();
-    _controlsTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && _isPlaying) {
-        setState(() {
-          _showControls = false;
-        });
-      }
-    });
-  }
-
-  void _resetControlsTimeout() {
-    setState(() {
-      _showControls = true;
-    });
-    _startControlsTimeout();
-  }
-
-  void _toggleFullscreen() {
-    if (_controller == null || !_isInitialized) return;
-
-    if (widget.isFullscreenMode) {
-      Navigator.pop(context);
-    } else {
-      Navigator.push(
-        context,
-        CustomPageRoute(
-          page: FullscreenVideoPlayerScreen(
-            controller: _controller!,
-            videoUrl: widget.videoUrl,
-            thumbnailAsset: widget.thumbnailAsset,
-            thumbnailUrl: widget.thumbnailUrl,
-          ),
-        ),
-      ).then((_) {
-        // Enforce portrait and normal status bars on exit
-        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        if (mounted) {
-          setState(() {
-            _isPlaying = _controller!.value.isPlaying;
-            _position = _controller!.value.position;
-          });
-        }
-      });
-    }
-  }
-
-  String _formatDuration(Duration d) {
-    final minutes = d.inMinutes.toString().padLeft(2, '0');
-    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
-  /// Build thumbnail — network jika ada URL, fallback ke asset.
-  Widget _buildThumbnail() {
-    if (widget.thumbnailUrl != null && widget.thumbnailUrl!.isNotEmpty) {
-      return Image.network(
-        widget.thumbnailUrl!,
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(
-            _currentThumbnail,
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.cover,
-          );
-        },
+  @override
+  Widget build(BuildContext context) {
+    if (_chewieController != null && _chewieController!.videoPlayerController.value.isInitialized) {
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Chewie(controller: _chewieController!),
       );
     }
-    return Image.asset(
-      _currentThumbnail,
-      width: double.infinity,
-      height: double.infinity,
-      fit: BoxFit.cover,
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Container(
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      ),
     );
+  }
+}
+
+class _YoutubeVideoPlayer extends StatefulWidget {
+  final String videoUrl;
+  const _YoutubeVideoPlayer({required this.videoUrl});
+
+  @override
+  State<_YoutubeVideoPlayer> createState() => _YoutubeVideoPlayerState();
+}
+
+class _YoutubeVideoPlayerState extends State<_YoutubeVideoPlayer> {
+  late YoutubePlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final videoId = _extractYouTubeId(widget.videoUrl) ?? '';
+    _controller = YoutubePlayerController.fromVideoId(
+      videoId: videoId,
+      autoPlay: false,
+      params: YoutubePlayerParams(
+        showControls: true,
+        showFullscreenButton: true,
+      ),
+    );
+  }
+
+  String? _extractYouTubeId(String url) {
+    final Uri? uri = Uri.tryParse(url);
+    if (uri == null) return null;
+    if (uri.host.contains('youtu.be')) {
+      return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+    }
+    if (uri.host.contains('youtube.com')) {
+      if (uri.queryParameters.containsKey('v')) {
+        return uri.queryParameters['v'];
+      }
+      if (uri.pathSegments.contains('embed')) {
+        return uri.pathSegments.last;
+      }
+    }
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _controller.close();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: 16 / 9,
-      child: Container(
-        color: Colors.black,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // 1. VIDEO LAYER or PREVIEW THUMBNAIL
-            if (!_isInitialized)
-              Stack(
-                children: [
-                  _buildThumbnail(),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withValues(alpha: 0.6),
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.6),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                  if (_isPlayStarted)
-                    const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary,
-                      ),
-                    )
-                  else
-                    // Play Button
-                    Center(
-                      child: GestureDetector(
-                        onTap: _initializeAndPlay,
-                        child: Container(
-                          width: 68,
-                          height: 68,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.primaryBlue.withValues(alpha: 0.85),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primaryBlue.withValues(alpha: 0.35),
-                                blurRadius: 24,
-                                spreadRadius: 1,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              )
-            else
-              GestureDetector(
-                onTap: _resetControlsTimeout,
-                child: AspectRatio(
-                  aspectRatio: _controller!.value.aspectRatio,
-                  child: VideoPlayer(_controller!),
-                ),
-              ),
-
-            // 2. CONTROLS OVERLAY LAYER (Fades smoothly)
-            if (_isInitialized)
-              AnimatedOpacity(
-                opacity: _showControls ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: IgnorePointer(
-                  ignoring: !_showControls,
-                  child: Stack(
-                    children: [
-                      Container(
-                        color: Colors.black.withValues(alpha: 0.45),
-                      ),
-
-                      // Center Skip Back / Play / Skip Forward Buttons
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildOverlayCircleButton(
-                              icon: Icons.replay_10_rounded,
-                              onPressed: () => _skip(-10),
-                            ),
-                            const SizedBox(width: 24),
-                            GestureDetector(
-                              onTap: _togglePlay,
-                              child: Container(
-                                width: 56,
-                                height: 56,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white24,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _isPlaying
-                                      ? Icons.pause_rounded
-                                      : Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 24),
-                            _buildOverlayCircleButton(
-                              icon: Icons.forward_10_rounded,
-                              onPressed: () => _skip(10),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Top Volume slider row
-                      Positioned(
-                        top: 14,
-                        right: 14,
-                        child: Row(
-                          children: [
-                            GestureDetector(
-                              onTap: _toggleMute,
-                              child: Icon(
-                                _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 70,
-                              height: 24,
-                              child: SliderTheme(
-                                data: SliderTheme.of(context).copyWith(
-                                  trackHeight: 2,
-                                  thumbShape: const RoundSliderThumbShape(
-                                      enabledThumbRadius: 5),
-                                  overlayShape: const RoundSliderOverlayShape(
-                                      overlayRadius: 10),
-                                  activeTrackColor: Colors.white,
-                                  inactiveTrackColor: Colors.white30,
-                                  thumbColor: Colors.white,
-                                ),
-                                child: Slider(
-                                  value: _volume,
-                                  min: 0.0,
-                                  max: 1.0,
-                                  onChanged: _setVolume,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Bottom Control Panel (SeekBar + Times + Fullscreen Toggles)
-                      Positioned(
-                        bottom: 12,
-                        left: 16,
-                        right: 16,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Eco-green Progress seekbar
-                            SizedBox(
-                              height: 20,
-                              child: SliderTheme(
-                                data: SliderTheme.of(context).copyWith(
-                                  trackHeight: 4,
-                                  thumbShape: const RoundSliderThumbShape(
-                                      enabledThumbRadius: 6),
-                                  activeTrackColor: AppColors.primary,
-                                  inactiveTrackColor: Colors.white24,
-                                  thumbColor: Colors.white,
-                                  overlayColor: AppColors.primary.withValues(alpha: 0.2),
-                                  overlayShape: const RoundSliderOverlayShape(
-                                      overlayRadius: 14),
-                                ),
-                                child: Slider(
-                                  value: _position.inMilliseconds.toDouble(),
-                                  min: 0.0,
-                                  max: _duration.inMilliseconds.toDouble(),
-                                  onChanged: (val) {
-                                    _controller?.seekTo(
-                                      Duration(milliseconds: val.toInt()),
-                                    );
-                                    _resetControlsTimeout();
-                                  },
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            // Symmetrical Timer & Screen row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '${_formatDuration(_position)} / ${_formatDuration(_duration)}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'Plus Jakarta Sans',
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: _toggleFullscreen,
-                                  child: Icon(
-                                    widget.isFullscreenMode
-                                        ? Icons.fullscreen_exit_rounded
-                                        : Icons.fullscreen_rounded,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOverlayCircleButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: const BoxDecoration(
-          color: Colors.black38,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: Colors.white, size: 22),
-      ),
-    );
-  }
-}
-
-/// Landscape Fullscreen Video Route which wraps the PremiumVideoPlayer cleanly.
-class FullscreenVideoPlayerScreen extends StatefulWidget {
-  final VideoPlayerController controller;
-  final String videoUrl;
-  final String thumbnailAsset;
-  final String? thumbnailUrl;
-
-  const FullscreenVideoPlayerScreen({
-    super.key,
-    required this.controller,
-    required this.videoUrl,
-    required this.thumbnailAsset,
-    this.thumbnailUrl,
-  });
-
-  @override
-  State<FullscreenVideoPlayerScreen> createState() =>
-      _FullscreenVideoPlayerScreenState();
-}
-
-class _FullscreenVideoPlayerScreenState
-    extends State<FullscreenVideoPlayerScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // Enable landscape and full screen immersive system bars
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  }
-
-  @override
-  void dispose() {
-    // Re-enable portrait and normal system bars on exit
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        left: false,
-        right: false,
-        child: Center(
-          child: PremiumVideoPlayer(
-            videoUrl: widget.videoUrl,
-            thumbnailAsset: widget.thumbnailAsset,
-            thumbnailUrl: widget.thumbnailUrl,
-            externalController: widget.controller,
-            isFullscreenMode: true,
-          ),
-        ),
-      ),
+      child: YoutubePlayer(controller: _controller),
     );
   }
 }

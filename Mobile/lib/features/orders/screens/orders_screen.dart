@@ -27,9 +27,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   /// 0 = Ongoing (default), 1 = History
   late int _selectedTab;
   HistoryFilter _selectedFilter = HistoryFilter.semua;
-  String _selectedSubFilter = 'Semua';
-
-  List<HistoryItemModel> _allHistory = [];
+    List<HistoryItemModel> _allHistory = [];
   List<dynamic> _ongoingOrders = [];
   bool _isLoadingHistory = true;
   bool _isLoadingOngoing = true;
@@ -99,12 +97,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       if (item.type != HistoryType.pencairan) return true;
       final st = item.rawStatus?.toLowerCase() ?? 'completed';
       
-      if (_selectedSubFilter == 'Pending') return st == 'pending';
-      if (_selectedSubFilter == 'Processing') return st == 'processing';
-      if (_selectedSubFilter == 'Completed') return st == 'completed';
-      if (_selectedSubFilter == 'Rejected') return st == 'rejected';
-      
-      // If subfilter is 'Semua' (default), only show completed and rejected redemptions in History tab,
+      // Only show completed and rejected redemptions in History tab,
       // because pending & processing redemptions belong in the Order -> Ongoing tab!
       return st == 'completed' || st == 'rejected' || st == 'cancelled';
     }).toList();
@@ -222,9 +215,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       HistoryFilter.pencairanSaldo,
     ];
 
-    const subFilters = ['Semua', 'Pending', 'Processing', 'Completed', 'Rejected'];
-
-    return Column(
+        return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -243,35 +234,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 onTap: () {
                   setState(() {
                     _selectedFilter = filter;
-                    if (filter != HistoryFilter.pencairanSaldo) {
-                      _selectedSubFilter = 'Semua';
-                    }
-                  });
+                                      });
                 },
               );
             },
           ),
         ),
-        if (_selectedFilter == HistoryFilter.pencairanSaldo) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            height: (MediaQuery.of(context).size.height * 0.05).clamp(38.0, 48.0),
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: subFilters.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 0),
-              itemBuilder: (context, index) {
-                final sf = subFilters[index];
-                return FilterChipWidget(
-                  label: sf,
-                  isSelected: _selectedSubFilter == sf,
-                  onTap: () => setState(() => _selectedSubFilter = sf),
-                );
-              },
-            ),
-          ),
-        ],
       ],
     );
   }

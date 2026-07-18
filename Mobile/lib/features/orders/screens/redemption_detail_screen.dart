@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/repositories/order_repository.dart';
 import '../../orders/models/ongoing_order_model.dart';
 import '../../orders/models/history_item_model.dart';
+import '../../../core/constants/api_config.dart';
 
 class RedemptionDetailScreen extends StatefulWidget {
   final String redemptionId;
@@ -51,6 +52,8 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
             'status': widget.ongoingItem!.rawStatus ?? (widget.ongoingItem!.status == OngoingStatus.pending ? 'pending' : 'processing'),
             'created_at': widget.ongoingItem!.date,
             'admin_note': widget.ongoingItem!.adminNote,
+            'transfer_proof': null,
+            'rejection_reason': null,
           };
         } else if (widget.historyItem != null) {
           _data = {
@@ -65,6 +68,8 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
             'status': widget.historyItem!.rawStatus ?? 'completed',
             'created_at': widget.historyItem!.date,
             'admin_note': widget.historyItem!.adminNote,
+            'transfer_proof': widget.historyItem!.transferProof,
+            'rejection_reason': widget.historyItem!.rejectionReason,
           };
         }
         _isLoading = false;
@@ -142,9 +147,10 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
     final processedAt = _data?['processed_at']?.toString() ?? _data?['processing_at']?.toString();
     final completedAt = _data?['completed_at']?.toString();
     final adminNote = _data?['admin_note']?.toString();
+    final rejectionReason = _data?['rejection_reason']?.toString() ?? adminNote;
     final submittedAt = _data?['submitted_at']?.toString() ?? createdAt;
     final verifiedAt = _data?['verified_at']?.toString() ?? processedAt;
-    final proofUrl = _data?['transfer_proof_url']?.toString();
+    final proofUrl = _data?['transfer_proof']?.toString() ?? _data?['transfer_proof_url']?.toString();
     final trxNumber = _getOrFormatTrxNumber(_data, widget.redemptionId, createdAt);
     final estTime = _data?['estimated_processing_time']?.toString() ?? '1x24 Jam Kerja';
     final convRate = _data?['conversion_rate']?.toString() ?? (pts > 0 && amt > 0 ? '100 Poin = Rp ${((amt / pts) * 100).toStringAsFixed(0)}' : '100 Poin = Rp 1.000');
@@ -253,8 +259,8 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
                         const SizedBox(height: 20),
 
                         // Part 15: Admin Note (Color-coded)
-                        if (adminNote != null && adminNote.trim().isNotEmpty)
-                          _buildAdminNoteCard(adminNote.trim(), status),
+                        if (rejectionReason != null && rejectionReason.trim().isNotEmpty && status == 'rejected')
+                          _buildAdminNoteCard(rejectionReason.trim(), status),
 
                         // Section 1: Timeline Progress (Part 14)
                         _buildSectionCard(
@@ -472,113 +478,93 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
   }
 
   Widget _buildProofSection(String proofUrl) {
-    return Container(
-      margin: const EdgeInsets.only(top: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF8EF),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(LucideIcons.file_text, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 14),
-              const Text(
-                'Bukti Transfer',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => Dialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Bukti Transfer Admin',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () => Navigator.of(context).pop(),
-                              ),
-                            ],
-                          ),
+    return _buildSectionCard(
+      icon: LucideIcons.image,
+      title: 'Bukti Transfer',
+      child: GestureDetector(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (ctx) => Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: EdgeInsets.zero,
+              child: Stack(
+                children: [
+                  InteractiveViewer(
+                    panEnabled: true,
+                    minScale: 0.5,
+                    maxScale: 4,
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.black,
+                      child: Image.network(
+                        '${ApiConfig.baseUrl}/bank_sampah/$proofUrl',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Center(
+                          child: Text('Gagal memuat gambar', style: TextStyle(color: Colors.white)),
                         ),
-                        Flexible(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                            child: Image.network(
-                              proofUrl,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => const Padding(
-                                padding: EdgeInsets.all(24),
-                                child: Text('Gagal memuat gambar bukti transfer.'),
-                              ),
-                            ),
-                          ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 40,
+                    right: 20,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.network(
+                  '${ApiConfig.baseUrl}/bank_sampah/$proofUrl',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    padding: const EdgeInsets.all(40),
+                    color: const Color(0xFFF9FAFB),
+                    child: const Column(
+                      children: [
+                        Icon(LucideIcons.image_off, color: AppColors.textSoft, size: 40),
+                        SizedBox(height: 12),
+                        Text(
+                          'Gagal memuat gambar bukti',
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: AppColors.textSoft),
                         ),
                       ],
                     ),
                   ),
-                );
-              },
-              icon: const Icon(Icons.visibility_outlined, color: Colors.white, size: 18),
-              label: const Text(
-                'Lihat Bukti Transfer',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.maximize, color: Colors.white, size: 16),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

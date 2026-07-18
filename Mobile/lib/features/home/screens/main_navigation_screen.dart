@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../shared/widgets/bottom_navbar.dart';
@@ -59,6 +60,8 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
   int _ordersInitialTabIndex = 0;
   bool _autoOpenEditAddress = false;
   final _notificationRepository = NotificationRepository();
+  Timer? _notificationPollingTimer;
+  int _lastUnreadCount = 0;
 
   List<Widget> get _screens => [
     const HomeScreen(),
@@ -80,6 +83,17 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     _currentIndex = widget.initialIndex.clamp(0, 3);
     _autoOpenEditAddress = widget.autoOpenEditAddress;
     _notificationRepository.addListener(_onNotificationChange);
+    _startNotificationPolling();
+  }
+  
+  void _startNotificationPolling() {
+    // Poll every 15 seconds to simulate real-time updates since FCM is not configured
+    _notificationPollingTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      if (!mounted) return;
+      try {
+        await _notificationRepository.fetchNotifications();
+      } catch (_) {}
+    });
   }
 
   @override
@@ -87,12 +101,46 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     if (instance == this) {
       instance = null;
     }
+    _notificationPollingTimer?.cancel();
     _notificationRepository.removeListener(_onNotificationChange);
     super.dispose();
   }
 
   void _onNotificationChange() {
     if (mounted) {
+      final currentUnread = _notificationRepository.unreadCount;
+      if (currentUnread > _lastUnreadCount && _lastUnreadCount > 0) {
+        // Show in-app popup for new notification
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.notifications_active, color: Colors.white),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Anda memiliki notifikasi baru!',
+                    style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    _onTabSelected(2); // Go to notification tab
+                  },
+                  child: const Text('Lihat', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      _lastUnreadCount = currentUnread;
       setState(() {});
     }
   }

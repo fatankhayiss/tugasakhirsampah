@@ -140,6 +140,23 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   Row(
                     children: [
                       Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          widget.article.kategori.toUpperCase(),
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
                         padding: const EdgeInsets.all(8),
                         decoration: const BoxDecoration(
                           color: AppColors.softGreen,

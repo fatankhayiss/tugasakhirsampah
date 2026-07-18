@@ -60,13 +60,25 @@ $create_table_sql = "CREATE TABLE IF NOT EXISTS reward_redemptions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 mysqli_query($koneksi, $create_table_sql);
 
-@mysqli_query($koneksi, "ALTER TABLE reward_redemptions ADD COLUMN transaction_code VARCHAR(50) NULL UNIQUE AFTER id");
-@mysqli_query($koneksi, "ALTER TABLE reward_redemptions ADD COLUMN account_holder_name VARCHAR(150) NULL AFTER account_name");
-@mysqli_query($koneksi, "ALTER TABLE reward_redemptions ADD COLUMN admin_id INT NULL AFTER admin_note");
-@mysqli_query($koneksi, "UPDATE reward_redemptions SET account_holder_name = account_name WHERE (account_holder_name IS NULL OR account_holder_name = '') AND account_name IS NOT NULL");
-@mysqli_query($koneksi, "UPDATE reward_redemptions SET account_name = account_holder_name WHERE (account_name IS NULL OR account_name = '') AND account_holder_name IS NOT NULL");
-@mysqli_query($koneksi, "UPDATE reward_redemptions SET transaction_code = CONCAT('RDM-', DATE_FORMAT(created_at, '%Y%m%d'), '-', LPAD(id, 6, '0')) WHERE transaction_code IS NULL OR transaction_code = ''");
-@mysqli_query($koneksi, "ALTER TABLE pengguna ADD COLUMN reserved_saldo DOUBLE DEFAULT 0.00");
+$migrations = [
+    "ALTER TABLE reward_redemptions ADD COLUMN transaction_code VARCHAR(50) NULL UNIQUE AFTER id",
+    "ALTER TABLE reward_redemptions ADD COLUMN account_holder_name VARCHAR(150) NULL AFTER account_name",
+    "ALTER TABLE reward_redemptions ADD COLUMN admin_id INT NULL AFTER admin_note",
+    "ALTER TABLE reward_redemptions ADD COLUMN transfer_proof VARCHAR(255) NULL AFTER status",
+    "ALTER TABLE reward_redemptions ADD COLUMN rejection_reason TEXT NULL AFTER admin_note",
+    "UPDATE reward_redemptions SET account_holder_name = account_name WHERE (account_holder_name IS NULL OR account_holder_name = '') AND account_name IS NOT NULL",
+    "UPDATE reward_redemptions SET account_name = account_holder_name WHERE (account_name IS NULL OR account_name = '') AND account_holder_name IS NOT NULL",
+    "UPDATE reward_redemptions SET transaction_code = CONCAT('RDM-', DATE_FORMAT(created_at, '%Y%m%d'), '-', LPAD(id, 6, '0')) WHERE transaction_code IS NULL OR transaction_code = ''",
+    "ALTER TABLE pengguna ADD COLUMN reserved_saldo DOUBLE DEFAULT 0.00"
+];
+
+foreach ($migrations as $query) {
+    try {
+        @mysqli_query($koneksi, $query);
+    } catch (Exception $e) {
+        // Ignore duplicate column errors or other migration errors
+    }
+}
 
 mysqli_query($koneksi, "CREATE TABLE IF NOT EXISTS redemption_audit_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -220,6 +232,8 @@ if ($action === 'history') {
             'estimated_amount' => floatval($row['estimated_amount']),
             'status' => $row['status'],
             'admin_note' => $row['admin_note'],
+            'transfer_proof' => $row['transfer_proof'],
+            'rejection_reason' => $row['rejection_reason'],
             'created_at' => $row['created_at'],
             'processed_at' => $row['processed_at'],
             'completed_at' => $row['completed_at']
@@ -266,7 +280,7 @@ if ($action === 'request') {
 
     $conversion_rate = 1;
     $estimated_amount = $redeem_point * $conversion_rate;
-    $status = 'pending';
+    $status = 'processing'; // Langsung diproses sesuai requirement baru
 
     mysqli_begin_transaction($koneksi);
     try {
@@ -356,6 +370,8 @@ if ($action === 'detail') {
         'estimated_amount' => floatval($row['estimated_amount']),
         'status' => $row['status'],
         'admin_note' => $row['admin_note'],
+        'transfer_proof' => $row['transfer_proof'],
+        'rejection_reason' => $row['rejection_reason'],
         'created_at' => $row['created_at'],
         'processed_at' => $row['processed_at'],
         'completed_at' => $row['completed_at']

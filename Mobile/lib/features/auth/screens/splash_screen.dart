@@ -319,57 +319,62 @@ class _SplashScreenState extends State<SplashScreen>
                       children: [
                         SizedBox(height: vGapSmall),
                         // Centered Logo & Brand Name at the top
-                        FadeTransition(
-                          opacity: _logoFadeAnimation,
-                          child: AnimatedBuilder(
-                            animation: _logoSlideAnimation,
-                            builder: (context, child) {
-                              return Transform.translate(
-                                offset: Offset(0, _logoSlideAnimation.value),
-                                child: ScaleTransition(
-                                  scale: _logoScaleAnimation,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: EdgeInsets.all((minDim * 0.035).clamp(8.0, 14.0)),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.white.withValues(alpha: 0.12),
-                                          border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.15),
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(0xFF0F4227).withValues(alpha: 0.10),
-                                              blurRadius: 16,
-                                              offset: const Offset(0, 4),
+                        SizedBox(
+                          width: double.infinity,
+                          child: Center(
+                            child: FadeTransition(
+                              opacity: _logoFadeAnimation,
+                              child: AnimatedBuilder(
+                                animation: _logoSlideAnimation,
+                                builder: (context, child) {
+                                  return Transform.translate(
+                                    offset: Offset(0, _logoSlideAnimation.value),
+                                    child: ScaleTransition(
+                                      scale: _logoScaleAnimation,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all((minDim * 0.035).clamp(8.0, 14.0)),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white.withValues(alpha: 0.12),
+                                              border: Border.all(
+                                                color: Colors.white.withValues(alpha: 0.15),
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: const Color(0xFF0F4227).withValues(alpha: 0.10),
+                                                  blurRadius: 16,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                        child: Image.asset(
-                                          AppImages.introLogo,
-                                          width: maxLogoSize,
-                                          height: maxLogoSize,
-                                          fit: BoxFit.contain,
-                                        ),
+                                            child: Image.asset(
+                                              AppImages.introLogo,
+                                              width: maxLogoSize,
+                                              height: maxLogoSize,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                          SizedBox(height: vGapSmall),
+                                          Text(
+                                            'I-Trashy',
+                                            style: TextStyle(
+                                              fontSize: (constraints.maxWidth * 0.052).clamp(16.0, 22.0),
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                              letterSpacing: -0.5,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      SizedBox(height: vGapSmall),
-                                      Text(
-                                        'I-Trashy',
-                                        style: TextStyle(
-                                          fontSize: (constraints.maxWidth * 0.052).clamp(16.0, 22.0),
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.white,
-                                          letterSpacing: -0.5,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
                         ),
 

@@ -54,13 +54,19 @@ $allowed_pages = [
 
     // Edukasi (Artikel/Foto/Video)
     'edukasi/data' => 'modules/edukasi/index.php',
-    'edukasi/tambah' => 'modules/edukasi/tambah.php',
-    'edukasi/edit' => 'modules/edukasi/edit.php',
+    'edukasi/artikel_tambah' => 'modules/edukasi/artikel_tambah.php',
+    'edukasi/artikel_edit' => 'modules/edukasi/artikel_edit.php',
+    'edukasi/video_tambah' => 'modules/edukasi/video_tambah.php',
+    'edukasi/video_edit' => 'modules/edukasi/video_edit.php',
     'edukasi/proses_simpan' => 'modules/edukasi/proses_simpan.php',
     'edukasi/hapus' => 'modules/edukasi/hapus.php',
 
     // Orders Penjemputan (dari Mobile/Driver)
     'orders/data' => 'modules/orders/index.php',
+
+    // Reward / Tukar Poin
+    'reward/index' => 'modules/reward/index.php',
+    'reward/detail' => 'modules/reward/detail.php',
 
     // Monitor AI Scan
     'monitor_ai/index' => 'modules/monitor_ai/index.php',

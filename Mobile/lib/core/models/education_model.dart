@@ -7,6 +7,7 @@ class ArticleModel {
   final String timeAgo;
   final String description;
   final String? konten;
+  final String kategori;
 
   ArticleModel({
     required this.id,
@@ -17,6 +18,7 @@ class ArticleModel {
     required this.timeAgo,
     this.description = 'Langkah penting dalam mengurangi dampak negatif sampah terhadap lingkungan sekitar.',
     this.konten,
+    this.kategori = 'Umum',
   });
 }
 
@@ -45,6 +47,7 @@ class VideoModel {
   final String timeAgo;
   final String? videoUrl;
   final String? konten;
+  final String kategori;
 
   VideoModel({
     required this.id,
@@ -55,5 +58,6 @@ class VideoModel {
     required this.timeAgo,
     this.videoUrl,
     this.konten,
+    this.kategori = 'Umum',
   });
 }

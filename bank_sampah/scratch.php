@@ -1,0 +1,1 @@
+<?php $conn = new mysqli("localhost", "root", "", "db_banksampah"); $t = ["pengguna", "reward_redemptions", "redemption_audit_logs", "transaksi"]; foreach($t as $table) { echo "\nTable: $table\n"; $res = $conn->query("DESCRIBE $table"); while($row = $res->fetch_assoc()) { echo $row["Field"] . " (" . $row["Type"] . ")\n"; } } ?>

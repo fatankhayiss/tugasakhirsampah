@@ -896,11 +896,35 @@ class _TransferPointPageState extends State<TransferPointPage>
             return;
           }
 
-          if (_amountController.text.trim().isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Jumlah poin yang ditukar wajib diisi.'),
-                backgroundColor: Colors.orange,
+          if (_amountController.text.isEmpty) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+                    SizedBox(width: 8),
+                    Text(
+                      'Input Kosong',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                    ),
+                  ],
+                ),
+                content: const Text(
+                  'Jumlah poin yang ditukar wajib diisi.',
+                  style: TextStyle(fontSize: 14, height: 1.5, color: AppColors.textDark),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    child: const Text('OK'),
+                  ),
+                ],
               ),
             );
             return;
@@ -985,7 +1009,7 @@ class _TransferPointPageState extends State<TransferPointPage>
             ),
           );
 
-          final result = await OrderRepository.instance.createRedemptionRequest(
+          final response = await OrderRepository.instance.createRedemptionRequest(
             destinationType: destType,
             provider: _selectedProvider!,
             accountName: _nameController.text.trim(),
@@ -997,7 +1021,8 @@ class _TransferPointPageState extends State<TransferPointPage>
             Navigator.pop(context); // Dismiss loading spinner
           }
 
-          if (result != null) {
+          if (response.success && response.data != null) {
+            final result = response.data as Map<String, dynamic>;
             final trxCode = result['transaction_code']?.toString() ??
                 result['transaction_number']?.toString() ??
                 'RDM-NEW';
@@ -1006,7 +1031,7 @@ class _TransferPointPageState extends State<TransferPointPage>
               NotificationModel(
                 id: 'transfer_${DateTime.now().millisecondsSinceEpoch}',
                 title: 'Tukar Poin Diterima',
-                message: 'Permintaan penukaran $pts Poin dengan kode $trxCode telah dikirim dan dalam status Menunggu (Pending).',
+                message: 'Permintaan penukaran $pts Poin dengan kode $trxCode telah dikirim dan dalam status Diproses.',
                 time: 'Baru saja',
                 type: 'transfer',
                 isRead: false,
@@ -1026,13 +1051,13 @@ class _TransferPointPageState extends State<TransferPointPage>
                     Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 26),
                     SizedBox(width: 8),
                     Text(
-                      'Berhasil',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                      'Permintaan Berhasil Dikirim',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                     ),
                   ],
                 ),
                 content: const Text(
-                  'Permintaan penukaran poin berhasil dikirim.\n\nPermintaan Anda akan diproses oleh Admin.',
+                  'Permintaan penukaran poin Anda telah berhasil dikirim.\n\nPermintaan akan diproses oleh Admin.\n\nSilakan menunggu hingga proses verifikasi selesai.',
                   style: TextStyle(fontSize: 14, height: 1.5, color: AppColors.textDark),
                 ),
                 actions: [
@@ -1052,10 +1077,36 @@ class _TransferPointPageState extends State<TransferPointPage>
             );
           } else {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Gagal memproses penukaran poin. Pastikan saldo poin Anda mencukupi dan koneksi stabil.'),
-                  backgroundColor: Colors.red,
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  title: const Row(
+                    children: [
+                      Icon(Icons.error_outline_rounded, color: Colors.red, size: 24),
+                      SizedBox(width: 8),
+                      Text(
+                        'Pengajuan Gagal',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                      ),
+                    ],
+                  ),
+                  content: Text(
+                    response.message.isNotEmpty 
+                        ? response.message 
+                        : 'Terjadi kesalahan saat memproses permintaan.',
+                    style: const TextStyle(fontSize: 14, height: 1.5, color: AppColors.textDark),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      child: const Text('Tutup'),
+                    ),
+                  ],
                 ),
               );
             }
@@ -1066,11 +1117,7 @@ class _TransferPointPageState extends State<TransferPointPage>
           height: 55,
           width: double.infinity,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.secondary],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
+            color: AppColors.primary,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(

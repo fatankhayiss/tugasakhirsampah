@@ -15,7 +15,6 @@ class NotificationRepository extends ChangeNotifier {
 
   List<NotificationModel> _notifications = [];
   int _unreadCount = 0;
-  bool _loaded = false;
 
   int get unreadCount => _unreadCount;
 
@@ -26,7 +25,9 @@ class NotificationRepository extends ChangeNotifier {
       if (response.success && response.data != null) {
         _unreadCount = response.data['unread_count'] ?? 0;
         final items = response.data['items'] as List? ?? [];
+        
         _notifications = items.map<NotificationModel>((item) {
+          final dt = DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
           return NotificationModel(
             id: item['id'].toString(),
             title: item['judul'] ?? '',
@@ -34,30 +35,25 @@ class NotificationRepository extends ChangeNotifier {
             time: _formatTimeAgo(item['created_at'] ?? ''),
             type: item['tipe'] ?? 'info',
             isRead: item['is_read'] == true,
+            createdAt: dt,
+            priority: item['priority'] ?? item['prioritas'], // Handling possible priority fields
           );
         }).toList();
-        _loaded = true;
+
+        // Sort descending by date
+        _notifications.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+
         notifyListeners();
         return _notifications;
+      } else {
+        throw Exception(response.message.isEmpty ? 'Gagal memuat notifikasi' : response.message);
       }
-    } catch (_) {}
-
-    // Fallback if API fails and no data loaded yet
-    if (!_loaded) {
-      _notifications = _getFallbackNotifications();
-      _unreadCount = _notifications.where((n) => !n.isRead).length;
-      _loaded = true;
-      notifyListeners();
+    } catch (e) {
+      throw Exception('Gagal memuat notifikasi: $e');
     }
-    return _notifications;
   }
 
   List<NotificationModel> getNotifications() {
-    if (!_loaded) {
-      // Trigger async fetch but return fallback immediately
-      fetchNotifications();
-      return _getFallbackNotifications();
-    }
     return _notifications;
   }
 
@@ -76,6 +72,8 @@ class NotificationRepository extends ChangeNotifier {
         type: notif.type,
         isRead: true,
         imageAsset: notif.imageAsset,
+        createdAt: notif.createdAt,
+        priority: notif.priority,
       );
     }).toList();
     _unreadCount = 0;
@@ -100,6 +98,8 @@ class NotificationRepository extends ChangeNotifier {
           type: notif.type,
           isRead: true,
           imageAsset: notif.imageAsset,
+          createdAt: notif.createdAt,
+          priority: notif.priority,
         );
       }
       return notif;
@@ -163,6 +163,7 @@ class NotificationRepository extends ChangeNotifier {
         time: 'Baru saja',
         type: status.toLowerCase(),
         isRead: false,
+        createdAt: DateTime.now(),
       ),
     );
   }
@@ -209,61 +210,9 @@ class NotificationRepository extends ChangeNotifier {
         time: 'Baru saja',
         type: 'transfer',
         isRead: false,
+        createdAt: DateTime.now(),
       ),
     );
-  }
-
-  List<NotificationModel> _getFallbackNotifications() {
-    return [
-      NotificationModel(
-        id: 'ord_completed_01',
-        title: 'Setoran Selesai! Poin Ditambahkan',
-        message: 'Proses validasi selesai. Poin reward +14.500 telah resmi masuk ke saldo Bank Sampah Bersinar Anda.',
-        time: '1 jam lalu',
-        type: 'completed',
-        isRead: false,
-      ),
-      NotificationModel(
-        id: 'ord_validating_01',
-        title: 'Proses Penimbangan & Validasi',
-        message: 'Petugas gudang sedang melakukan penimbangan fisik dan verifikasi kualitas sampah setoran Anda.',
-        time: '3 jam lalu',
-        type: 'validating',
-        isRead: false,
-      ),
-      NotificationModel(
-        id: 'ord_picked_up_01',
-        title: 'Sampah Berhasil Dijemput',
-        message: 'Sampah Anda telah diangkut oleh driver dan sedang dalam perjalanan menuju gudang Bank Sampah.',
-        time: '4 jam lalu',
-        type: 'picked_up',
-        isRead: true,
-      ),
-      NotificationModel(
-        id: 'ord_on_the_way_01',
-        title: 'Driver Sedang Menuju Lokasi',
-        message: 'Driver dalam perjalanan menuju alamat penjemputan. Estimasi tiba 10-15 menit lagi.',
-        time: '5 jam lalu',
-        type: 'on_the_way',
-        isRead: true,
-      ),
-      NotificationModel(
-        id: 'ord_accepted_01',
-        title: 'Pesanan Diterima & Driver Ditugaskan',
-        message: 'Driver Bersinar #104 telah ditugaskan dan bersiap menuju lokasi penjemputan Anda.',
-        time: '6 jam lalu',
-        type: 'accepted',
-        isRead: true,
-      ),
-      NotificationModel(
-        id: 'ord_pending_01',
-        title: 'Menunggu Konfirmasi Admin',
-        message: 'Permintaan setoran sampah Anda telah dikirim dan sedang menunggu verifikasi serta penugasan driver.',
-        time: '1 hari lalu',
-        type: 'pending',
-        isRead: true,
-      ),
-    ];
   }
 
   String _formatTimeAgo(String dateStr) {

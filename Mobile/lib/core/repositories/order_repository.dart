@@ -121,7 +121,7 @@ class OrderRepository {
   }
 
   /// Create a reward redemption request (Tukar Poin)
-  Future<Map<String, dynamic>?> createRedemptionRequest({
+  Future<ApiResponse> createRedemptionRequest({
     required String destinationType,
     required String provider,
     required String accountName,
@@ -145,10 +145,11 @@ class OrderRepository {
           redemptionId: data['id']?.toString() ?? 'NEW',
           status: 'pending',
         );
-        return data;
       }
-    } catch (_) {}
-    return null;
+      return response;
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
+    }
   }
 
   /// Fetch ongoing redemptions (status pending or processing)
@@ -161,10 +162,9 @@ class OrderRepository {
       if (response.success && response.data != null) {
         final items = response.data['items'] as List? ?? [];
         return items.map<OngoingOrderModel>((item) {
-          final rawStatus = item['status']?.toString() ?? 'pending';
-          final OngoingStatus mappedStatus = rawStatus == 'pending'
-              ? OngoingStatus.pending
-              : OngoingStatus.processing;
+          final rawStatus = item['status']?.toString() ?? 'processing';
+          // Force both pending and processing to 'Diproses' in the new workflow
+          final OngoingStatus mappedStatus = OngoingStatus.processing;
           final pts = (item['redeem_point'] as num?)?.toInt() ?? 0;
           final amt = (item['estimated_amount'] as num?)?.toDouble() ?? 0.0;
 
@@ -259,7 +259,7 @@ class OrderRepository {
     } catch (_) {}
 
     try {
-      final response = await _api.get(ApiConfig.reward, queryParams: {'action': 'history'});
+      final response = await _api.get(ApiConfig.reward, queryParams: {'action': 'history', 'status': 'completed,rejected'});
       if (response.success && response.data != null) {
         final items = response.data['items'] as List? ?? [];
         for (final item in items) {
@@ -267,10 +267,6 @@ class OrderRepository {
           String statusLabel;
           if (rawStatus == 'rejected') {
             statusLabel = 'Ditolak';
-          } else if (rawStatus == 'processing') {
-            statusLabel = 'Diproses';
-          } else if (rawStatus == 'pending') {
-            statusLabel = 'Menunggu';
           } else {
             statusLabel = 'Selesai';
           }
@@ -294,6 +290,8 @@ class OrderRepository {
               adminNote: item['admin_note']?.toString(),
               rawStatus: rawStatus,
               transactionCode: item['transaction_code']?.toString() ?? item['transaction_number']?.toString(),
+              transferProof: item['transfer_proof']?.toString(),
+              rejectionReason: item['rejection_reason']?.toString(),
             ),
           );
         }

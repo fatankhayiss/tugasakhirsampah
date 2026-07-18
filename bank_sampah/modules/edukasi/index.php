@@ -40,9 +40,14 @@ $res = mysqli_query($koneksi, $sql);
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Edukasi</h1>
         <?php if ($can_manage): ?>
-        <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/tambah" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">
-            <i class="fas fa-plus mr-2"></i> Tambah Artikel
-        </a>
+        <div class="flex space-x-3">
+            <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/video_tambah" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">
+                <i class="fas fa-video mr-2"></i> Tambah Video
+            </a>
+            <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/artikel_tambah" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition">
+                <i class="fas fa-file-alt mr-2"></i> Tambah Artikel
+            </a>
+        </div>
         <?php endif; ?>
     </div>
 
@@ -89,10 +94,11 @@ $res = mysqli_query($koneksi, $sql);
                             <a href="#" class="text-sky-700 hover:underline text-sm" onclick="openEdukasiModal(<?php echo (int)$row['id_edukasi']; ?>)">Baca selengkapnya</a>
                             <?php if ($can_manage): ?>
                             <div class="space-x-3 text-sm">
-                                <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/edit&id=<?php echo (int)$row['id_edukasi']; ?>" class="text-indigo-600 hover:text-indigo-900"><i class="fas fa-edit"></i> Edit</a>
+                                <?php $edit_route = ($video_url || $video_path) ? 'video_edit' : 'artikel_edit'; ?>
+                                <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/<?php echo $edit_route; ?>&id=<?php echo (int)$row['id_edukasi']; ?>" class="text-indigo-600 hover:text-indigo-900"><i class="fas fa-edit"></i> Edit</a>
                                 <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/hapus&id=<?php echo (int)$row['id_edukasi']; ?>" 
                                    class="text-red-600 hover:text-red-900 btn-hapus" 
-                                   data-pesan="Apakah Anda yakin ingin menghapus artikel ini?"><i class="fas fa-trash"></i> Hapus</a>
+                                   data-pesan="Apakah Anda yakin ingin menghapus konten ini?"><i class="fas fa-trash"></i> Hapus</a>
                             </div>
                             <?php endif; ?>
                         </div>

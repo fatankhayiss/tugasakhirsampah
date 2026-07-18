@@ -6,6 +6,8 @@ class NotificationModel {
   final String type; // 'order', 'promo', 'info', 'achievement'
   final bool isRead;
   final String? imageAsset;
+  final DateTime? createdAt;
+  final String? priority;
 
   NotificationModel({
     required this.id,
@@ -15,5 +17,7 @@ class NotificationModel {
     required this.type,
     this.isRead = false,
     this.imageAsset,
+    this.createdAt,
+    this.priority,
   });
 }

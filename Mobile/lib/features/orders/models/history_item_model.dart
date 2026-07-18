@@ -63,6 +63,8 @@ class HistoryItemModel {
   final String? adminNote;
   final String? rawStatus;
   final String? transactionCode;
+  final String? transferProof;
+  final String? rejectionReason;
 
   const HistoryItemModel({
     required this.id,
@@ -80,5 +82,7 @@ class HistoryItemModel {
     this.adminNote,
     this.rawStatus,
     this.transactionCode,
+    this.transferProof,
+    this.rejectionReason,
   });
 }

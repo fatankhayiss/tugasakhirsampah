@@ -87,6 +87,7 @@ if (!isset($_SESSION['admin_logged_in']) && $page !== 'login' && $page !== 'pros
         <a href="admin.php?page=nasabah_list" class="<?php echo (strpos($page, 'nasabah') === 0) ? 'active' : ''; ?>">Kelola Nasabah</a>
         <a href="admin.php?page=setor_sampah" class="<?php echo ($page === 'setor_sampah') ? 'active' : ''; ?>">Input Setoran</a>
         <a href="admin.php?page=jenis_sampah" class="<?php echo ($page === 'jenis_sampah') ? 'active' : ''; ?>">Jenis Sampah</a>
+        <a href="admin.php?page=edukasi_list" class="<?php echo (strpos($page, 'edukasi') === 0) ? 'active' : ''; ?>">Kelola Edukasi</a>
         <a href="admin.php?page=laporan" class="<?php echo ($page === 'laporan') ? 'active' : ''; ?>">Laporan</a>
         <a href="admin.php?page=logout">Logout (<?php echo htmlspecialchars($_SESSION['admin_username']); ?>)</a>
     </nav>
@@ -304,6 +305,253 @@ switch ($page) {
         // Ambil ID dari GET, proses hapus, redirect dengan pesan
         break;
 
+
+    // --- Manajemen Edukasi ---
+    case 'edukasi_list':
+        if (!isset($_SESSION['admin_logged_in'])) { header('Location: admin.php?page=login'); exit; }
+        $sql = "SELECT e.*, p.nama_lengkap AS author FROM edukasi e LEFT JOIN pengguna p ON e.author_id = p.id_pengguna ORDER BY e.created_at DESC";
+        $res = mysqli_query($conn, $sql);
+        ?>
+        <h2 class="admin-title">Daftar Edukasi</h2>
+        <p>
+            <a href="admin.php?page=artikel_tambah" class="btn btn-primary">+ Tambah Artikel</a>
+            <a href="admin.php?page=video_tambah" class="btn btn-primary" style="margin-left: 8px;">+ Tambah Video</a>
+        </p>
+        
+        <?php if (mysqli_num_rows($res) == 0): ?>
+            <p class="message info">Belum ada data edukasi.</p>
+        <?php else: ?>
+            <div class="table-responsive-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Tipe</th>
+                            <th>Judul</th>
+                            <th>Kategori</th>
+                            <th>Status</th>
+                            <th>Tanggal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = mysqli_fetch_assoc($res)): 
+                            $is_video = (!empty($row['video_url']) || !empty($row['video_path']));
+                        ?>
+                        <tr>
+                            <td><?php echo $is_video ? 'Video' : 'Artikel'; ?></td>
+                            <td><?php echo htmlspecialchars($row['judul']); ?></td>
+                            <td><?php echo htmlspecialchars($row['kategori']); ?></td>
+                            <td>
+                                <?php if ($row['status'] == 'published'): ?>
+                                    <span style="color: green; font-weight: bold;">Published</span>
+                                <?php else: ?>
+                                    <span style="color: gray;">Draft</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo date('d M Y', strtotime($row['created_at'])); ?></td>
+                            <td class="actions">
+                                <?php $edit_page = $is_video ? 'video_edit' : 'artikel_edit'; ?>
+                                <a href="admin.php?page=<?php echo $edit_page; ?>&id=<?php echo $row['id_edukasi']; ?>" class="btn btn-warning btn-sm">Edit</a>
+                                <a href="admin.php?page=edukasi_hapus&id=<?php echo $row['id_edukasi']; ?>" class="btn btn-danger btn-sm btn-hapus">Hapus</a>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+        <?php
+        break;
+
+    case 'artikel_tambah':
+    case 'artikel_edit':
+        if (!isset($_SESSION['admin_logged_in'])) { header('Location: admin.php?page=login'); exit; }
+        
+        $is_edit = ($page === 'artikel_edit');
+        $id = $is_edit ? (int)$_GET['id'] : 0;
+        $row = null;
+        if ($is_edit) {
+            $res = mysqli_query($conn, "SELECT * FROM edukasi WHERE id_edukasi = $id");
+            $row = mysqli_fetch_assoc($res);
+        }
+        ?>
+        <h2 class="admin-title"><?php echo $is_edit ? 'Edit' : 'Tambah'; ?> Artikel</h2>
+        <form class="form-admin" method="POST" action="modules/api/edukasi.php" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="<?php echo $is_edit ? 'update' : 'create'; ?>">
+            <?php if ($is_edit): ?>
+            <input type="hidden" name="id" value="<?php echo $id; ?>">
+            <input type="hidden" name="gambar_existing" value="<?php echo htmlspecialchars($row['gambar'] ?? ''); ?>">
+            <?php endif; ?>
+            <input type="hidden" name="author_id" value="1">
+
+            <div class="form-group">
+                <label>Judul:</label>
+                <input type="text" name="judul" value="<?php echo $is_edit ? htmlspecialchars($row['judul']) : ''; ?>" required>
+            </div>
+            <div class="form-group">
+                <label>Kategori:</label>
+                <input type="text" name="kategori" value="<?php echo $is_edit ? htmlspecialchars($row['kategori']) : 'Umum'; ?>" required>
+            </div>
+            <div class="form-group">
+                <label>Status:</label>
+                <select name="status">
+                    <option value="draft" <?php echo ($is_edit && $row['status'] == 'draft') ? 'selected' : ''; ?>>Draft</option>
+                    <option value="published" <?php echo ($is_edit && $row['status'] == 'published') ? 'selected' : ''; ?>>Published</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Thumbnail Image (Opsional):</label>
+                <input type="file" name="gambar" accept="image/*">
+                <?php if ($is_edit && !empty($row['gambar'])): ?>
+                    <small>Sudah ada gambar (upload baru untuk mengganti).</small>
+                <?php endif; ?>
+            </div>
+            
+            <div class="form-group">
+                <label>Konten Teks Lengkap:</label>
+                <textarea name="konten" required style="min-height:200px;"><?php echo $is_edit ? htmlspecialchars($row['konten']) : ''; ?></textarea>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="submitEdukasi(this.form)">Simpan Artikel</button>
+            <a href="admin.php?page=edukasi_list" class="btn" style="background-color:#6c757d; color:white; margin-left:10px;">Batal</a>
+        </form>
+        <script>
+            function submitEdukasi(form) {
+                var formData = new FormData(form);
+                fetch(form.action, { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire('Sukses', data.message, 'success').then(() => {
+                            window.location.href = 'admin.php?page=edukasi_list';
+                        });
+                    } else {
+                        Swal.fire('Gagal', data.message, 'error');
+                    }
+                }).catch(e => {
+                    Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                });
+            }
+        </script>
+        <?php
+        break;
+
+    case 'video_tambah':
+    case 'video_edit':
+        if (!isset($_SESSION['admin_logged_in'])) { header('Location: admin.php?page=login'); exit; }
+        
+        $is_edit = ($page === 'video_edit');
+        $id = $is_edit ? (int)$_GET['id'] : 0;
+        $row = null;
+        if ($is_edit) {
+            $res = mysqli_query($conn, "SELECT * FROM edukasi WHERE id_edukasi = $id");
+            $row = mysqli_fetch_assoc($res);
+        }
+        ?>
+        <h2 class="admin-title"><?php echo $is_edit ? 'Edit' : 'Tambah'; ?> Video</h2>
+        <form class="form-admin" method="POST" action="modules/api/edukasi.php" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="<?php echo $is_edit ? 'update' : 'create'; ?>">
+            <?php if ($is_edit): ?>
+            <input type="hidden" name="id" value="<?php echo $id; ?>">
+            <input type="hidden" name="gambar_existing" value="<?php echo htmlspecialchars($row['gambar'] ?? ''); ?>">
+            <input type="hidden" name="video_path_existing" value="<?php echo htmlspecialchars($row['video_path'] ?? ''); ?>">
+            <?php endif; ?>
+            <input type="hidden" name="author_id" value="1">
+
+            <div class="form-group">
+                <label>Judul Video:</label>
+                <input type="text" name="judul" value="<?php echo $is_edit ? htmlspecialchars($row['judul']) : ''; ?>" required>
+            </div>
+            <div class="form-group">
+                <label>Kategori:</label>
+                <input type="text" name="kategori" value="<?php echo $is_edit ? htmlspecialchars($row['kategori']) : 'Umum'; ?>" required>
+            </div>
+            <div class="form-group">
+                <label>Status:</label>
+                <select name="status">
+                    <option value="draft" <?php echo ($is_edit && $row['status'] == 'draft') ? 'selected' : ''; ?>>Draft</option>
+                    <option value="published" <?php echo ($is_edit && $row['status'] == 'published') ? 'selected' : ''; ?>>Published</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Thumbnail Image (Opsional):</label>
+                <input type="file" name="gambar" accept="image/*">
+                <?php if ($is_edit && !empty($row['gambar'])): ?>
+                    <small>Sudah ada gambar (upload baru untuk mengganti).</small>
+                <?php endif; ?>
+            </div>
+            
+            <div style="padding:15px; border:1px solid #ccc; background:#f9f9f9; margin-bottom:15px; border-radius: 8px;">
+                <h4 style="margin-top:0;">Video Source</h4>
+                <p style="font-size:12px; color:#666;">Isi salah satu saja (URL ATAU Upload File). Jika satu diisi, opsi lain dinonaktifkan.</p>
+                <div class="form-group">
+                    <label>Option 1: Video URL (YouTube/MP4):</label>
+                    <input type="url" id="video_url_input" name="video_url" value="<?php echo $is_edit ? htmlspecialchars($row['video_url'] ?? '') : ''; ?>" oninput="toggleVideoSource()">
+                </div>
+                <div class="form-group">
+                    <label>Option 2: Upload File MP4:</label>
+                    <input type="file" id="video_file_input" name="video_file" accept="video/mp4" onchange="toggleVideoSource()">
+                    <?php if ($is_edit && !empty($row['video_path'])): ?>
+                        <small>Sudah ada video file (upload baru untuk mengganti).</small>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Deskripsi:</label>
+                <textarea name="konten" required style="min-height:120px;"><?php echo $is_edit ? htmlspecialchars($row['konten']) : ''; ?></textarea>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="submitVideo(this.form)">Simpan Video</button>
+            <a href="admin.php?page=edukasi_list" class="btn" style="background-color:#6c757d; color:white; margin-left:10px;">Batal</a>
+        </form>
+        <script>
+            function toggleVideoSource() {
+                const urlInput = document.getElementById('video_url_input');
+                const fileInput = document.getElementById('video_file_input');
+                
+                if (urlInput.value.trim() !== '') {
+                    fileInput.disabled = true;
+                } else {
+                    fileInput.disabled = false;
+                }
+
+                if (fileInput.files.length > 0) {
+                    urlInput.disabled = true;
+                } else {
+                    urlInput.disabled = false;
+                }
+            }
+            toggleVideoSource(); // initial run
+
+            function submitVideo(form) {
+                var formData = new FormData(form);
+                fetch(form.action, { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire('Sukses', data.message, 'success').then(() => {
+                            window.location.href = 'admin.php?page=edukasi_list';
+                        });
+                    } else {
+                        Swal.fire('Gagal', data.message, 'error');
+                    }
+                }).catch(e => {
+                    Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                });
+            }
+        </script>
+        <?php
+        break;
+
+    case 'edukasi_hapus':
+        if (!isset($_SESSION['admin_logged_in'])) { header('Location: admin.php?page=login'); exit; }
+        $id = (int)$_GET['id'];
+        $sql = "DELETE FROM edukasi WHERE id_edukasi = $id";
+        if(mysqli_query($conn, $sql)){
+            $_SESSION['flash_message'] = ['type' => 'success', 'text' => 'Edukasi dihapus.'];
+        }
+        header('Location: admin.php?page=edukasi_list');
+        exit;
+        break;
 
     // --- Placeholder untuk Fitur Lainnya ---
     case 'setor_sampah': // (Isi dengan form input setoran)

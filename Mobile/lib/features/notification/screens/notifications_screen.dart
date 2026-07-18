@@ -7,6 +7,7 @@ import 'notification_detail_screen.dart';
 import '../../../core/navigation/app_page_transitions.dart';
 import '../../../shared/widgets/staggered_animation.dart';
 import '../../../shared/widgets/scale_tap.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -18,11 +19,62 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final _repository = NotificationRepository();
   int _activeFilterIndex = 0; // 0 = Semua, 1 = Belum Dibaca
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _repository.addListener(_onRepositoryChange);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await _repository.fetchNotifications();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+        _showErrorDialog(_errorMessage!);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('Terjadi Kesalahan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold)),
+        content: Text(message, style: const TextStyle(fontFamily: 'Plus Jakarta Sans')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup', style: TextStyle(color: AppColors.textSoft)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _loadData();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -32,7 +84,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _onRepositoryChange() {
-    if (mounted) {
+    if (mounted && !_isLoading) {
       setState(() {});
     }
   }
@@ -52,13 +104,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     bool hasYesterday = false;
     bool hasOlder = false;
 
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
     for (final n in list) {
-      final t = n.time.toLowerCase();
-      String group = 'Hari Ini';
-      if (t.contains('kemarin') || t.contains('yesterday') || t.contains('1 hari')) {
-        group = 'Kemarin';
-      } else if (t.contains('hari lalu') || t.contains('jan') || t.contains('feb') || t.contains('mar') || t.contains('apr') || t.contains('mei') || t.contains('jun') || t.contains('jul') || t.contains('agu') || t.contains('sep') || t.contains('okt') || t.contains('nov') || t.contains('des') || t.contains('2024') || t.contains('2025') || t.contains('2026')) {
-        group = 'Sebelumnya';
+      String group = 'Sebelumnya';
+      if (n.createdAt != null) {
+        final date = DateTime(n.createdAt!.year, n.createdAt!.month, n.createdAt!.day);
+        if (date == today) {
+          group = 'Hari Ini';
+        } else if (date == yesterday) {
+          group = 'Kemarin';
+        }
       }
 
       if (group == 'Hari Ini' && !hasToday) {
@@ -361,24 +419,71 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
           Expanded(
-            child: notifications.isEmpty
-                ? _buildEmptyState()
-                : Builder(
-                    builder: (context) {
-                      final grouped = _groupedNotificationItems;
-                      return ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.only(bottom: 120), // extra padding for bottom navigation
-                        itemCount: grouped.length,
-                        itemBuilder: (context, index) {
-                          final item = grouped[index];
-                          if (item is String) {
-                            return _buildGroupHeader(item);
-                          }
-                          return _buildNotificationItem(item as NotificationModel, index);
-                        },
-                      );
-                    },
+            child: _isLoading
+                ? ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 120, top: 16),
+                    itemCount: 6,
+                    itemBuilder: (context, index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const ShimmerSkeleton(width: 48, height: 48, borderRadius: 24),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const ShimmerSkeleton(width: double.infinity, height: 16, borderRadius: 4),
+                                const SizedBox(height: 6),
+                                const ShimmerSkeleton(width: 150, height: 14, borderRadius: 4),
+                                const SizedBox(height: 10),
+                                const ShimmerSkeleton(width: 80, height: 12, borderRadius: 4),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: AppColors.primary,
+                    child: notifications.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.only(top: 100),
+                            children: [_buildEmptyState()],
+                          )
+                        : Builder(
+                            builder: (context) {
+                              final grouped = _groupedNotificationItems;
+                              return ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.only(bottom: 120), // extra padding for bottom navigation
+                                itemCount: grouped.length,
+                                itemBuilder: (context, index) {
+                                  final item = grouped[index];
+                                  if (item is String) {
+                                    return _buildGroupHeader(item);
+                                  }
+                                  return _buildNotificationItem(item as NotificationModel, index);
+                                },
+                              );
+                            },
+                          ),
                   ),
           ),
         ],
@@ -542,13 +647,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       Row(
                         children: [
                           Icon(
-                            LucideIcons.clock,
+                            LucideIcons.calendar,
                             size: 12,
                             color: AppColors.textSoft,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            notification.time,
+                            notification.createdAt != null
+                                ? '${notification.createdAt!.day} ${['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][notification.createdAt!.month - 1]} ${notification.createdAt!.year}'
+                                : notification.time,
                             style: const TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
                               fontSize: 11,
@@ -556,6 +663,47 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               color: AppColors.textSoft,
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          if (notification.createdAt != null) ...[
+                            Icon(
+                              LucideIcons.clock,
+                              size: 12,
+                              color: AppColors.textSoft,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${notification.createdAt!.hour.toString().padLeft(2, '0')}:${notification.createdAt!.minute.toString().padLeft(2, '0')}',
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSoft,
+                              ),
+                            ),
+                          ],
+                          if (notification.priority != null && notification.priority!.isNotEmpty) ...[
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: (notification.priority!.toLowerCase() == 'high' || notification.priority!.toLowerCase() == 'tinggi')
+                                    ? const Color(0xFFFFE4E6)
+                                    : const Color(0xFFE0E7FF),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                notification.priority!.toUpperCase(),
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: (notification.priority!.toLowerCase() == 'high' || notification.priority!.toLowerCase() == 'tinggi')
+                                      ? const Color(0xFFE11D48)
+                                      : const Color(0xFF4F46E5),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],

@@ -27,6 +27,7 @@ class EducationRepository {
             timeAgo: _formatTimeAgo(item['created_at'] ?? ''),
             description: item['excerpt'] ?? '',
             konten: item['konten'],
+            kategori: item['kategori'] ?? 'Umum',
           );
         }).toList();
       }
@@ -55,6 +56,7 @@ class EducationRepository {
             timeAgo: _formatTimeAgo(item['created_at'] ?? ''),
             videoUrl: item['video_url'],
             konten: item['konten'],
+            kategori: item['kategori'] ?? 'Umum',
           );
         }).toList();
       }
@@ -94,6 +96,7 @@ class EducationRepository {
               timeAgo: _formatTimeAgo(item['created_at'] ?? ''),
               videoUrl: item['video_url'],
               konten: item['konten'],
+              kategori: item['kategori'] ?? 'Umum',
             );
           } else {
             return ArticleModel(
@@ -105,6 +108,7 @@ class EducationRepository {
               timeAgo: _formatTimeAgo(item['created_at'] ?? ''),
               description: item['excerpt'] ?? '',
               konten: item['konten'],
+              kategori: item['kategori'] ?? 'Umum',
             );
           }
         }).toList();

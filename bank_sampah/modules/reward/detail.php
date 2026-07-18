@@ -26,33 +26,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
         $uid = (int)$row['user_id'];
         $pts = (int)$row['redeem_point'];
         
-        if ($action_type === 'process' && $old_status === 'pending') {
-            $stmt = mysqli_prepare($koneksi, "UPDATE reward_redemptions SET status = 'processing', processed_at = NOW(), admin_id = ? WHERE id = ?");
-            mysqli_stmt_bind_param($stmt, "ii", $admin_id, $id);
-            mysqli_stmt_execute($stmt);
-            mysqli_stmt_close($stmt);
-            
-            mysqli_query($koneksi, "INSERT INTO redemption_audit_logs (redemption_id, transaction_code, action, old_status, new_status, admin_id, reason, created_at) VALUES ($id, '$trx_code', 'PROCESS', '$old_status', 'processing', $admin_id, 'Admin memproses dari halaman detail', NOW())");
-            mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Diproses', 'Admin sedang memproses penukaran poin Anda. Kode: $trx_code', 'info')");
-            
-            echo "<script>alert('Berhasil diproses! Status berubah menjadi Processing.'); window.location.href='index.php?page=reward/detail&id=$id';</script>";
-            exit;
-        }
-        
         if ($action_type === 'complete' && ($old_status === 'processing' || $old_status === 'pending')) {
+            $transfer_proof_path = null;
+            if (isset($_FILES['transfer_proof']) && $_FILES['transfer_proof']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = __DIR__ . '/../../uploads/transfer_proof/';
+                if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+                $ext = pathinfo($_FILES['transfer_proof']['name'], PATHINFO_EXTENSION);
+                $filename = 'proof_' . $trx_code . '_' . time() . '.' . $ext;
+                if (move_uploaded_file($_FILES['transfer_proof']['tmp_name'], $upload_dir . $filename)) {
+                    $transfer_proof_path = 'uploads/transfer_proof/' . $filename;
+                }
+            }
+            if (!$transfer_proof_path) {
+                echo "<script>alert('Bukti transfer wajib diunggah!'); window.history.back();</script>";
+                exit;
+            }
+
             mysqli_begin_transaction($koneksi);
             try {
                 if ($old_status !== 'completed' && $old_status !== 'rejected') {
                     mysqli_query($koneksi, "UPDATE pengguna SET reserved_saldo = GREATEST(0, COALESCE(reserved_saldo, 0) - $pts) WHERE id_pengguna = $uid");
                 }
                 
-                $stmt = mysqli_prepare($koneksi, "UPDATE reward_redemptions SET status = 'completed', completed_at = NOW(), admin_id = ? WHERE id = ?");
-                mysqli_stmt_bind_param($stmt, "ii", $admin_id, $id);
+                $stmt = mysqli_prepare($koneksi, "UPDATE reward_redemptions SET status = 'completed', completed_at = NOW(), admin_id = ?, transfer_proof = ? WHERE id = ?");
+                mysqli_stmt_bind_param($stmt, "isi", $admin_id, $transfer_proof_path, $id);
                 mysqli_stmt_execute($stmt);
                 mysqli_stmt_close($stmt);
                 
-                mysqli_query($koneksi, "INSERT INTO redemption_audit_logs (redemption_id, transaction_code, action, old_status, new_status, admin_id, reason, created_at) VALUES ($id, '$trx_code', 'COMPLETE', '$old_status', 'completed', $admin_id, 'Penukaran diselesaikan dari halaman detail', NOW())");
-                mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Berhasil', 'Penukaran poin berhasil. Kode: $trx_code', 'success')");
+                mysqli_query($koneksi, "INSERT INTO redemption_audit_logs (redemption_id, transaction_code, action, old_status, new_status, admin_id, reason, created_at) VALUES ($id, '$trx_code', 'COMPLETE', '$old_status', 'completed', $admin_id, 'Penukaran diselesaikan dari halaman detail dengan bukti transfer', NOW())");
+                mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Berhasil', 'Penukaran poin Anda telah selesai diproses. Silakan cek riwayat transaksi Anda. Kode: $trx_code', 'success')");
                 
                 mysqli_commit($koneksi);
                 echo "<script>alert('Penukaran berhasil selesai (Completed)!'); window.location.href='index.php?page=reward/detail&id=$id';</script>";
@@ -74,14 +76,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                     mysqli_query($koneksi, "UPDATE pengguna SET saldo = saldo + $pts, reserved_saldo = GREATEST(0, COALESCE(reserved_saldo, 0) - $pts) WHERE id_pengguna = $uid");
                 }
                 
-                $stmt = mysqli_prepare($koneksi, "UPDATE reward_redemptions SET status = 'rejected', admin_note = ?, completed_at = NOW(), admin_id = ? WHERE id = ?");
-                mysqli_stmt_bind_param($stmt, "sii", $note, $admin_id, $id);
+                $stmt = mysqli_prepare($koneksi, "UPDATE reward_redemptions SET status = 'rejected', admin_note = ?, rejection_reason = ?, completed_at = NOW(), admin_id = ? WHERE id = ?");
+                mysqli_stmt_bind_param($stmt, "ssii", $note, $note, $admin_id, $id);
                 mysqli_stmt_execute($stmt);
                 mysqli_stmt_close($stmt);
                 
                 $safe_note = mysqli_real_escape_string($koneksi, $note);
                 mysqli_query($koneksi, "INSERT INTO redemption_audit_logs (redemption_id, transaction_code, action, old_status, new_status, admin_id, reason, created_at) VALUES ($id, '$trx_code', 'REJECT', '$old_status', 'rejected', $admin_id, '$safe_note', NOW())");
-                mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Ditolak', 'Penukaran poin ditolak. Alasan: $safe_note. Kode: $trx_code', 'warning')");
+                mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Ditolak', 'Pengajuan penukaran poin ditolak. Alasan: $safe_note. Kode: $trx_code', 'warning')");
                 
                 mysqli_commit($koneksi);
                 echo "<script>alert('Penukaran berhasil DITOLAK dan poin dikembalikan 100%!'); window.location.href='index.php?page=reward/detail&id=$id';</script>";
@@ -139,14 +141,12 @@ mysqli_stmt_close($stmt_l);
                 <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-700">
                     <?php echo htmlspecialchars($row['destination_type']); ?>
                 </span>
-                <?php if ($row['status'] === 'pending'): ?>
-                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800">Pending</span>
-                <?php elseif ($row['status'] === 'processing'): ?>
-                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 animate-pulse">Processing</span>
+                <?php if ($row['status'] === 'processing' || $row['status'] === 'pending'): ?>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-800 animate-pulse">Diproses</span>
                 <?php elseif ($row['status'] === 'completed'): ?>
-                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">Completed</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">Selesai</span>
                 <?php elseif ($row['status'] === 'rejected'): ?>
-                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-800">Rejected</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-800">Ditolak</span>
                 <?php endif; ?>
             </div>
             <h1 class="text-3xl font-extrabold text-gray-900 font-mono tracking-tight"><?php echo htmlspecialchars($trx_code); ?></h1>
@@ -155,25 +155,13 @@ mysqli_stmt_close($stmt_l);
 
         <!-- Material 3 Action Buttons in Detail View -->
         <div class="flex items-center space-x-3">
-            <?php if ($row['status'] === 'pending'): ?>
-                <form method="POST" onsubmit="return confirm('Proses penukaran ini ke status Processing?');">
-                    <input type="hidden" name="action_type" value="process">
-                    <button type="submit" class="px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md shadow-blue-500/20 transition duration-150 inline-flex items-center">
-                        <i class="fas fa-play mr-2"></i> Process Redemption
-                    </button>
-                </form>
-            <?php endif; ?>
-
             <?php if ($row['status'] === 'processing' || $row['status'] === 'pending'): ?>
-                <form method="POST" onsubmit="return confirm('Konfirmasi penukaran SELESAI? Dana akan ditransfer dan poin dipotong permanen.');">
-                    <input type="hidden" name="action_type" value="complete">
-                    <button type="submit" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-500/20 transition duration-150 inline-flex items-center">
-                        <i class="fas fa-check-circle mr-2"></i> Complete & Send
-                    </button>
-                </form>
+                <button type="button" onclick="openCompleteDetailModal()" class="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-500/20 transition duration-150 inline-flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i> Selesaikan
+                </button>
                 
                 <button type="button" onclick="openRejectDetailModal()" class="px-5 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm shadow-md shadow-red-500/20 transition duration-150 inline-flex items-center">
-                    <i class="fas fa-times-circle mr-2"></i> Reject Request
+                    <i class="fas fa-times-circle mr-2"></i> Tolak
                 </button>
             <?php endif; ?>
         </div>
@@ -216,12 +204,20 @@ mysqli_stmt_close($stmt_l);
                     </div>
                 </div>
             </div>
+            
+            <!-- Bukti Transfer (If Completed) -->
+            <?php if (!empty($row['transfer_proof'])): ?>
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <h3 class="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-4"><i class="fas fa-image mr-1"></i> Bukti Transfer</h3>
+                <img src="../<?php echo htmlspecialchars($row['transfer_proof']); ?>" alt="Bukti Transfer" class="max-w-full rounded-2xl border border-gray-200 shadow-sm" />
+            </div>
+            <?php endif; ?>
 
             <!-- Admin Note (If Rejected) -->
-            <?php if (!empty($row['admin_note'])): ?>
+            <?php if (!empty($row['rejection_reason'])): ?>
             <div class="bg-red-50 rounded-3xl p-6 border border-red-100">
-                <h3 class="text-xs font-bold text-red-600 uppercase tracking-wider mb-2"><i class="fas fa-info-circle mr-1"></i> Alasan / Catatan Admin</h3>
-                <p class="text-sm text-red-800 font-medium leading-relaxed"><?php echo nl2br(htmlspecialchars($row['admin_note'])); ?></p>
+                <h3 class="text-xs font-bold text-red-600 uppercase tracking-wider mb-2"><i class="fas fa-info-circle mr-1"></i> Alasan Penolakan</h3>
+                <p class="text-sm text-red-800 font-medium leading-relaxed"><?php echo nl2br(htmlspecialchars($row['rejection_reason'])); ?></p>
             </div>
             <?php endif; ?>
         </div>
@@ -254,17 +250,17 @@ mysqli_stmt_close($stmt_l);
                     <div class="flex items-start space-x-3">
                         <div class="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0"></div>
                         <div>
-                            <div class="font-bold text-gray-800">Permintaan Diajukan (Submitted)</div>
+                            <div class="font-bold text-gray-800">Permintaan Diajukan</div>
                             <div class="text-gray-400 mt-0.5"><?php echo date('d M Y, H:i:s', strtotime($row['created_at'])); ?></div>
                         </div>
                     </div>
 
-                    <?php if (!empty($row['processed_at'])): ?>
+                    <?php if (!empty($row['processed_at']) || $row['status'] == 'processing'): ?>
                     <div class="flex items-start space-x-3">
                         <div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
                         <div>
-                            <div class="font-bold text-gray-800">Mulai Diproses (Processing)</div>
-                            <div class="text-gray-400 mt-0.5"><?php echo date('d M Y, H:i:s', strtotime($row['processed_at'])); ?></div>
+                            <div class="font-bold text-gray-800">Mulai Diproses</div>
+                            <div class="text-gray-400 mt-0.5"><?php echo date('d M Y, H:i:s', strtotime($row['processed_at'] ?? $row['created_at'])); ?></div>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -273,7 +269,7 @@ mysqli_stmt_close($stmt_l);
                     <div class="flex items-start space-x-3">
                         <div class="w-2 h-2 rounded-full <?php echo ($row['status']=='completed') ? 'bg-emerald-500' : 'bg-red-500'; ?> mt-1.5 shrink-0"></div>
                         <div>
-                            <div class="font-bold text-gray-800"><?php echo ($row['status']=='completed') ? 'Selesai (Completed)' : 'Ditolak (Rejected)'; ?></div>
+                            <div class="font-bold text-gray-800"><?php echo ($row['status']=='completed') ? 'Selesai' : 'Ditolak'; ?></div>
                             <div class="text-gray-400 mt-0.5"><?php echo date('d M Y, H:i:s', strtotime($row['completed_at'])); ?></div>
                             <?php if (!empty($row['nama_admin'])): ?>
                                 <div class="text-emerald-700 mt-0.5">Oleh Admin: <?php echo htmlspecialchars($row['nama_admin']); ?></div>
@@ -313,7 +309,7 @@ mysqli_stmt_close($stmt_l);
         <div class="flex items-center justify-between pb-4 border-b border-gray-100">
             <div class="flex items-center space-x-2 text-red-600 font-bold text-lg">
                 <i class="fas fa-exclamation-triangle"></i>
-                <span>Reject Redemption #<?php echo $id; ?></span>
+                <span>Tolak Penukaran #<?php echo $id; ?></span>
             </div>
             <button onclick="closeRejectDetailModal()" class="text-gray-400 hover:text-gray-600 p-1">
                 <i class="fas fa-times text-lg"></i>
@@ -328,8 +324,8 @@ mysqli_stmt_close($stmt_l);
             </p>
             
             <div>
-                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Reject Reason (Wajib Diisi) <span class="text-red-500">*</span></label>
-                <textarea name="reject_reason" id="reject_reason_detail_input" rows="3" required placeholder="Alasan penolakan..." class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm text-gray-800"></textarea>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Alasan Penolakan (Wajib Diisi) <span class="text-red-500">*</span></label>
+                <textarea name="reject_reason" id="reject_reason_detail_input" rows="3" required placeholder="Tuliskan alasan penolakan..." class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm text-gray-800"></textarea>
             </div>
             
             <div class="flex items-center justify-end space-x-3 pt-3">
@@ -337,7 +333,45 @@ mysqli_stmt_close($stmt_l);
                     Batal
                 </button>
                 <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/20">
-                    Konfirmasi Reject
+                    Konfirmasi Penolakan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Complete untuk halaman detail -->
+<div id="completeDetailModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
+        <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+            <div class="flex items-center space-x-2 text-emerald-600 font-bold text-lg">
+                <i class="fas fa-check-circle"></i>
+                <span>Selesaikan Penukaran #<?php echo $id; ?></span>
+            </div>
+            <button onclick="closeCompleteDetailModal()" class="text-gray-400 hover:text-gray-600 p-1">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        
+        <form method="POST" class="mt-4 space-y-4" enctype="multipart/form-data" onsubmit="return validateCompleteDetailForm();">
+            <input type="hidden" name="action_type" value="complete">
+            
+            <p class="text-xs text-gray-500">
+                Poin akan dipotong permanen dan warga akan menerima notifikasi penyelesaian.
+            </p>
+            
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Bukti Transfer (Wajib Diisi) <span class="text-red-500">*</span></label>
+                <input type="file" name="transfer_proof" id="transfer_proof_input" accept="image/jpeg,image/png,image/jpg" required class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-gray-800">
+                <p class="text-[10px] text-gray-400 mt-1">Format didukung: JPG, PNG, JPEG.</p>
+            </div>
+            
+            <div class="flex items-center justify-end space-x-3 pt-3">
+                <button type="button" onclick="closeCompleteDetailModal()" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100">
+                    Batal
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20">
+                    Konfirmasi Selesai
                 </button>
             </div>
         </form>
@@ -361,9 +395,31 @@ function closeRejectDetailModal() {
 function validateRejectDetailForm() {
     const val = document.getElementById('reject_reason_detail_input').value.trim();
     if (!val) {
-        alert('Peringatan: Reject Reason wajib diisi demi transparansi ke warga!');
+        alert('Peringatan: Alasan penolakan wajib diisi demi transparansi ke warga!');
         return false;
     }
     return confirm('Anda yakin menolak penukaran ini dan mengembalikan poin ke warga?');
+}
+
+function openCompleteDetailModal() {
+    document.getElementById('transfer_proof_input').value = '';
+    const modal = document.getElementById('completeDetailModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeCompleteDetailModal() {
+    const modal = document.getElementById('completeDetailModal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+}
+
+function validateCompleteDetailForm() {
+    const file = document.getElementById('transfer_proof_input').files[0];
+    if (!file) {
+        alert('Peringatan: Bukti transfer wajib diunggah!');
+        return false;
+    }
+    return confirm('Konfirmasi penukaran SELESAI? Dana akan ditransfer dan poin dipotong permanen.');
 }
 </script>
