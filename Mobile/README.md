@@ -1,16 +1,36 @@
-# mobile_user
+# iTrashy Mobile (Flutter)
 
-A new Flutter project.
+## Konfigurasi koneksi backend
 
-## Getting Started
+App sudah mendukung environment API melalui `dart-define`.
 
-This project is a starting point for a Flutter application.
+### Prioritas base URL
+1. `API_BASE_URL` (override langsung)
+2. `APP_FLAVOR` (`prod` / `staging` / `dev`)
+3. fallback default internal
 
-A few resources to get you started if this is your first Flutter project:
+### Contoh menjalankan app
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+#### Production (default domain)
+```bash
+flutter run --dart-define=APP_FLAVOR=prod
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+#### Production dengan override URL langsung
+```bash
+flutter run --dart-define=API_BASE_URL=https://itrashy.triki.cloud/bank_sampah/
+```
+
+#### Staging
+```bash
+flutter run --dart-define=APP_FLAVOR=staging
+```
+
+#### Development (emulator Android)
+```bash
+flutter run --dart-define=APP_FLAVOR=dev
+```
+
+## Catatan
+- Pastikan URL backend mengarah ke root `bank_sampah/`.
+- Semua endpoint mobile berada di `modules/api/*.php`.

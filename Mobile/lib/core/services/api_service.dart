@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +15,9 @@ class ApiService {
 
   static const String _tokenKey = 'api_token';
   static const String _userKey = 'user_data';
+  static const Duration _defaultTimeout = Duration(seconds: 10);
+  static const Duration _multipartTimeout = Duration(seconds: 15);
+  static const int _maxRetries = 1;
 
   final ValueNotifier<int> profileUpdateNotifier = ValueNotifier<int>(0);
   void notifyProfileChanged() => profileUpdateNotifier.value++;
@@ -80,8 +85,14 @@ class ApiService {
         });
       }
       final headers = await _headers();
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+      final response = await _requestWithRetry(
+        () => http.get(uri, headers: headers).timeout(_defaultTimeout),
+      );
       return _parseResponse(response);
+    } on TimeoutException {
+      return ApiResponse(success: false, message: 'Koneksi timeout. Silakan coba lagi.');
+    } on SocketException {
+      return ApiResponse(success: false, message: 'Tidak dapat terhubung ke server.');
     } catch (e) {
       debugPrint('API Error (GET $url): $e');
       return ApiResponse(success: false, message: 'Network error: $e');
@@ -93,8 +104,14 @@ class ApiService {
     try {
       final uri = Uri.parse(url);
       final headers = await _headers();
-      final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
+      final response = await _requestWithRetry(
+        () => http.post(uri, headers: headers, body: body).timeout(_defaultTimeout),
+      );
       return _parseResponse(response);
+    } on TimeoutException {
+      return ApiResponse(success: false, message: 'Koneksi timeout. Silakan coba lagi.');
+    } on SocketException {
+      return ApiResponse(success: false, message: 'Tidak dapat terhubung ke server.');
     } catch (e) {
       debugPrint('API Error (POST $url): $e');
       return ApiResponse(success: false, message: 'Network error: $e');
@@ -125,9 +142,13 @@ class ApiService {
           ));
         }
       }
-      final streamed = await request.send().timeout(const Duration(seconds: 15));
-      final response = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 15));
+      final streamed = await request.send().timeout(_multipartTimeout);
+      final response = await http.Response.fromStream(streamed).timeout(_multipartTimeout);
       return _parseResponse(response);
+    } on TimeoutException {
+      return ApiResponse(success: false, message: 'Upload timeout. Silakan coba lagi.');
+    } on SocketException {
+      return ApiResponse(success: false, message: 'Tidak dapat terhubung ke server.');
     } catch (e) {
       debugPrint('API Error (Multipart POST $url): $e');
       return ApiResponse(success: false, message: 'Network error: $e');
@@ -144,30 +165,90 @@ class ApiService {
         uri,
         headers: headers,
         body: body != null ? json.encode(body) : null,
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_defaultTimeout);
       return _parseResponse(response);
+    } on TimeoutException {
+      return ApiResponse(success: false, message: 'Koneksi timeout. Silakan coba lagi.');
+    } on SocketException {
+      return ApiResponse(success: false, message: 'Tidak dapat terhubung ke server.');
     } catch (e) {
       debugPrint('API Error (PUT $url): $e');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
 
+  Future<http.Response> _requestWithRetry(
+    Future<http.Response> Function() requestFn,
+  ) async {
+    var lastError = const SocketException('Unknown request error');
+
+    for (var attempt = 0; attempt <= _maxRetries; attempt++) {
+      try {
+        final response = await requestFn();
+        if (_isRetryableStatusCode(response.statusCode) && attempt < _maxRetries) {
+          await Future.delayed(const Duration(milliseconds: 350));
+          continue;
+        }
+        return response;
+      } on TimeoutException catch (e) {
+        lastError = SocketException(e.message ?? 'Request timeout');
+        if (attempt >= _maxRetries) rethrow;
+        await Future.delayed(const Duration(milliseconds: 350));
+      } on SocketException catch (e) {
+        lastError = e;
+        if (attempt >= _maxRetries) rethrow;
+        await Future.delayed(const Duration(milliseconds: 350));
+      }
+    }
+
+    throw lastError;
+  }
+
+  bool _isRetryableStatusCode(int statusCode) {
+    return statusCode == 408 || statusCode == 429 || statusCode == 502 || statusCode == 503 || statusCode == 504;
+  }
+
   ApiResponse _parseResponse(http.Response response) {
-    try {
-      final data = json.decode(response.body);
+    if (response.body.trim().isEmpty) {
       return ApiResponse(
-        success: data['success'] == true,
-        message: data['message'] ?? '',
+        success: false,
+        message: _defaultMessageFromStatus(response.statusCode),
+        statusCode: response.statusCode,
+      );
+    }
+
+    try {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final message = (data['message']?.toString().trim().isNotEmpty ?? false)
+          ? data['message'].toString()
+          : _defaultMessageFromStatus(response.statusCode);
+
+      return ApiResponse(
+        success: data['success'] == true || (response.statusCode >= 200 && response.statusCode < 300),
+        message: message,
         data: data['data'],
         statusCode: response.statusCode,
       );
     } catch (e) {
       return ApiResponse(
         success: false,
-        message: 'Invalid server response',
+        message: _defaultMessageFromStatus(response.statusCode),
         statusCode: response.statusCode,
       );
     }
+  }
+
+  String _defaultMessageFromStatus(int statusCode) {
+    if (statusCode >= 200 && statusCode < 300) {
+      return 'Permintaan berhasil';
+    }
+    if (statusCode == 401) return 'Sesi berakhir. Silakan login ulang.';
+    if (statusCode == 403) return 'Akses ditolak.';
+    if (statusCode == 404) return 'Endpoint tidak ditemukan.';
+    if (statusCode == 408) return 'Permintaan timeout.';
+    if (statusCode == 429) return 'Terlalu banyak permintaan. Coba lagi nanti.';
+    if (statusCode >= 500) return 'Server sedang bermasalah. Coba lagi nanti.';
+    return 'Terjadi kesalahan saat menghubungi server.';
   }
 }
 

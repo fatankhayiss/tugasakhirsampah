@@ -1,19 +1,13 @@
 <?php
 // modules/api/auth_api.php
 // Endpoint: Login & Register untuk Mobile (warga) dan Driver
-header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Accept, Authorization');
+require_once __DIR__ . '/_api_bootstrap.php';
+bs_api_setup_headers('POST, OPTIONS');
+bs_api_enforce_origin_policy();
+bs_api_handle_options();
 
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    echo json_encode(['success' => true]);
-    exit;
-}
 
 require_once __DIR__ . '/../../config/database.php';
 
@@ -31,6 +25,13 @@ try {
     }
 
     $action = isset($_POST['action']) ? trim($_POST['action']) : (isset($_GET['action']) ? trim($_GET['action']) : 'login');
+    if ($action === 'login') {
+        bs_api_rate_limit('auth_login', 12, 60);
+    } elseif ($action === 'register') {
+        bs_api_rate_limit('auth_register', 8, 60);
+    } elseif ($action === 'google_login') {
+        bs_api_rate_limit('auth_google_login', 20, 60);
+    }
 
     // =====================
     // LOGIN
