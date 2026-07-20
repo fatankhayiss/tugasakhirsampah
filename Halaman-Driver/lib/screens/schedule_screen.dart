@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../constants/api_config.dart';
+import '../widgets/floating_nav_bar.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -10,7 +11,7 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  int _currentIndex = 1;
+  final int _currentIndex = 1;
   List<dynamic> _schedules = [];
   bool _isLoading = true;
 
@@ -39,10 +40,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DriverColors.background,
+      backgroundColor: AppColors.background,
       body: RefreshIndicator(
         onRefresh: _fetchSchedules,
-        color: DriverColors.primary,
+        color: AppColors.primary,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -50,7 +51,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               pinned: true,
               floating: false,
               snap: false,
-              backgroundColor: DriverColors.background,
+              backgroundColor: AppColors.background,
               elevation: 0,
               toolbarHeight: 84,
               automaticallyImplyLeading: false,
@@ -58,7 +59,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: DriverColors.primary,
+                    backgroundColor: AppColors.primary,
                     child: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
@@ -68,13 +69,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: DriverColors.textDark,
+                      color: AppColors.textDark,
                     ),
                   ),
                   const Spacer(),
                   IconButton(
                     onPressed: _fetchSchedules,
-                    icon: const Icon(Icons.refresh_rounded, color: DriverColors.primary),
+                    icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
                   ),
                 ],
               ),
@@ -88,7 +89,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         child: Center(
                           child: Padding(
                             padding: EdgeInsets.all(40),
-                            child: CircularProgressIndicator(color: DriverColors.primary),
+                            child: CircularProgressIndicator(color: AppColors.primary),
                           ),
                         ),
                       )
@@ -100,12 +101,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: DriverStyles.cardRadius,
-                                border: Border.all(color: DriverColors.border),
+                                border: Border.all(color: AppColors.border),
                                 boxShadow: DriverStyles.cardShadow,
                               ),
                               child: Column(
                                 children: const [
-                                  Icon(Icons.event_busy_rounded, size: 56, color: DriverColors.textMuted),
+                                  Icon(Icons.event_busy_rounded, size: 56, color: AppColors.textMuted),
                                   SizedBox(height: 16),
                                   Text(
                                     'Belum ada jadwal penjemputan',
@@ -113,7 +114,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                       fontFamily: 'Plus Jakarta Sans',
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
-                                      color: DriverColors.textDark,
+                                      color: AppColors.textDark,
                                     ),
                                   ),
                                   SizedBox(height: 6),
@@ -122,7 +123,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                     style: TextStyle(
                                       fontFamily: 'Plus Jakarta Sans',
                                       fontSize: 13,
-                                      color: DriverColors.textMuted,
+                                      color: AppColors.textMuted,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -142,7 +143,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: DriverStyles.cardRadius,
-                                    border: Border.all(color: DriverColors.border),
+                                    border: Border.all(color: AppColors.border),
                                     boxShadow: DriverStyles.cardShadow,
                                   ),
                                   child: Material(
@@ -169,10 +170,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                                     Container(
                                                       padding: const EdgeInsets.all(10),
                                                       decoration: BoxDecoration(
-                                                        color: DriverColors.softBlue,
+                                                        color: AppColors.softBlue,
                                                         borderRadius: BorderRadius.circular(12),
                                                       ),
-                                                      child: const Icon(Icons.calendar_today_rounded, color: DriverColors.primary, size: 20),
+                                                      child: const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 20),
                                                     ),
                                                     const SizedBox(width: 12),
                                                     Column(
@@ -184,7 +185,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                                             fontFamily: 'Plus Jakarta Sans',
                                                             fontSize: 16,
                                                             fontWeight: FontWeight.w700,
-                                                            color: DriverColors.textDark,
+                                                            color: AppColors.textDark,
                                                           ),
                                                         ),
                                                         const SizedBox(height: 2),
@@ -193,7 +194,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                                           style: const TextStyle(
                                                             fontFamily: 'Plus Jakarta Sans',
                                                             fontSize: 12,
-                                                            color: DriverColors.textMuted,
+                                                            color: AppColors.textMuted,
                                                           ),
                                                         ),
                                                       ],
@@ -219,11 +220,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                               ],
                                             ),
                                             const SizedBox(height: 16),
-                                            const Divider(color: DriverColors.border, height: 1),
+                                            const Divider(color: AppColors.border, height: 1),
                                             const SizedBox(height: 16),
                                             Row(
                                               children: [
-                                                const Icon(Icons.location_on_outlined, color: DriverColors.primary, size: 20),
+                                                const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 20),
                                                 const SizedBox(width: 10),
                                                 Expanded(
                                                   child: Text(
@@ -231,7 +232,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                                     style: const TextStyle(
                                                       fontFamily: 'Plus Jakarta Sans',
                                                       fontSize: 14,
-                                                      color: DriverColors.textDark,
+                                                      color: AppColors.textDark,
                                                       fontWeight: FontWeight.w500,
                                                     ),
                                                   ),
@@ -244,14 +245,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                               children: [
                                                 Row(
                                                   children: [
-                                                    const Icon(Icons.access_time_rounded, color: DriverColors.primary, size: 20),
+                                                    const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 20),
                                                     const SizedBox(width: 10),
                                                     Text(
                                                       '${item['tanggal_order'] ?? ''} (${item['waktu_jemput_dari'] ?? '08:00'} - ${item['waktu_jemput_sampai'] ?? '17:00'})',
                                                       style: const TextStyle(
                                                         fontFamily: 'Plus Jakarta Sans',
                                                         fontSize: 13,
-                                                        color: DriverColors.textDark,
+                                                        color: AppColors.textDark,
                                                         fontWeight: FontWeight.w600,
                                                       ),
                                                     ),
@@ -263,7 +264,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                                     fontFamily: 'Plus Jakarta Sans',
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.w700,
-                                                    color: DriverColors.primary,
+                                                    color: AppColors.primary,
                                                   ),
                                                 ),
                                               ],
@@ -283,51 +284,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) {
-              if (i == _currentIndex) return;
-              if (i == 0) {
-                Navigator.of(context).pushReplacementNamed('/dashboard');
-                return;
-              }
-              if (i == 2) {
-                Navigator.of(context).pushReplacementNamed('/alerts');
-                return;
-              }
-              if (i == 3) {
-                Navigator.of(context).pushReplacementNamed('/profile');
-                return;
-              }
-              setState(() => _currentIndex = i);
-            },
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: DriverColors.primary,
-            unselectedItemColor: DriverColors.textMuted,
-            selectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 12),
-            unselectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w500, fontSize: 12),
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Beranda'),
-              BottomNavigationBarItem(icon: Icon(Icons.calendar_month_rounded), label: 'Jadwal'),
-              BottomNavigationBarItem(icon: Icon(Icons.notifications_none_rounded), label: 'Notifikasi'),
-              BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profil'),
-            ],
-          ),
-        ),
+      bottomNavigationBar: FloatingNavBar(
+        currentIndex: _currentIndex,
+        onTap: (i) {
+          if (i == _currentIndex) return;
+          if (i == 0) {
+            Navigator.of(context).pushReplacementNamed('/dashboard');
+          } else if (i == 2) {
+            Navigator.of(context).pushReplacementNamed('/alerts');
+          } else if (i == 3) {
+            Navigator.of(context).pushReplacementNamed('/profile');
+          }
+        },
       ),
     );
   }

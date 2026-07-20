@@ -255,7 +255,7 @@ class _ChangeAddressScreenState extends State<ChangeAddressScreen> {
                             }
                             : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.primaryBlue,
                       disabledBackgroundColor: Colors.grey[300],
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),

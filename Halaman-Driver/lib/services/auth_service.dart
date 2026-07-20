@@ -30,19 +30,6 @@ class AuthService {
     return response;
   }
 
-  Future<ApiResponse> register(Map<String, dynamic> registerData) async {
-    registerData['level'] = 'driver'; // ensure level is driver
-    
-    final response = await _api.post(
-      ApiConfig.authRegister,
-      body: registerData,
-    );
-
-    // Do not save token or user data here, so the user must login manually
-    // if (response.success && response.data != null) { ... }
-    
-    return response;
-  }
 
   Future<bool> isLoggedIn() => _api.isLoggedIn();
 

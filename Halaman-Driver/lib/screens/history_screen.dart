@@ -38,10 +38,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DriverColors.background,
+      backgroundColor: AppColors.background,
       body: RefreshIndicator(
         onRefresh: _fetchHistory,
-        color: DriverColors.primary,
+        color: AppColors.primary,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -49,7 +49,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               pinned: true,
               floating: false,
               snap: false,
-              backgroundColor: DriverColors.background,
+              backgroundColor: AppColors.background,
               elevation: 0,
               toolbarHeight: 84,
               automaticallyImplyLeading: false,
@@ -57,7 +57,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_rounded, color: DriverColors.textDark),
+                    icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
                   ),
                   const Text(
                     'Riwayat Penjemputan',
@@ -65,13 +65,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: DriverColors.textDark,
+                      color: AppColors.textDark,
                     ),
                   ),
                   const Spacer(),
                   IconButton(
                     onPressed: _fetchHistory,
-                    icon: const Icon(Icons.refresh_rounded, color: DriverColors.primary),
+                    icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
                   ),
                 ],
               ),
@@ -85,7 +85,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         child: Center(
                           child: Padding(
                             padding: EdgeInsets.all(40),
-                            child: CircularProgressIndicator(color: DriverColors.primary),
+                            child: CircularProgressIndicator(color: AppColors.primary),
                           ),
                         ),
                       )
@@ -97,12 +97,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: DriverStyles.cardRadius,
-                                border: Border.all(color: DriverColors.border),
+                                border: Border.all(color: AppColors.border),
                                 boxShadow: DriverStyles.cardShadow,
                               ),
                               child: Column(
                                 children: const [
-                                  Icon(Icons.history_toggle_off_rounded, size: 56, color: DriverColors.textMuted),
+                                  Icon(Icons.history_toggle_off_rounded, size: 56, color: AppColors.textMuted),
                                   SizedBox(height: 16),
                                   Text(
                                     'Belum ada riwayat penjemputan',
@@ -110,7 +110,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       fontFamily: 'Plus Jakarta Sans',
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
-                                      color: DriverColors.textDark,
+                                      color: AppColors.textDark,
                                     ),
                                   ),
                                   SizedBox(height: 6),
@@ -119,7 +119,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     style: TextStyle(
                                       fontFamily: 'Plus Jakarta Sans',
                                       fontSize: 13,
-                                      color: DriverColors.textMuted,
+                                      color: AppColors.textMuted,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -141,7 +141,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: DriverStyles.cardRadius,
-                                    border: Border.all(color: DriverColors.border),
+                                    border: Border.all(color: AppColors.border),
                                     boxShadow: DriverStyles.cardShadow,
                                   ),
                                   child: Column(
@@ -174,7 +174,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                                       fontFamily: 'Plus Jakarta Sans',
                                                       fontSize: 16,
                                                       fontWeight: FontWeight.w700,
-                                                      color: DriverColors.textDark,
+                                                      color: AppColors.textDark,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 2),
@@ -183,7 +183,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                                     style: const TextStyle(
                                                       fontFamily: 'Plus Jakarta Sans',
                                                       fontSize: 12,
-                                                      color: DriverColors.textMuted,
+                                                      color: AppColors.textMuted,
                                                     ),
                                                   ),
                                                 ],
@@ -209,11 +209,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 16),
-                                      const Divider(color: DriverColors.border, height: 1),
+                                      const Divider(color: AppColors.border, height: 1),
                                       const SizedBox(height: 16),
                                       Row(
                                         children: [
-                                          const Icon(Icons.location_on_outlined, color: DriverColors.primary, size: 20),
+                                          const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 20),
                                           const SizedBox(width: 10),
                                           Expanded(
                                             child: Text(
@@ -221,7 +221,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               style: const TextStyle(
                                                 fontFamily: 'Plus Jakarta Sans',
                                                 fontSize: 14,
-                                                color: DriverColors.textDark,
+                                                color: AppColors.textDark,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -234,14 +234,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         children: [
                                           Row(
                                             children: [
-                                              const Icon(Icons.calendar_today_rounded, color: DriverColors.primary, size: 18),
+                                              const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 18),
                                               const SizedBox(width: 10),
                                               Text(
                                                 item['tanggal_order'] ?? '',
                                                 style: const TextStyle(
                                                   fontFamily: 'Plus Jakarta Sans',
                                                   fontSize: 13,
-                                                  color: DriverColors.textDark,
+                                                  color: AppColors.textDark,
                                                   fontWeight: FontWeight.w600,
                                                 ),
                                               ),
@@ -253,7 +253,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               fontFamily: 'Plus Jakarta Sans',
                                               fontSize: 15,
                                               fontWeight: FontWeight.w800,
-                                              color: DriverColors.primary,
+                                              color: AppColors.primary,
                                             ),
                                           ),
                                         ],

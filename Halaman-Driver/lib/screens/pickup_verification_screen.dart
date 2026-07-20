@@ -27,30 +27,30 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
 
     if (task == null) {
       return Scaffold(
-        backgroundColor: DriverColors.background,
+        backgroundColor: AppColors.background,
         appBar: AppBar(
-          backgroundColor: DriverColors.background,
+          backgroundColor: AppColors.background,
           elevation: 0,
-          title: const Text('Error', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark)),
+          title: const Text('Error', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark)),
         ),
         body: const Center(
-          child: Text('Data pesanan tidak ditemukan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted)),
+          child: Text('Data pesanan tidak ditemukan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted)),
         ),
       );
     }
 
-    final statusStr = task['status']?.toString().toLowerCase() ?? 'on_the_way';
-    final isAlreadyPickedUp = statusStr == 'picked_up' || statusStr == 'diangkut';
+    final statusStr = task['status']?.toString().toUpperCase() ?? 'DRIVER_MENUJU_LOKASI';
+    final isAlreadyPickedUp = statusStr == 'SAMPAH_DIJEMPUT';
 
     return Scaffold(
-      backgroundColor: DriverColors.background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: DriverColors.background,
+        backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded, color: DriverColors.textDark),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
         ),
         title: Text(
           isAlreadyPickedUp ? 'Penyelesaian di Bank Sampah' : 'Verifikasi & Timbang Sampah',
@@ -58,7 +58,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: DriverColors.textDark,
+            color: AppColors.textDark,
           ),
         ),
       ),
@@ -97,8 +97,8 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: DriverColors.textMuted,
-                    side: const BorderSide(color: DriverColors.border),
+                    foregroundColor: AppColors.textMuted,
+                    side: const BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -119,12 +119,12 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                     final finalWeight = weightStr.isNotEmpty ? '$weightStr Kg' : (task['berat_aktual'] ?? task['estimasi_berat'] ?? '0 Kg');
                     task['berat_aktual'] = finalWeight;
                     final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
-                    final nextStatus = isAlreadyPickedUp ? 'completed' : 'picked_up';
+                    final nextStatus = isAlreadyPickedUp ? 'VALIDASI_BANK_SAMPAH' : 'SAMPAH_DIJEMPUT';
 
                     showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (_) => const Center(child: CircularProgressIndicator(color: DriverColors.primary)),
+                      builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
                     );
 
                     final res = await ApiService().updateOrderStatus(orderId, nextStatus, beratAktual: finalWeight);
@@ -133,17 +133,17 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                     if (res['success'] == true) {
                       task['status'] = nextStatus;
                       if (context.mounted) {
-                        if (nextStatus == 'completed') {
+                        if (nextStatus == 'VALIDASI_BANK_SAMPAH') {
                           Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                            content: Text('Tugas berhasil diselesaikan! Poin & saldo telah diperbarui.'),
-                            backgroundColor: DriverColors.badgeCompleted,
+                            content: Text('Tugas berhasil diselesaikan! Menunggu validasi admin.'),
+                            backgroundColor: AppColors.badgeCompleted,
                           ));
                         } else {
                           Navigator.of(context).pop(); // Go back or refresh
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                             content: Text('Verifikasi sukses: Sampah telah diangkut ke kendaraan!'),
-                            backgroundColor: DriverColors.primary,
+                            backgroundColor: AppColors.primary,
                           ));
                         }
                       }
@@ -151,7 +151,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content: Text(res['message']?.toString() ?? 'Gagal memperbarui verifikasi'),
-                          backgroundColor: DriverColors.badgeCancelled,
+                          backgroundColor: AppColors.badgeCancelled,
                         ));
                       }
                     }
@@ -162,14 +162,14 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                     style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 14),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: DriverColors.primary,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 4,
-                    shadowColor: DriverColors.primary.withValues(alpha: 0.3),
+                    shadowColor: AppColors.primary.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -194,7 +194,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: DriverStyles.cardRadius,
-        border: Border.all(color: DriverColors.border),
+        border: Border.all(color: AppColors.border),
         boxShadow: DriverStyles.cardShadow,
       ),
       child: Column(
@@ -204,10 +204,10 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: DriverColors.softBlue,
+                backgroundColor: AppColors.softBlue,
                 child: Text(
                   inisial,
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: DriverColors.primary, fontSize: 16),
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
                 ),
               ),
               const SizedBox(width: 14),
@@ -221,13 +221,13 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: DriverColors.textDark,
+                        color: AppColors.textDark,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       alamat,
-                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13),
+                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13),
                     ),
                   ],
                 ),
@@ -235,7 +235,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(color: DriverColors.border, height: 1),
+          const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -244,12 +244,12 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
               ...categories.map((cat) => Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: DriverColors.softBlue,
+                  color: AppColors.softBlue,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   cat,
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.primary, fontWeight: FontWeight.w700, fontSize: 12),
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 12),
                 ),
               )),
               Container(
@@ -260,7 +260,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                 ),
                 child: Text(
                   'Estimasi: $berat',
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark, fontWeight: FontWeight.w600, fontSize: 12),
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontWeight: FontWeight.w600, fontSize: 12),
                 ),
               ),
             ],
@@ -280,7 +280,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: DriverStyles.cardRadius,
-        border: Border.all(color: DriverColors.border),
+        border: Border.all(color: AppColors.border),
         boxShadow: DriverStyles.cardShadow,
       ),
       child: Column(
@@ -291,9 +291,9 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
             children: [
               Text(
                 isAlreadyPickedUp ? 'Konfirmasi Timbangan Akhir' : 'Timbangan Aktual Sampah',
-                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w800, color: DriverColors.textDark),
+                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
               ),
-              Text('Est: $estStr', style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text('Est: $estStr', style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 14),
@@ -304,24 +304,24 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   hintText: estVal > 0 ? estVal.toStringAsFixed(2) : '0.00',
-                  hintStyle: const TextStyle(color: DriverColors.textMuted),
+                  hintStyle: const TextStyle(color: AppColors.textMuted),
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: DriverColors.border),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: DriverColors.border),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: DriverColors.primary, width: 2),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
-                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 22, fontWeight: FontWeight.w800, color: DriverColors.textDark),
+                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textDark),
               ),
               const Positioned(
                 right: 20,
@@ -330,7 +330,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                   'Kg',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
-                    color: DriverColors.textMuted,
+                    color: AppColors.textMuted,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -351,8 +351,8 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                     }
                   },
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: DriverColors.softBlue,
-                    foregroundColor: DriverColors.primary,
+                    backgroundColor: AppColors.softBlue,
+                    foregroundColor: AppColors.primary,
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -372,7 +372,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
                   },
                   style: OutlinedButton.styleFrom(
                     backgroundColor: const Color(0xFFF1F5F9),
-                    foregroundColor: DriverColors.textDark,
+                    foregroundColor: AppColors.textDark,
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -411,7 +411,7 @@ class _DynamicMapCard extends StatelessWidget {
       height: 200,
       decoration: BoxDecoration(
         borderRadius: DriverStyles.cardRadius,
-        border: Border.all(color: DriverColors.border),
+        border: Border.all(color: AppColors.border),
         boxShadow: DriverStyles.cardShadow,
       ),
       child: ClipRRect(
@@ -439,7 +439,7 @@ class _DynamicMapCard extends StatelessWidget {
                       height: 44,
                       child: Container(
                         decoration: const BoxDecoration(
-                          color: DriverColors.primary,
+                          color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
@@ -464,11 +464,11 @@ class _DynamicMapCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     child: Row(
                       children: const [
-                        Icon(Icons.directions_rounded, color: DriverColors.primary, size: 20),
+                        Icon(Icons.directions_rounded, color: AppColors.primary, size: 20),
                         SizedBox(width: 8),
                         Text(
                           'Buka Navigasi Maps',
-                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: DriverColors.primary, fontSize: 13),
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 13),
                         ),
                       ],
                     ),

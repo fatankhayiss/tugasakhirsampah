@@ -37,6 +37,7 @@ class NotificationRepository extends ChangeNotifier {
             isRead: item['is_read'] == true,
             createdAt: dt,
             priority: item['priority'] ?? item['prioritas'], // Handling possible priority fields
+            relatedId: item['related_id'] != null ? int.tryParse(item['related_id'].toString()) : null,
           );
         }).toList();
 
@@ -74,6 +75,7 @@ class NotificationRepository extends ChangeNotifier {
         imageAsset: notif.imageAsset,
         createdAt: notif.createdAt,
         priority: notif.priority,
+        relatedId: notif.relatedId,
       );
     }).toList();
     _unreadCount = 0;
@@ -100,6 +102,7 @@ class NotificationRepository extends ChangeNotifier {
           imageAsset: notif.imageAsset,
           createdAt: notif.createdAt,
           priority: notif.priority,
+          relatedId: notif.relatedId,
         );
       }
       return notif;

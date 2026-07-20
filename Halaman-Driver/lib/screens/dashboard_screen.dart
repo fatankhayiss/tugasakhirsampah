@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'dart:async';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../constants/api_config.dart';
+import '../widgets/floating_nav_bar.dart';
+import '../widgets/driver_status_chip.dart';
+import '../widgets/daily_vehicle_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -11,32 +17,56 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
   final _authService = AuthService();
   Map<String, dynamic>? _userData;
   Map<String, dynamic>? _activeTask;
   Map<String, dynamic>? _stats;
+  Map<String, dynamic>? _todayVehicle;
+  String _driverStatus = 'offline';
   List<dynamic> _schedules = [];
   List<dynamic> _history = [];
   bool _isLoading = true;
+  String? _localAvatarPath;
+
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadUserAndData();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      _fetchAllData(silent: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadUserAndData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final localPath = prefs.getString('local_avatar_path');
+    if (localPath != null && File(localPath).existsSync()) {
+      _localAvatarPath = localPath;
+    }
+
     final user = await _authService.getSavedUser();
     setState(() {
       _userData = user;
+      // driverStatus dari cache jika ada
+      _driverStatus = user?['driver_status']?.toString() ?? 'offline';
     });
     await _fetchAllData();
   }
 
-  Future<void> _fetchAllData() async {
-    setState(() => _isLoading = true);
-    
+  Future<void> _fetchAllData({bool silent = false}) async {
+    if (!silent) {
+      setState(() => _isLoading = true);
+    }
+
     // Fetch Active Task
     final resTask = await ApiService.instance.get(ApiConfig.driverActiveTask);
     if (resTask.success && resTask.data != null) {
@@ -54,9 +84,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'total_completed': 0,
         'total_berat': 0.0,
         'today_orders': 0,
+        'today_completed': 0,
+        'today_berat': 0.0,
         'pending_orders': 0,
-        'rating': 5.0,
       };
+    }
+
+    // Fetch Today's Vehicle from backend
+    final resVehicle = await ApiService.instance.get(ApiConfig.driverGetDailyVehicle);
+    if (resVehicle.success && resVehicle.data != null) {
+      _todayVehicle = resVehicle.data as Map<String, dynamic>;
+    } else {
+      _todayVehicle = null;
     }
 
     // Fetch Upcoming Schedules
@@ -75,18 +114,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _history = [];
     }
 
-    if (mounted) {
+    if (mounted && !silent) {
       setState(() => _isLoading = false);
+    } else if (mounted) {
+      setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DriverColors.background,
+      backgroundColor: AppColors.background,
       body: RefreshIndicator(
         onRefresh: _fetchAllData,
-        color: DriverColors.primary,
+        color: AppColors.primary,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -94,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               pinned: true,
               floating: false,
               snap: false,
-              backgroundColor: DriverColors.background,
+              backgroundColor: AppColors.background,
               elevation: 0,
               toolbarHeight: 84,
               automaticallyImplyLeading: false,
@@ -103,17 +144,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   CircleAvatar(
                     radius: 22,
-                    backgroundColor: DriverColors.primary,
-                    child: Text(
-                      _userData?['nama_lengkap'] != null && (_userData!['nama_lengkap'] as String).isNotEmpty
-                          ? (_userData!['nama_lengkap'] as String).substring(0, 2).toUpperCase()
-                          : 'DR',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    backgroundColor: AppColors.primary,
+                    backgroundImage: _localAvatarPath != null ? FileImage(File(_localAvatarPath!)) : null,
+                    child: _localAvatarPath != null
+                        ? null
+                        : Text(
+                            _userData?['nama_lengkap'] != null && (_userData!['nama_lengkap'] as String).isNotEmpty
+                                ? (_userData!['nama_lengkap'] as String).substring(0, 2).toUpperCase()
+                                : 'DR',
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -123,7 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         const Text(
                           'Halo, Mitra Driver',
-                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: DriverColors.textMuted),
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: AppColors.textMuted),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -132,7 +176,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: DriverColors.textDark,
+                            color: AppColors.textDark,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -140,16 +184,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
+                  DriverStatusChip(
+                    initialStatus: _driverStatus,
+                    onStatusChanged: (s) => setState(() => _driverStatus = s),
+                  ),
+                  const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: DriverColors.border),
+                      border: Border.all(color: AppColors.border),
                       boxShadow: DriverStyles.cardShadow,
                     ),
                     child: IconButton(
                       onPressed: () => Navigator.of(context).pushNamed('/alerts'),
-                      icon: const Icon(Icons.notifications_outlined, color: DriverColors.textDark),
+                      icon: const Icon(Icons.notifications_outlined, color: AppColors.textDark),
                     ),
                   ),
                 ],
@@ -181,167 +230,224 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) {
-              if (i == _currentIndex) return;
-              if (i == 1) {
-                Navigator.of(context).pushReplacementNamed('/schedule');
-                return;
-              }
-              if (i == 2) {
-                Navigator.of(context).pushReplacementNamed('/alerts');
-                return;
-              }
-              if (i == 3) {
-                Navigator.of(context).pushReplacementNamed('/profile');
-                return;
-              }
-              setState(() => _currentIndex = i);
-            },
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: DriverColors.primary,
-            unselectedItemColor: DriverColors.textMuted,
-            selectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 12),
-            unselectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w500, fontSize: 12),
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Beranda'),
-              BottomNavigationBarItem(icon: Icon(Icons.calendar_month_rounded), label: 'Jadwal'),
-              BottomNavigationBarItem(icon: Icon(Icons.notifications_none_rounded), label: 'Notifikasi'),
-              BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profil'),
-            ],
-          ),
-        ),
+      bottomNavigationBar: FloatingNavBar(
+        currentIndex: _currentIndex,
+        onTap: (i) {
+          if (i == _currentIndex) return;
+          if (i == 1) {
+            Navigator.of(context).pushReplacementNamed('/schedule');
+          } else if (i == 2) {
+            Navigator.of(context).pushReplacementNamed('/alerts');
+          } else if (i == 3) {
+            Navigator.of(context).pushReplacementNamed('/profile');
+          }
+        },
       ),
     );
   }
 
   Widget _buildStatsCard() {
-    final todayCount = _stats?['today_orders'] ?? 0;
+    final todayCount     = _stats?['today_orders']    ?? 0;
     final completedCount = _stats?['total_completed'] ?? 0;
-    final totalBerat = _stats?['total_berat'] ?? 0;
-    final rating = _stats?['rating'] ?? 5.0;
+    final todayDone      = _stats?['today_completed'] ?? 0;
+    final pendingCount   = _stats?['pending_orders']  ?? 0;
+    final todayBerat     = _stats?['today_berat']     ?? 0;
+    final totalBerat     = _stats?['total_berat']     ?? 0;
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            DriverColors.primary,
-            DriverColors.secondary,
-          ],
-        ),
-        borderRadius: DriverStyles.cardRadius,
-        boxShadow: [
-          BoxShadow(
-            color: DriverColors.primary.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Tugas Hari Ini',
-                      style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$todayCount',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        color: Colors.white,
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    const Text('Total Selesai', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white70, fontSize: 11)),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$completedCount',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Kendaraan hari ini (dari backend) ──
+        if (_todayVehicle != null) ...[
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+              color: Colors.white,
+              borderRadius: DriverStyles.cardRadius,
+              border: Border.all(color: AppColors.border),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.star_rounded, color: Color(0xFFFBBF24), size: 20),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Rating: $rating',
-                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
-                    ),
-                  ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: AppColors.softBlue, borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.directions_car_rounded, color: AppColors.primary, size: 20),
                 ),
-                Row(
-                  children: [
-                    const Icon(Icons.scale_rounded, color: Colors.white70, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Total Berat: ${totalBerat}kg',
-                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Kendaraan Hari Ini', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: AppColors.textMuted)),
+                      Text(
+                        '${_todayVehicle!["vehicle_type"]} — ${(_todayVehicle!["license_plate"] as String? ?? "").toUpperCase()}',
+                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, color: AppColors.textDark, fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
+                const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
               ],
             ),
           ),
+          const SizedBox(height: 16),
+        ] else ...[
+          GestureDetector(
+            onTap: () async {
+              final ok = await DailyVehicleSheet.show(context);
+              if (ok == true) _fetchAllData();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.badgePending.withValues(alpha: 0.08),
+                borderRadius: DriverStyles.cardRadius,
+                border: Border.all(color: AppColors.badgePending.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.directions_car_outlined, color: AppColors.badgePending, size: 22),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Belum daftar kendaraan hari ini — Ketuk untuk daftarkan',
+                      style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.badgePending),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.badgePending, size: 14),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
-      ),
+        // ── Stats gradient card ──
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primary, AppColors.secondary],
+            ),
+            borderRadius: DriverStyles.cardRadius,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Tugas Hari Ini',
+                          style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$todayCount',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            color: Colors.white,
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('Total Selesai', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white70, fontSize: 11)),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$completedCount',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.today_rounded, color: Colors.white70, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Selesai Hari Ini: $todayDone',
+                          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.scale_rounded, color: Colors.white70, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${todayBerat > 0 ? todayBerat.toStringAsFixed(1) : totalBerat.toStringAsFixed(1)} kg',
+                          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (pendingCount > 0) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.pending_actions_rounded, color: Color(0xFFFBBF24), size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$pendingCount pesanan masih dalam proses',
+                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -350,7 +456,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(color: DriverColors.primary),
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
       );
     }
@@ -362,12 +468,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: DriverStyles.cardRadius,
-          border: Border.all(color: DriverColors.border),
+          border: Border.all(color: AppColors.border),
           boxShadow: DriverStyles.cardShadow,
         ),
         child: Column(
           children: const [
-            Icon(Icons.inbox_outlined, size: 52, color: DriverColors.textMuted),
+            Icon(Icons.inbox_outlined, size: 52, color: AppColors.textMuted),
             SizedBox(height: 12),
             Text(
               'Tidak ada penjemputan aktif',
@@ -375,13 +481,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 fontFamily: 'Plus Jakarta Sans',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: DriverColors.textDark,
+                color: AppColors.textDark,
               ),
             ),
             SizedBox(height: 4),
             Text(
               'Saat ini Anda tidak memiliki pesanan yang sedang diproses atau dijadwalkan hari ini.',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: DriverColors.textMuted),
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: AppColors.textMuted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -397,19 +503,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Penjemputan Aktif',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: DriverColors.textDark),
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: DriverColors.badgeOnTheWay.withValues(alpha: 0.15),
+                color: AppColors.badgeOnTheWay.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 DriverStyles.getStatusLabel(_activeTask!['status'] as String?),
                 style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  color: DriverColors.badgeOnTheWay,
+                  color: AppColors.badgeOnTheWay,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -422,7 +528,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: DriverStyles.cardRadius,
-            border: Border.all(color: DriverColors.border),
+            border: Border.all(color: AppColors.border),
             boxShadow: DriverStyles.cardShadow,
           ),
           padding: const EdgeInsets.all(20),
@@ -434,10 +540,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: DriverColors.softBlue,
+                      color: AppColors.softBlue,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.recycling_rounded, color: DriverColors.primary, size: 26),
+                    child: const Icon(Icons.recycling_rounded, color: AppColors.primary, size: 26),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -446,12 +552,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Text(
                           _activeTask!['nama_warga'] ?? 'Warga',
-                          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 16, color: DriverColors.textDark),
+                          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textDark),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'ID Pesanan: #${_activeTask!['id_order']}',
-                          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13),
+                          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13),
                         ),
                       ],
                     ),
@@ -459,17 +565,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Divider(color: DriverColors.border, height: 1),
+              const Divider(color: AppColors.border, height: 1),
               const SizedBox(height: 16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.location_on_outlined, color: DriverColors.primary, size: 20),
+                  const Icon(Icons.location_on_outlined, color: AppColors.primary, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       _activeTask!['alamat_jemput'] ?? '-',
-                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark, fontSize: 14, fontWeight: FontWeight.w500),
+                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontSize: 14, fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -477,22 +583,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Icon(Icons.access_time_rounded, color: DriverColors.primary, size: 20),
+                  const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 20),
                   const SizedBox(width: 10),
                   Text(
                     '${_activeTask!['tanggal_order'] ?? ''} (${_activeTask!['waktu_jemput_dari'] ?? '08:00'} - ${_activeTask!['waktu_jemput_sampai'] ?? '17:00'})',
-                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark, fontSize: 13, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Icon(Icons.category_outlined, color: DriverColors.primary, size: 20),
+                  const Icon(Icons.category_outlined, color: AppColors.primary, size: 20),
                   const SizedBox(width: 10),
                   Text(
                     'Tipe Sampah: ${_activeTask!['jenis_sampah'] ?? 'Campuran'} (${_activeTask!['estimasi_berat'] ?? '0'} kg)',
-                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark, fontSize: 13, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -509,7 +615,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: const Icon(Icons.navigation_rounded),
                   label: const Text('Lihat Detail Penjemputan'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: DriverColors.primary,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -534,7 +640,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Jadwal Selanjutnya',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: DriverColors.textDark),
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
             ),
             TextButton(
               onPressed: () {
@@ -542,7 +648,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
               child: const Text(
                 'Lihat Semua',
-                style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.primary, fontWeight: FontWeight.w700),
+                style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -555,11 +661,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: DriverStyles.cardRadius,
-              border: Border.all(color: DriverColors.border),
+              border: Border.all(color: AppColors.border),
             ),
             child: const Text(
               'Belum ada jadwal penjemputan lainnya saat ini.',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 14),
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           )
@@ -572,7 +678,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: DriverStyles.cardRadius,
-                  border: Border.all(color: DriverColors.border),
+                  border: Border.all(color: AppColors.border),
                   boxShadow: DriverStyles.cardShadow,
                 ),
                 child: Row(
@@ -580,10 +686,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: DriverColors.softBlue,
+                        color: AppColors.softBlue,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.calendar_today_rounded, color: DriverColors.primary, size: 22),
+                      child: const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 22),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -592,24 +698,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Text(
                             item['nama_warga'] ?? 'Warga',
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 15, color: DriverColors.textDark),
+                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textDark),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             item['alamat_jemput'] ?? '-',
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13),
+                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${item['tanggal_order'] ?? ''} (${item['waktu_jemput_dari'] ?? ''} - ${item['waktu_jemput_sampai'] ?? ''})',
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded, color: DriverColors.textMuted),
+                    const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
                   ],
                 ),
               );
@@ -628,7 +734,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             const Text(
               'Riwayat Selesai',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: DriverColors.textDark),
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
             ),
             TextButton(
               onPressed: () {
@@ -636,7 +742,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
               child: const Text(
                 'Lihat Semua',
-                style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.primary, fontWeight: FontWeight.w700),
+                style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -649,11 +755,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: DriverStyles.cardRadius,
-              border: Border.all(color: DriverColors.border),
+              border: Border.all(color: AppColors.border),
             ),
             child: const Text(
               'Belum ada riwayat penjemputan selesai.',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 14),
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           )
@@ -669,7 +775,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: DriverStyles.cardRadius,
-                  border: Border.all(color: DriverColors.border),
+                  border: Border.all(color: AppColors.border),
                   boxShadow: DriverStyles.cardShadow,
                 ),
                 child: Row(
@@ -686,19 +792,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Text(
                             item['nama_warga'] ?? 'Warga',
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 15, color: DriverColors.textDark),
+                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textDark),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             item['alamat_jemput'] ?? '-',
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13),
+                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             item['tanggal_order'] ?? '',
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 12),
+                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 12),
                           ),
                         ],
                       ),
@@ -720,7 +826,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           '${item['berat_aktual'] ?? item['estimasi_berat'] ?? '0'} kg',
                           style: const TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
-                            color: DriverColors.textDark,
+                            color: AppColors.textDark,
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
@@ -747,7 +853,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           end: Alignment.bottomRight,
           colors: [
             Color(0xFF1E3A8A), // Dark blue
-            DriverColors.primary,
+            AppColors.primary,
           ],
         ),
         boxShadow: DriverStyles.cardShadow,

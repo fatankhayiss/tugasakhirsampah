@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/pickup_detail_screen.dart';
 import 'screens/schedule_screen.dart';
@@ -11,7 +10,9 @@ import 'screens/alerts_screen.dart';
 import 'screens/alert_detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/edit_profile_screen.dart';
 import 'constants/api_config.dart';
+import 'constants/app_colors.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,23 +31,23 @@ class MainApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Plus Jakarta Sans',
         colorScheme: ColorScheme.fromSeed(
-          seedColor: DriverColors.primary,
-          primary: DriverColors.primary,
-          secondary: DriverColors.secondary,
-          surface: DriverColors.surface,
+          seedColor: AppColors.primary,
+          primary: AppColors.primary,
+          secondary: AppColors.secondary,
+          surface: AppColors.surface,
           error: const Color(0xFFEF4444),
         ),
-        scaffoldBackgroundColor: DriverColors.background,
+        scaffoldBackgroundColor: AppColors.background,
         appBarTheme: const AppBarTheme(
-          backgroundColor: DriverColors.background,
+          backgroundColor: AppColors.background,
           elevation: 0,
           centerTitle: false,
-          iconTheme: IconThemeData(color: DriverColors.textDark),
+          iconTheme: IconThemeData(color: AppColors.textDark),
           titleTextStyle: TextStyle(
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: DriverColors.textDark,
+            color: AppColors.textDark,
           ),
         ),
         pageTransitionsTheme: const PageTransitionsTheme(
@@ -60,7 +61,6 @@ class MainApp extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/pickup-detail': (context) => const PickupDetailScreen(),
         '/schedule': (context) => const ScheduleScreen(),
@@ -69,6 +69,7 @@ class MainApp extends StatelessWidget {
         '/alert-detail': (context) => const AlertDetailScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/history': (context) => const HistoryScreen(),
+        '/edit-profile': (context) => const EditProfileScreen(),
       },
     );
   }

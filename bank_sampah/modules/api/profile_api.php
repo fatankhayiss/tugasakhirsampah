@@ -6,6 +6,9 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Accept, Authorization');
 
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     echo json_encode(['success' => true]);
@@ -20,6 +23,18 @@ function api_respond($success, $message, $data = null, $code = 200) {
     if ($data !== null) $response['data'] = $data;
     echo json_encode($response);
     exit;
+}
+
+if (!function_exists('getallheaders')) {
+    function getallheaders() {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (substr($name, 0, 5) == 'HTTP_') {
+                $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+            }
+        }
+        return $headers;
+    }
 }
 
 // Helper: ambil user dari token
@@ -40,7 +55,7 @@ function get_user_from_token($koneksi) {
     }
     if (!$token) return null;
 
-    $stmt = mysqli_prepare($koneksi, "SELECT id_pengguna, nama_lengkap, username, level, alamat, no_telepon, email, saldo, foto_profil, tanggal_daftar FROM pengguna WHERE api_token = ? LIMIT 1");
+    $stmt = mysqli_prepare($koneksi, "SELECT id_pengguna, nama_lengkap, username, level, alamat, no_telepon, email, saldo, foto_profil, tanggal_daftar, latitude, longitude FROM pengguna WHERE api_token = ? LIMIT 1");
     mysqli_stmt_bind_param($stmt, "s", $token);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
@@ -96,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'total_setor' => $total_setor,
         'foto_profil' => $user['foto_profil'],
         'tanggal_daftar' => $user['tanggal_daftar'],
+        'latitude' => isset($user['latitude']) ? floatval($user['latitude']) : null,
+        'longitude' => isset($user['longitude']) ? floatval($user['longitude']) : null,
     ];
 
     api_respond(true, 'Profil berhasil diambil', $profile);
@@ -113,9 +130,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $no_telepon = isset($_POST['no_telepon']) ? trim($_POST['no_telepon']) : null;
     $email = isset($_POST['email']) ? trim($_POST['email']) : null;
     $remove_foto = isset($_POST['remove_foto']) ? trim($_POST['remove_foto']) : null;
+    
+    $latitude = isset($_POST['latitude']) ? floatval($_POST['latitude']) : null;
+    $longitude = isset($_POST['longitude']) ? floatval($_POST['longitude']) : null;
 
-    // Cek duplikat Username jika diubah
-    if ($username !== null && $username !== '') {
+    // Cek duplikat Username jika diubah (kecuali untuk driver)
+    if ($username !== null && $username !== '' && $user['level'] !== 'driver') {
         $stmt_check = mysqli_prepare($koneksi, "SELECT id_pengguna FROM pengguna WHERE username = ? AND id_pengguna != ? LIMIT 1");
         mysqli_stmt_bind_param($stmt_check, "si", $username, $user_id);
         mysqli_stmt_execute($stmt_check);
@@ -168,6 +188,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updates[] = "email = ?";
         $types .= 's';
         $values[] = $email;
+    }
+    if ($latitude !== null) {
+        $updates[] = "latitude = ?";
+        $types .= 'd';
+        $values[] = $latitude;
+    }
+    if ($longitude !== null) {
+        $updates[] = "longitude = ?";
+        $types .= 'd';
+        $values[] = $longitude;
     }
     if ($remove_foto === '1' || $remove_foto === 'true') {
         $updates[] = "foto_profil = NULL";

@@ -1117,11 +1117,11 @@ class _TransferPointPageState extends State<TransferPointPage>
           height: 55,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: AppColors.primaryBlue,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.18),
+                color: AppColors.primaryBlue.withValues(alpha: 0.18),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),

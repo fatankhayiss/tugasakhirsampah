@@ -116,10 +116,10 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
         $q = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM orders");
         if ($q) $total_orders = (int)mysqli_fetch_assoc($q)['total'];
 
-        $q = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM orders WHERE status = 'pending'");
+        $q = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM orders WHERE status = 'MENUNGGU_KONFIRMASI'");
         if ($q) $orders_pending = (int)mysqli_fetch_assoc($q)['total'];
 
-        $q = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM orders WHERE status = 'completed'");
+        $q = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM orders WHERE status = 'SELESAI'");
         if ($q) $orders_completed = (int)mysqli_fetch_assoc($q)['total'];
     }
 

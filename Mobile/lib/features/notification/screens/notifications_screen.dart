@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/models/notification_model.dart';
 import '../../../core/repositories/notification_repository.dart';
 import 'notification_detail_screen.dart';
+import '../../orders/screens/order_detail_screen.dart';
 import '../../../core/navigation/app_page_transitions.dart';
 import '../../../shared/widgets/staggered_animation.dart';
 import '../../../shared/widgets/scale_tap.dart';
@@ -69,7 +70,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               Navigator.pop(context);
               _loadData();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryBlue),
             child: const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -555,12 +556,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             // Mark as read immediately on click
             _repository.markAsRead(notification.id);
 
-            Navigator.push(
-              context,
-              CustomPageRoute(
-                page: NotificationDetailScreen(notification: notification),
-              ),
-            );
+            if (notification.relatedId != null) {
+              Navigator.push(
+                context,
+                CustomPageRoute(
+                  page: OrderDetailScreen(orderId: notification.relatedId.toString()),
+                ),
+              );
+            } else {
+              Navigator.push(
+                context,
+                CustomPageRoute(
+                  page: NotificationDetailScreen(notification: notification),
+                ),
+              );
+            }
           },
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),

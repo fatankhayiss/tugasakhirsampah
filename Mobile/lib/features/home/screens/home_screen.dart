@@ -6,7 +6,6 @@ import 'main_navigation_screen.dart';
 import '../../education/screens/education_screen.dart';
 import '../../profile/screens/transfer_point_page.dart';
 import '../../../shared/widgets/notification_badge.dart';
-import '../../../shared/widgets/point_badge.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../core/repositories/education_repository.dart';
 import '../../../core/models/education_model.dart';
@@ -44,10 +43,15 @@ class _HomeScreenState extends State<HomeScreen> {
   String _userName = 'Guest';
   String? _avatarUrl;
   String? _userAddress;
+  int _currentBalance = 0;
+  
+  final _educationRepository = EducationRepository();
+  Future<List<dynamic>>? _educationFuture;
 
   @override
   void initState() {
     super.initState();
+    _educationFuture = _educationRepository.getLatestEducation(limit: 4);
     _loadUserData();
     ApiService.instance.profileUpdateNotifier.addListener(_loadUserData);
     _pageController.addListener(() {
@@ -86,6 +90,9 @@ class _HomeScreenState extends State<HomeScreen> {
               : null;
           final alamat = userData['alamat']?.toString() ?? '';
           _userAddress = alamat.isNotEmpty ? alamat : 'Alamat belum diatur';
+          
+          final saldoRaw = userData['saldo'] ?? 0;
+          _currentBalance = (saldoRaw is num) ? saldoRaw.toInt() : int.tryParse(saldoRaw.toString()) ?? 0;
         }
       });
     }
@@ -124,9 +131,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC), // Modern clean background
       extendBody: true, // For floating bottom nav bar
-      body: CustomScrollView(
-        physics: const ClampingScrollPhysics(),
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _loadUserData();
+          setState(() {
+            _educationFuture = _educationRepository.getLatestEducation(limit: 4);
+          });
+        },
+        color: AppColors.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+          slivers: [
           SliverAppBar(
             pinned: true,
             floating: false,
@@ -263,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 24),
                   StaggeredCardAnimation(
                     index: 0,
-                    child: _BalanceCard(),
+                    child: _BalanceCard(balance: _currentBalance),
                   ),
                   const SizedBox(height: 24),
                   StaggeredCardAnimation(
@@ -325,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        _EducationGrid(),
+                        _EducationGrid(future: _educationFuture),
                       ],
                     ),
                   ),
@@ -336,11 +351,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 }
 
 class _BalanceCard extends StatefulWidget {
+  final int balance;
+  const _BalanceCard({required this.balance});
+
   @override
   State<_BalanceCard> createState() => _BalanceCardState();
 }
@@ -348,25 +367,12 @@ class _BalanceCard extends StatefulWidget {
 class _BalanceCardState extends State<_BalanceCard> {
   bool _transferHover = false;
   bool _transferPressed = false;
-  String _balance = '0';
 
-  @override
-  void initState() {
-    super.initState();
-    _loadBalance();
-  }
-
-  Future<void> _loadBalance() async {
-    final userData = await ApiService.instance.getUserData();
-    if (userData != null && mounted) {
-      setState(() {
-        // Asumsi saldo dari API berupa angka utuh / desimal
-        final saldoRaw = userData['saldo'] ?? 0;
-        final int saldoInt = (saldoRaw is num) ? saldoRaw.toInt() : int.tryParse(saldoRaw.toString()) ?? 0;
-        // Format ke ribuan sederhana
-        _balance = saldoInt.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
-      });
-    }
+  String _formatNumber(int value) {
+    return value.toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
   }
 
   @override
@@ -456,10 +462,78 @@ class _BalanceCardState extends State<_BalanceCard> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Flexible(
-                    child: PointBadge.balanceAmount(
-                      amount: _balance,
-                      fontSize: 36,
-                      logoSize: 24,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Opacity(
+                            opacity: 0.95,
+                            child: Image.asset(
+                              AppImages.pointLogo,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: TweenAnimationBuilder<int>(
+                              tween: IntTween(begin: 0, end: widget.balance),
+                              duration: const Duration(milliseconds: 600),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, child) {
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    Text(
+                                      _formatNumber(value),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -1.0,
+                                        height: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Poin',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.8),
+                                        fontSize: 16.2,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -711,12 +785,13 @@ class _Carousel extends StatelessWidget {
 }
 
 class _EducationGrid extends StatelessWidget {
-  final _repository = EducationRepository();
+  final Future<List<dynamic>>? future;
+  const _EducationGrid({this.future});
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<dynamic>>(
-      future: _repository.getLatestEducation(limit: 4),
+      future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return SizedBox(

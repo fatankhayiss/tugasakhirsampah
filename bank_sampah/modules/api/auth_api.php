@@ -54,7 +54,7 @@ try {
         }
 
         // Cari user berdasarkan username, email, nama_lengkap, ATAU no_telepon (baik mentah maupun angka saja)
-        $query = "SELECT id_pengguna, nama_lengkap, username, password, level, alamat, no_telepon, email, saldo, foto_profil, tanggal_daftar, status
+        $query = "SELECT id_pengguna, nama_lengkap, username, password, level, alamat, no_telepon, email, saldo, foto_profil, tanggal_daftar, status, latitude, longitude
                   FROM pengguna
                   WHERE username = ? OR email = ? OR no_telepon = ? OR nama_lengkap = ? OR username = ? OR no_telepon = ?
                   LIMIT 1";
@@ -110,6 +110,8 @@ try {
                     'tanggal_daftar' => $user['tanggal_daftar'],
                     'status' => $user['status'] ?? 'aktif',
                     'token' => $token,
+                    'latitude' => isset($user['latitude']) ? floatval($user['latitude']) : null,
+                    'longitude' => isset($user['longitude']) ? floatval($user['longitude']) : null,
                 ];
 
                 if ($user['level'] === 'driver') {
@@ -154,6 +156,9 @@ try {
         $alamat = isset($_POST['alamat']) ? trim($_POST['alamat']) : (isset($input_json['alamat']) ? trim($input_json['alamat']) : '');
         $req_username = isset($_POST['username']) ? trim($_POST['username']) : (isset($input_json['username']) ? trim($input_json['username']) : '');
         $google_uid = isset($_POST['google_uid']) ? trim($_POST['google_uid']) : (isset($input_json['google_uid']) ? trim($input_json['google_uid']) : null);
+        
+        $latitude = isset($_POST['latitude']) ? floatval($_POST['latitude']) : (isset($input_json['latitude']) ? floatval($input_json['latitude']) : null);
+        $longitude = isset($_POST['longitude']) ? floatval($_POST['longitude']) : (isset($input_json['longitude']) ? floatval($input_json['longitude']) : null);
 
         // Data tambahan untuk driver
         $kecamatan = isset($_POST['kecamatan']) ? trim($_POST['kecamatan']) : '';
@@ -198,10 +203,10 @@ try {
 
         $requested_level = (isset($_POST['level']) && $_POST['level'] === 'driver') ? 'driver' : 'warga';
 
-        $insert = "INSERT INTO pengguna (nama_lengkap, username, password, level, alamat, no_telepon, email, google_uid, saldo, api_token, status)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.00, ?, 'aktif')";
+        $insert = "INSERT INTO pengguna (nama_lengkap, username, password, level, alamat, no_telepon, email, google_uid, saldo, api_token, status, latitude, longitude)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.00, ?, 'aktif', ?, ?)";
         $stmt_insert = mysqli_prepare($koneksi, $insert);
-        mysqli_stmt_bind_param($stmt_insert, "sssssssss", $nama, $username, $hashed_password, $requested_level, $alamat, $no_telepon, $email, $google_uid, $token);
+        mysqli_stmt_bind_param($stmt_insert, "sssssssssdd", $nama, $username, $hashed_password, $requested_level, $alamat, $no_telepon, $email, $google_uid, $token, $latitude, $longitude);
 
         if (mysqli_stmt_execute($stmt_insert)) {
             $new_id = mysqli_insert_id($koneksi);
@@ -247,6 +252,8 @@ try {
                 'foto_profil' => null,
                 'status' => 'aktif',
                 'token' => $token,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
             ];
             api_respond(true, 'Registrasi berhasil', $user_data, 201);
         } else {
@@ -270,7 +277,7 @@ try {
         }
 
         // Cari user berdasarkan google_uid atau email
-        $query = "SELECT id_pengguna, nama_lengkap, username, level, alamat, no_telepon, email, google_uid, saldo, foto_profil, tanggal_daftar, status
+        $query = "SELECT id_pengguna, nama_lengkap, username, level, alamat, no_telepon, email, google_uid, saldo, foto_profil, tanggal_daftar, status, latitude, longitude
                   FROM pengguna
                   WHERE (google_uid = ? AND google_uid IS NOT NULL AND google_uid != '') OR (email = ? AND email IS NOT NULL AND email != '')
                   LIMIT 1";
@@ -326,6 +333,8 @@ try {
                 'tanggal_daftar' => $user['tanggal_daftar'],
                 'status' => $user['status'] ?? 'aktif',
                 'token' => $token,
+                'latitude' => isset($user['latitude']) ? floatval($user['latitude']) : null,
+                'longitude' => isset($user['longitude']) ? floatval($user['longitude']) : null,
             ];
             api_respond(true, 'Login berhasil', $user_data, 200);
         } else {

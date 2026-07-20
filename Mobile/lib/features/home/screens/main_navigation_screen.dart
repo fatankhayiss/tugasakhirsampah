@@ -7,17 +7,20 @@ import '../../../shared/widgets/exit_app_dialog.dart';
 import 'home_screen.dart';
 import '../../notification/screens/notifications_screen.dart';
 import '../../orders/screens/orders_screen.dart';
+import '../../orders/screens/order_detail_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 
 /// Main shell — bottom nav + tab pages + double-back exit.
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
   final bool autoOpenEditAddress;
+  final String? targetOrderId;
 
   const MainNavigationScreen({
     super.key,
     this.initialIndex = 0,
     this.autoOpenEditAddress = false,
+    this.targetOrderId,
   });
 
   /// Safely switches to the specified tab index from anywhere in the app while maintaining the BottomNavigationBar.
@@ -26,6 +29,7 @@ class MainNavigationScreen extends StatefulWidget {
     int index, {
     bool autoOpenEditAddress = false,
     int ordersInitialTabIndex = 0,
+    String? targetOrderId,
   }) {
     final navState = context.findAncestorStateOfType<MainNavigationScreenState>() ?? MainNavigationScreenState.instance;
     if (navState != null) {
@@ -35,6 +39,7 @@ class MainNavigationScreen extends StatefulWidget {
         index,
         ordersInitialTabIndex: ordersInitialTabIndex,
         autoOpenEditAddress: autoOpenEditAddress,
+        targetOrderId: targetOrderId,
       );
     } else {
       Navigator.of(context).pushAndRemoveUntil(
@@ -43,6 +48,7 @@ class MainNavigationScreen extends StatefulWidget {
           builder: (_) => MainNavigationScreen(
             initialIndex: index,
             autoOpenEditAddress: autoOpenEditAddress,
+            targetOrderId: targetOrderId,
           ),
         ),
         (route) => false,
@@ -84,6 +90,17 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     _autoOpenEditAddress = widget.autoOpenEditAddress;
     _notificationRepository.addListener(_onNotificationChange);
     _startNotificationPolling();
+
+    if (widget.targetOrderId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: widget.targetOrderId!),
+          ),
+        );
+      });
+    }
   }
   
   void _startNotificationPolling() {
@@ -156,12 +173,23 @@ class MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-  void setTab(int index, {int ordersInitialTabIndex = 0, bool autoOpenEditAddress = false}) {
+  void setTab(int index, {int ordersInitialTabIndex = 0, bool autoOpenEditAddress = false, String? targetOrderId}) {
     setState(() {
       _ordersInitialTabIndex = ordersInitialTabIndex;
       _autoOpenEditAddress = autoOpenEditAddress;
       _currentIndex = index.clamp(0, 3);
     });
+
+    if (targetOrderId != null) {
+      Future.microtask(() {
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: targetOrderId),
+          ),
+        );
+      });
+    }
   }
 
   Future<void> _handleBackPress() async {

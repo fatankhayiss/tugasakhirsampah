@@ -99,6 +99,8 @@ class AuthRepository {
     String? username,
     String? noTelepon,
     String? alamat,
+    double? latitude,
+    double? longitude,
   }) async {
     final body = {
       'nama_lengkap': name,
@@ -113,6 +115,12 @@ class AuthRepository {
     }
     if (alamat != null && alamat.isNotEmpty) {
       body['alamat'] = alamat;
+    }
+    if (latitude != null) {
+      body['latitude'] = latitude.toString();
+    }
+    if (longitude != null) {
+      body['longitude'] = longitude.toString();
     }
 
     final response = await _api.post(ApiConfig.authRegister, body: body);

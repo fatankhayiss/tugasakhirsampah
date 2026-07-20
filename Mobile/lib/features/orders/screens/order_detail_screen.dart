@@ -121,20 +121,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   int _getStepIndex(String status) {
-    switch (status.toLowerCase()) {
-      case 'submitted':
+    switch (status.toUpperCase()) {
+      case 'SUBMITTED':
         return 0;
-      case 'pending':
+      case 'MENUNGGU_KONFIRMASI':
         return 1;
-      case 'accepted':
+      case 'DRIVER_DITUGASKAN':
         return 2;
-      case 'on_the_way':
+      case 'DRIVER_MENUJU_LOKASI':
         return 3;
-      case 'picked_up':
+      case 'SAMPAH_DIJEMPUT':
         return 4;
-      case 'validating':
+      case 'VALIDASI_BANK_SAMPAH':
         return 5;
-      case 'completed':
+      case 'SELESAI':
         return 6;
       default:
         return 1;
@@ -142,20 +142,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Color _getStatusBgColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
+    switch (status.toUpperCase()) {
+      case 'MENUNGGU_KONFIRMASI':
         return const Color(0xFFFEF9C3);
-      case 'accepted':
+      case 'DRIVER_DITUGASKAN':
         return const Color(0xFFDBEAFE);
-      case 'on_the_way':
+      case 'DRIVER_MENUJU_LOKASI':
         return const Color(0xFFE0E7FF);
-      case 'picked_up':
+      case 'SAMPAH_DIJEMPUT':
         return const Color(0xFFCCFBF1);
-      case 'validating':
+      case 'VALIDASI_BANK_SAMPAH':
         return const Color(0xFFFFEDD5);
-      case 'completed':
+      case 'SELESAI':
         return const Color(0xFFDCFCE7);
-      case 'cancelled':
+      case 'DIBATALKAN':
         return const Color(0xFFFEE2E2);
       default:
         return const Color(0xFFF1F5F9);
@@ -163,20 +163,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Color _getStatusTextColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
+    switch (status.toUpperCase()) {
+      case 'MENUNGGU_KONFIRMASI':
         return const Color(0xFFD97706);
-      case 'accepted':
+      case 'DRIVER_DITUGASKAN':
         return const Color(0xFF2563EB);
-      case 'on_the_way':
+      case 'DRIVER_MENUJU_LOKASI':
         return const Color(0xFF4F46E5);
-      case 'picked_up':
+      case 'SAMPAH_DIJEMPUT':
         return const Color(0xFF0D9488);
-      case 'validating':
+      case 'VALIDASI_BANK_SAMPAH':
         return const Color(0xFFEA580C);
-      case 'completed':
+      case 'SELESAI':
         return const Color(0xFF16A34A);
-      case 'cancelled':
+      case 'DIBATALKAN':
         return const Color(0xFFDC2626);
       default:
         return AppColors.textSoft;
@@ -184,20 +184,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   String _getStatusLabel(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
+    switch (status.toUpperCase()) {
+      case 'MENUNGGU_KONFIRMASI':
         return 'MENUNGGU KONFIRMASI';
-      case 'accepted':
+      case 'DRIVER_DITUGASKAN':
         return 'PESANAN DITERIMA';
-      case 'on_the_way':
+      case 'DRIVER_MENUJU_LOKASI':
         return 'DRIVER MENUJU LOKASI';
-      case 'picked_up':
+      case 'SAMPAH_DIJEMPUT':
         return 'SAMPAH DIJEMPUT';
-      case 'validating':
+      case 'VALIDASI_BANK_SAMPAH':
         return 'PROSES VALIDASI';
-      case 'completed':
+      case 'SELESAI':
         return 'SELESAI';
-      case 'cancelled':
+      case 'DIBATALKAN':
         return 'DIBATALKAN';
       default:
         return status.toUpperCase();
@@ -244,13 +244,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildContent() {
-    final status = _order!['status'] as String? ?? 'pending';
+    final status = _order!['status'] as String? ?? 'MENUNGGU_KONFIRMASI';
     final driverName = _order!['nama_driver'] as String?;
     final platNomor = _order!['plat_nomor'] as String? ?? 'Motor Box - B 1234 ABC';
-    final isAssigned = (status == 'accepted' ||
-            status == 'on_the_way' ||
-            status == 'picked_up' ||
-            status == 'completed') &&
+    final isAssigned = (status == 'DRIVER_DITUGASKAN' ||
+            status == 'DRIVER_MENUJU_LOKASI' ||
+            status == 'SAMPAH_DIJEMPUT' ||
+            status == 'VALIDASI_BANK_SAMPAH' ||
+            status == 'SELESAI') &&
         driverName != null;
 
     final alamat = _order!['alamat_jemput'] ?? _order!['alamat'] ?? '-';
@@ -312,7 +313,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 24),
 
           // Card 1: Timeline Status 6 Tahap
-          if (status != 'cancelled') ...[
+          if (status != 'DIBATALKAN') ...[
             _buildSectionCard(
               icon: LucideIcons.git_commit_vertical,
               iconBgColor: const Color(0xFFEAF8EF),
@@ -373,7 +374,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ],
                     ),
                   ),
-                  if (status == 'accepted' || status == 'on_the_way')
+                  if (status == 'DRIVER_DITUGASKAN' || status == 'DRIVER_MENUJU_LOKASI')
                     Container(
                       width: 44,
                       height: 44,

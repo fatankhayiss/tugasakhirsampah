@@ -7,32 +7,17 @@ import '../models/order_model.dart';
 import 'notification_repository.dart';
 import '../services/api_service.dart';
 
+import 'package:flutter/foundation.dart';
+
 /// Repository for orders — fetches from bank_sampah orders_api.php, transaksi_api.php, and reward_api.php.
-class OrderRepository {
+class OrderRepository extends ChangeNotifier {
   OrderRepository._();
   static final OrderRepository instance = OrderRepository._();
 
   final ApiService _api = ApiService.instance;
 
-  /// In-memory ongoing orders (supplemented by API data).
-  final List<OngoingOrderModel> _localOngoing = [];
-
-  void addOrder(OrderModel order) {
-    _localOngoing.insert(
-      0,
-      OngoingOrderModel(
-        id: order.id,
-        title: order.title,
-        date: order.date,
-        subtitle: '${order.estimatedWeight} · Est. ${order.estimatedPoints} poin',
-        status: OngoingStatus.processing,
-        estimatedPoints: '+${order.estimatedPoints} poin',
-      ),
-    );
-  }
-
-  void addOngoing(OngoingOrderModel order) {
-    _localOngoing.insert(0, order);
+  void refresh() {
+    notifyListeners();
   }
 
   /// Create a new pickup order via API.
@@ -68,14 +53,14 @@ class OrderRepository {
 
   /// Fetch ongoing orders (both pickup and redemptions) from API.
   Future<List<OngoingOrderModel>> getOngoingOrders() async {
-    final List<OngoingOrderModel> combined = [..._localOngoing];
+    final List<OngoingOrderModel> combined = [];
     try {
       final userData = await _api.getUserData();
       final userId = userData?['id']?.toString() ?? '';
       if (userId.isNotEmpty) {
         final response = await _api.get(ApiConfig.orders, queryParams: {
           'user_id': userId,
-          'status': 'pending,accepted,on_the_way,picked_up',
+          'status': 'MENUNGGU_KONFIRMASI,DRIVER_DITUGASKAN,DRIVER_MENUJU_LOKASI,SAMPAH_DIJEMPUT,VALIDASI_BANK_SAMPAH',
         });
 
         if (response.success && response.data != null) {
@@ -90,6 +75,7 @@ class OrderRepository {
               status: status,
               estimatedPoints: '+${item['estimasi_poin'] ?? 0} poin',
               driverName: item['nama_driver'],
+              rawStatus: item['status']?.toString(),
             );
           }).toList();
           combined.addAll(apiOrders);
@@ -330,15 +316,15 @@ class OrderRepository {
 
   OngoingStatus _mapStatus(String status) {
     switch (status) {
-      case 'pending':
+      case 'MENUNGGU_KONFIRMASI':
+        return OngoingStatus.pending;
+      case 'DRIVER_DITUGASKAN':
+      case 'DRIVER_MENUJU_LOKASI':
         return OngoingStatus.processing;
-      case 'accepted':
-      case 'on_the_way':
-        return OngoingStatus.processing;
-      case 'picked_up':
-        return OngoingStatus.processing;
-      case 'completed':
-        return OngoingStatus.processing;
+      case 'SAMPAH_DIJEMPUT':
+        return OngoingStatus.pickup;
+      case 'VALIDASI_BANK_SAMPAH':
+        return OngoingStatus.verifying;
       default:
         return OngoingStatus.processing;
     }

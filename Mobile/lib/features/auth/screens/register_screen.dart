@@ -4,6 +4,8 @@ import 'package:mobile_user/core/repositories/auth_repository.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
+import '../../../core/repositories/auth_repository.dart';
+import '../../../core/repositories/auth_repository.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -14,22 +16,24 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = false;
-  
+
   bool _isRegisterPressed = false;
   bool _isLoading = false;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _usernameController.dispose();
     _phoneController.dispose();
@@ -41,41 +45,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _showAlertDialog(String title, String message) {
     AppDialogTransitions.showFadeScaleDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'OK',
-              style: TextStyle(color: Color(0xFF43C97B), fontWeight: FontWeight.w700, fontSize: 15),
+      builder:
+          (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
+            title: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            content: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF64748B),
+                height: 1.4,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Color(0xFF43C97B),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   Future<void> _handleRegister() async {
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final username = _usernameController.text.trim();
     final noTelepon = _phoneController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (email.isEmpty || username.isEmpty || noTelepon.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      _showAlertDialog(
-        'Peringatan',
-        'Semua kolom (Username, Email, Nomor HP, Password, Confirm Password) wajib diisi.',
-      );
+    if (name.isEmpty ||
+        email.isEmpty ||
+        username.isEmpty ||
+        noTelepon.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      _showAlertDialog('Peringatan', 'Semua kolom wajib diisi.');
       return;
     }
 
@@ -100,23 +122,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final repo = AuthRepository();
       await repo.register(
-        username,
+        name,
         email,
         password,
         username: username,
         noTelepon: noTelepon,
-        alamat: '',
       );
       await repo.logout(); // Hapus auto-login agar user terpaksa login manual
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Registrasi berhasil! Silakan login.'),
-          backgroundColor: AppColors.primary,
+          backgroundColor: AppColors.primaryBlue,
         ),
       );
-      Navigator.pushReplacementNamed(context, AppRoutes.login, arguments: email);
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.login,
+        arguments: email,
+      );
     } catch (e) {
       if (!mounted) return;
       _showAlertDialog(
@@ -139,7 +164,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      _showAlertDialog('Peringatan', e.toString().replaceAll('Exception: ', ''));
+      _showAlertDialog(
+        'Peringatan',
+        e.toString().replaceAll('Exception: ', ''),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -166,36 +194,75 @@ class _RegisterScreenState extends State<RegisterScreen> {
           physics: const BouncingScrollPhysics(),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: (MediaQuery.of(context).size.width * 0.06).clamp(16.0, 32.0),
-              vertical: (MediaQuery.of(context).size.height * 0.02).clamp(12.0, 24.0),
+              horizontal: (MediaQuery.of(context).size.width * 0.06).clamp(
+                16.0,
+                32.0,
+              ),
+              vertical: (MediaQuery.of(context).size.height * 0.02).clamp(
+                12.0,
+                24.0,
+              ),
             ),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: (MediaQuery.of(context).size.height * 0.01).clamp(4.0, 12.0)),
+                  SizedBox(
+                    height: (MediaQuery.of(context).size.height * 0.01).clamp(
+                      4.0,
+                      12.0,
+                    ),
+                  ),
                   // Title
                   Text(
                     content.title,
                     style: TextStyle(
-                      fontSize: (MediaQuery.of(context).size.width * 0.08).clamp(26.0, 34.0),
+                      fontSize: (MediaQuery.of(context).size.width * 0.08)
+                          .clamp(26.0, 34.0),
                       fontWeight: FontWeight.w800,
                       color: AppColors.textDark,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  SizedBox(height: (MediaQuery.of(context).size.height * 0.015).clamp(8.0, 16.0)),
+                  SizedBox(
+                    height: (MediaQuery.of(context).size.height * 0.015).clamp(
+                      8.0,
+                      16.0,
+                    ),
+                  ),
                   // Subtitle
                   Text(
                     content.subtitle,
                     style: TextStyle(
-                      fontSize: (MediaQuery.of(context).size.width * 0.038).clamp(13.0, 16.0),
+                      fontSize: (MediaQuery.of(context).size.width * 0.038)
+                          .clamp(13.0, 16.0),
                       color: Colors.black54,
                       height: 1.6,
                     ),
                   ),
-                  SizedBox(height: (MediaQuery.of(context).size.height * 0.035).clamp(20.0, 36.0)),
+                  SizedBox(
+                    height: (MediaQuery.of(context).size.height * 0.035).clamp(
+                      20.0,
+                      36.0,
+                    ),
+                  ),
+
+                  // Name Field
+                  const Text(
+                    'Nama Lengkap',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _EcoTextField(
+                    controller: _nameController,
+                    hintText: 'Masukkan nama lengkap',
+                  ),
+                  const SizedBox(height: 24),
 
                   // Username Field
                   const Text(
@@ -361,56 +428,83 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   // Register Button
                   GestureDetector(
-                    onTapDown: (_agreedToTerms && !_isLoading) ? (_) => setState(() => _isRegisterPressed = true) : null,
-                    onTapUp: (_agreedToTerms && !_isLoading) ? (_) {
-                      setState(() => _isRegisterPressed = false);
-                      _handleRegister();
-                    } : null,
-                    onTapCancel: () => setState(() => _isRegisterPressed = false),
+                    onTapDown:
+                        (_agreedToTerms && !_isLoading)
+                            ? (_) => setState(() => _isRegisterPressed = true)
+                            : null,
+                    onTapUp:
+                        (_agreedToTerms && !_isLoading)
+                            ? (_) {
+                              setState(() => _isRegisterPressed = false);
+                              _handleRegister();
+                            }
+                            : null,
+                    onTapCancel:
+                        () => setState(() => _isRegisterPressed = false),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      transform: Matrix4.identity()..scaleByDouble(_isRegisterPressed ? 0.95 : 1.0, _isRegisterPressed ? 0.95 : 1.0, 1.0, 1.0),
+                      transform:
+                          Matrix4.identity()..scaleByDouble(
+                            _isRegisterPressed ? 0.95 : 1.0,
+                            _isRegisterPressed ? 0.95 : 1.0,
+                            1.0,
+                            1.0,
+                          ),
                       transformAlignment: Alignment.center,
                       width: double.infinity,
                       height: 56,
                       decoration: BoxDecoration(
-                        gradient: (_agreedToTerms && !_isLoading)
-                            ? const LinearGradient(
-                                colors: [AppColors.primaryBlue, AppColors.secondaryBlue],
-                              )
-                            : LinearGradient(
-                                colors: [Colors.grey[300]!, Colors.grey[300]!],
-                              ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: (_agreedToTerms && !_isLoading)
-                            ? [
-                                BoxShadow(
-                                  color: AppColors.primaryBlue.withValues(alpha: 0.04),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 6),
+                        gradient:
+                            (_agreedToTerms && !_isLoading)
+                                ? const LinearGradient(
+                                  colors: [
+                                    AppColors.primaryBlue,
+                                    AppColors.secondaryBlue,
+                                  ],
                                 )
-                              ]
-                            : [],
+                                : LinearGradient(
+                                  colors: [
+                                    Colors.grey[300]!,
+                                    Colors.grey[300]!,
+                                  ],
+                                ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow:
+                            (_agreedToTerms && !_isLoading)
+                                ? [
+                                  BoxShadow(
+                                    color: AppColors.primaryBlue.withValues(
+                                      alpha: 0.04,
+                                    ),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ]
+                                : [],
                       ),
                       alignment: Alignment.center,
-                      child: _isLoading 
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : Text(
-                            content.registerButtonText,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: (_agreedToTerms && !_isLoading) ? Colors.white : Colors.grey[500],
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+                      child:
+                          _isLoading
+                              ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                              : Text(
+                                content.registerButtonText,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      (_agreedToTerms && !_isLoading)
+                                          ? Colors.white
+                                          : Colors.grey[500],
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -433,16 +527,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           Navigator.pushReplacement(
                             context,
                             PageRouteBuilder(
-                              pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
-                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                return FadeTransition(opacity: animation, child: child);
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const LoginScreen(),
+                              transitionsBuilder: (
+                                context,
+                                animation,
+                                secondaryAnimation,
+                                child,
+                              ) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
                               },
                             ),
                           );
                         },
                         borderRadius: BorderRadius.circular(4),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
                           child: Text(
                             content.loginLinkText,
                             style: const TextStyle(
@@ -460,7 +567,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // Divider
                   Row(
                     children: [
-                      Expanded(child: Divider(color: Colors.grey[200], thickness: 1.5)),
+                      Expanded(
+                        child: Divider(color: Colors.grey[200], thickness: 1.5),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -472,7 +581,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: Colors.grey[200], thickness: 1.5)),
+                      Expanded(
+                        child: Divider(color: Colors.grey[200], thickness: 1.5),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 32),
@@ -483,7 +594,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     height: 54,
                     child: OutlinedButton.icon(
                       onPressed: _isLoading ? null : _handleGoogleLogin,
-                      icon: const FaIcon(FontAwesomeIcons.google, color: Color(0xFFEA4335), size: 20),
+                      icon: const FaIcon(
+                        FontAwesomeIcons.google,
+                        color: Color(0xFFEA4335),
+                        size: 20,
+                      ),
                       label: const Text(
                         'Masuk dengan Google',
                         style: TextStyle(
@@ -494,7 +609,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       style: OutlinedButton.styleFrom(
                         backgroundColor: Colors.white,
-                        side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                        side: const BorderSide(
+                          color: Color(0xFFE2E8F0),
+                          width: 1.5,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -572,21 +690,22 @@ class _EcoTextFieldState extends State<_EcoTextField> {
           color: _isFocused ? AppColors.primary : AppColors.border,
           width: _isFocused ? 2 : 1,
         ),
-        boxShadow: _isFocused
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.04),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                )
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                )
-              ],
+        boxShadow:
+            _isFocused
+                ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.04),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+                : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
       ),
       child: TextField(
         controller: widget.controller,
@@ -600,37 +719,52 @@ class _EcoTextFieldState extends State<_EcoTextField> {
           hintText: widget.hintText,
           hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-          prefixIcon: widget.prefixIcon != null
-              ? Icon(widget.prefixIcon, color: _isFocused ? AppColors.primary : Colors.grey[400], size: 20)
-              : null,
-          suffixIcon: widget.onToggleObscure != null
-              ? IconButton(
-                  icon: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, anim) => RotationTransition(
-                      turns: child.key == const ValueKey('icon1')
-                          ? Tween<double>(begin: 1, end: 1).animate(anim)
-                          : Tween<double>(begin: 1, end: 1).animate(anim),
-                      child: FadeTransition(opacity: anim, child: child),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
+          ),
+          prefixIcon:
+              widget.prefixIcon != null
+                  ? Icon(
+                    widget.prefixIcon,
+                    color: _isFocused ? AppColors.primary : Colors.grey[400],
+                    size: 20,
+                  )
+                  : null,
+          suffixIcon:
+              widget.onToggleObscure != null
+                  ? IconButton(
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder:
+                          (child, anim) => RotationTransition(
+                            turns:
+                                child.key == const ValueKey('icon1')
+                                    ? Tween<double>(
+                                      begin: 1,
+                                      end: 1,
+                                    ).animate(anim)
+                                    : Tween<double>(
+                                      begin: 1,
+                                      end: 1,
+                                    ).animate(anim),
+                            child: FadeTransition(opacity: anim, child: child),
+                          ),
+                      child: Icon(
+                        widget.obscureText
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        key: ValueKey(widget.obscureText ? 'icon1' : 'icon2'),
+                        color:
+                            _isFocused ? AppColors.primary : Colors.grey[400],
+                        size: 20,
+                      ),
                     ),
-                    child: Icon(
-                      widget.obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      key: ValueKey(widget.obscureText ? 'icon1' : 'icon2'),
-                      color: _isFocused ? AppColors.primary : Colors.grey[400],
-                      size: 20,
-                    ),
-                  ),
-                  onPressed: widget.onToggleObscure,
-                )
-              : null,
+                    onPressed: widget.onToggleObscure,
+                  )
+                  : null,
         ),
       ),
     );
   }
 }
-
-
-
-
-

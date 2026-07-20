@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               fontFamily: 'Plus Jakarta Sans',
               fontWeight: FontWeight.w700,
               fontSize: 18,
-              color: DriverColors.textDark,
+              color: AppColors.textDark,
             ),
             textAlign: TextAlign.center,
           ),
@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
               fontSize: 14,
-              color: DriverColors.textMuted,
+              color: AppColors.textMuted,
             ),
             textAlign: TextAlign.center,
           ),
@@ -147,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DriverColors.background,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnim,
@@ -163,13 +163,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: DriverColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(18),
                     ),
                     alignment: Alignment.center,
                     child: const Icon(
                       Icons.local_shipping_rounded,
-                      color: DriverColors.primary,
+                      color: AppColors.primary,
                       size: 34,
                     ),
                   ),
@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
-                      color: DriverColors.textDark,
+                      color: AppColors.textDark,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -190,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
-                      color: DriverColors.textMuted,
+                      color: AppColors.textMuted,
                       height: 1.5,
                     ),
                   ),
@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: DriverColors.border),
+                      border: Border.all(color: AppColors.border),
                       boxShadow: DriverStyles.cardShadow,
                     ),
                     child: Column(
@@ -212,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: DriverColors.textMuted,
+                            color: AppColors.textMuted,
                             letterSpacing: 0.8,
                           ),
                         ),
@@ -224,26 +224,26 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: DriverColors.textDark,
+                            color: AppColors.textDark,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Email / Username / Nomor Telepon',
-                            hintStyle: const TextStyle(color: DriverColors.textMuted, fontWeight: FontWeight.w400),
-                            prefixIcon: const Icon(Icons.person_outline_rounded, color: DriverColors.primary),
+                            hintStyle: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w400),
+                            prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
                             filled: true,
-                            fillColor: DriverColors.background,
+                            fillColor: AppColors.background,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: DriverColors.border),
+                              borderSide: const BorderSide(color: AppColors.border),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: DriverColors.border),
+                              borderSide: const BorderSide(color: AppColors.border),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: DriverColors.primary, width: 2),
+                              borderSide: const BorderSide(color: AppColors.primary, width: 2),
                             ),
                           ),
                         ),
@@ -254,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: DriverColors.textMuted,
+                            color: AppColors.textMuted,
                             letterSpacing: 0.8,
                           ),
                         ),
@@ -266,16 +266,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: DriverColors.textDark,
+                            color: AppColors.textDark,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Masukkan password',
-                            hintStyle: const TextStyle(color: DriverColors.textMuted, fontWeight: FontWeight.w400),
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: DriverColors.primary),
+                            hintStyle: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w400),
+                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                color: DriverColors.textMuted,
+                                color: AppColors.textMuted,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -284,19 +284,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               },
                             ),
                             filled: true,
-                            fillColor: DriverColors.background,
+                            fillColor: AppColors.background,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: DriverColors.border),
+                              borderSide: const BorderSide(color: AppColors.border),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: DriverColors.border),
+                              borderSide: const BorderSide(color: AppColors.border),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: DriverColors.primary, width: 2),
+                              borderSide: const BorderSide(color: AppColors.primary, width: 2),
                             ),
                           ),
                           onSubmitted: (_) => _login(),
@@ -308,7 +308,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _login,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: DriverColors.primary,
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               elevation: 2,
                               shape: RoundedRectangleBorder(
@@ -336,29 +336,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Belum terdaftar sebagai Driver?',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          color: DriverColors.textMuted,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pushNamed('/register'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: DriverColors.primary,
-                        ),
-                        child: const Text(
-                          'Daftar Sekarang',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),

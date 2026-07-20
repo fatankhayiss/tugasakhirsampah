@@ -8,6 +8,7 @@ class NotificationModel {
   final String? imageAsset;
   final DateTime? createdAt;
   final String? priority;
+  final int? relatedId;
 
   NotificationModel({
     required this.id,
@@ -19,5 +20,6 @@ class NotificationModel {
     this.imageAsset,
     this.createdAt,
     this.priority,
+    this.relatedId,
   });
 }

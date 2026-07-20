@@ -1,0 +1,34 @@
+Time: 2026-07-21 00:05:06
+POST Data: Array
+(
+    [nama_lengkap] => Driver Budi
+    [username] => driverbudi
+    [no_telepon] => 0812345678
+    [email] => driverbudi@gmail.com
+    [token] => 9ec4a8342c58eaf5c448ea357ac71382c40350c2e363e71e2478f1696b4f12c7
+)
+
+SQL: UPDATE pengguna SET nama_lengkap = ?, username = ?, no_telepon = ?, email = ? WHERE id_pengguna = ?
+Values: Array
+(
+    [0] => Driver Budi
+    [1] => driverbudi
+    [2] => 0812345678
+    [3] => driverbudi@gmail.com
+    [4] => 9
+)
+
+Time: 2026-07-21 00:06:29
+POST Data: Array
+(
+    [nama_lengkap] => Driver Budi
+    [token] => 9ec4a8342c58eaf5c448ea357ac71382c40350c2e363e71e2478f1696b4f12c7
+)
+
+SQL: UPDATE pengguna SET nama_lengkap = ? WHERE id_pengguna = ?
+Values: Array
+(
+    [0] => Driver Budi
+    [1] => 9
+)
+

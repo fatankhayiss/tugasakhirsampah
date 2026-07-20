@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../constants/api_config.dart';
+import '../widgets/floating_nav_bar.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -10,7 +11,7 @@ class AlertsScreen extends StatefulWidget {
 }
 
 class _AlertsScreenState extends State<AlertsScreen> {
-  int _currentIndex = 2;
+  final int _currentIndex = 2;
   List<dynamic> _notifications = [];
   bool _isLoading = true;
 
@@ -39,10 +40,10 @@ class _AlertsScreenState extends State<AlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DriverColors.background,
+      backgroundColor: AppColors.background,
       body: RefreshIndicator(
         onRefresh: _fetchNotifications,
-        color: DriverColors.primary,
+        color: AppColors.primary,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -50,7 +51,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
               pinned: true,
               floating: false,
               snap: false,
-              backgroundColor: DriverColors.background,
+              backgroundColor: AppColors.background,
               elevation: 0,
               toolbarHeight: 84,
               automaticallyImplyLeading: false,
@@ -58,7 +59,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: DriverColors.primary,
+                    backgroundColor: AppColors.primary,
                     child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
@@ -68,13 +69,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: DriverColors.textDark,
+                      color: AppColors.textDark,
                     ),
                   ),
                   const Spacer(),
                   IconButton(
                     onPressed: _fetchNotifications,
-                    icon: const Icon(Icons.refresh_rounded, color: DriverColors.primary),
+                    icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
                   ),
                 ],
               ),
@@ -88,7 +89,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         child: Center(
                           child: Padding(
                             padding: EdgeInsets.all(40),
-                            child: CircularProgressIndicator(color: DriverColors.primary),
+                            child: CircularProgressIndicator(color: AppColors.primary),
                           ),
                         ),
                       )
@@ -100,12 +101,12 @@ class _AlertsScreenState extends State<AlertsScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: DriverStyles.cardRadius,
-                                border: Border.all(color: DriverColors.border),
+                                border: Border.all(color: AppColors.border),
                                 boxShadow: DriverStyles.cardShadow,
                               ),
                               child: Column(
                                 children: const [
-                                  Icon(Icons.notifications_off_rounded, size: 56, color: DriverColors.textMuted),
+                                  Icon(Icons.notifications_off_rounded, size: 56, color: AppColors.textMuted),
                                   SizedBox(height: 16),
                                   Text(
                                     'Belum ada notifikasi',
@@ -113,7 +114,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                       fontFamily: 'Plus Jakarta Sans',
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
-                                      color: DriverColors.textDark,
+                                      color: AppColors.textDark,
                                     ),
                                   ),
                                   SizedBox(height: 6),
@@ -122,7 +123,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                                     style: TextStyle(
                                       fontFamily: 'Plus Jakarta Sans',
                                       fontSize: 13,
-                                      color: DriverColors.textMuted,
+                                      color: AppColors.textMuted,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -144,51 +145,18 @@ class _AlertsScreenState extends State<AlertsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) {
-              if (i == _currentIndex) return;
-              if (i == 0) {
-                Navigator.of(context).pushReplacementNamed('/dashboard');
-                return;
-              }
-              if (i == 1) {
-                Navigator.of(context).pushReplacementNamed('/schedule');
-                return;
-              }
-              if (i == 3) {
-                Navigator.of(context).pushReplacementNamed('/profile');
-                return;
-              }
-              setState(() => _currentIndex = i);
-            },
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: DriverColors.primary,
-            unselectedItemColor: DriverColors.textMuted,
-            selectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 12),
-            unselectedLabelStyle: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w500, fontSize: 12),
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Beranda'),
-              BottomNavigationBarItem(icon: Icon(Icons.calendar_month_rounded), label: 'Jadwal'),
-              BottomNavigationBarItem(icon: Icon(Icons.notifications_none_rounded), label: 'Notifikasi'),
-              BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: 'Profil'),
-            ],
-          ),
-        ),
+      bottomNavigationBar: FloatingNavBar(
+        currentIndex: _currentIndex,
+        onTap: (i) {
+          if (i == _currentIndex) return;
+          if (i == 0) {
+            Navigator.of(context).pushReplacementNamed('/dashboard');
+          } else if (i == 1) {
+            Navigator.of(context).pushReplacementNamed('/schedule');
+          } else if (i == 3) {
+            Navigator.of(context).pushReplacementNamed('/profile');
+          }
+        },
       ),
     );
   }
@@ -203,7 +171,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: DriverStyles.cardRadius,
-        border: Border.all(color: DriverColors.border),
+        border: Border.all(color: AppColors.border),
         boxShadow: DriverStyles.cardShadow,
       ),
       child: Material(
@@ -226,11 +194,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: DriverColors.softBlue,
+                    color: AppColors.softBlue,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.notifications_active_rounded, color: DriverColors.primary, size: 24),
+                  child: const Icon(Icons.notifications_active_rounded, color: AppColors.primary, size: 24),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -244,13 +212,13 @@ class _AlertsScreenState extends State<AlertsScreen> {
                             judul,
                             style: const TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
-                              color: DriverColors.primary,
+                              color: AppColors.primary,
                               fontWeight: FontWeight.w800,
                               fontSize: 12,
                               letterSpacing: 0.5,
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded, color: DriverColors.textMuted, size: 18),
+                          const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 18),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -260,7 +228,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: DriverColors.textDark,
+                          color: AppColors.textDark,
                           height: 1.4,
                         ),
                       ),
@@ -269,7 +237,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         dateStr,
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          color: DriverColors.textMuted,
+                          color: AppColors.textMuted,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),

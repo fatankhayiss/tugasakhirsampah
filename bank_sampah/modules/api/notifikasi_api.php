@@ -88,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'pesan' => $row['pesan'],
             'tipe' => $row['tipe'],
             'is_read' => (bool)$row['is_read'],
+            'related_id' => $row['related_id'] ? (int)$row['related_id'] : null,
             'created_at' => $row['created_at'],
         ];
     }

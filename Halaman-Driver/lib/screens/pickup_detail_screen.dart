@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../constants/api_config.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 
 class PickupDetailScreen extends StatefulWidget {
   const PickupDetailScreen({super.key});
@@ -24,6 +27,67 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
         _task = {};
       }
       _initialized = true;
+      _initLocationTracking();
+    }
+  }
+
+  StreamSubscription<Position>? _positionStream;
+  double _distanceToPickup = double.infinity;
+
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initLocationTracking() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+    
+    if (permission == LocationPermission.deniedForever) return;
+
+    final latStr = _task['latitude']?.toString();
+    final lngStr = _task['longitude']?.toString();
+    if (latStr == null || lngStr == null) return;
+    
+    final targetLat = double.tryParse(latStr);
+    final targetLng = double.tryParse(lngStr);
+    if (targetLat == null || targetLng == null) return;
+
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 10),
+    ).listen((Position position) {
+      final distance = Geolocator.distanceBetween(
+        position.latitude,
+        position.longitude,
+        targetLat,
+        targetLng,
+      );
+      if (mounted) {
+        setState(() {
+          _distanceToPickup = distance;
+        });
+      }
+    });
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat membuka aplikasi terkait.')));
+      }
     }
   }
 
@@ -31,18 +95,18 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
   Widget build(BuildContext context) {
     if (_task.isEmpty) {
       return Scaffold(
-        backgroundColor: DriverColors.background,
+        backgroundColor: AppColors.background,
         appBar: AppBar(
-          backgroundColor: DriverColors.background,
+          backgroundColor: AppColors.background,
           elevation: 0,
           leading: IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back_rounded, color: DriverColors.textDark),
+            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
           ),
-          title: const Text('Detail Pesanan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: DriverColors.textDark)),
+          title: const Text('Detail Pesanan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.textDark)),
         ),
         body: const Center(
-          child: Text('Data pesanan tidak ditemukan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted)),
+          child: Text('Data pesanan tidak ditemukan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted)),
         ),
       );
     }
@@ -52,14 +116,14 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
     final statusColor = DriverStyles.getStatusColor(statusStr);
 
     return Scaffold(
-      backgroundColor: DriverColors.background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: DriverColors.background,
+        backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded, color: DriverColors.textDark),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
         ),
         title: Text(
           'Pesanan #${_task['id_order'] ?? ''}',
@@ -67,7 +131,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: DriverColors.textDark,
+            color: AppColors.textDark,
           ),
         ),
         actions: [
@@ -121,7 +185,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: DriverStyles.cardRadius,
-        border: Border.all(color: DriverColors.border),
+        border: Border.all(color: AppColors.border),
         boxShadow: DriverStyles.cardShadow,
       ),
       padding: const EdgeInsets.all(20),
@@ -132,11 +196,11 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: DriverColors.softBlue,
+              color: AppColors.softBlue,
               borderRadius: BorderRadius.circular(16),
             ),
             alignment: Alignment.center,
-            child: const Icon(Icons.recycling_rounded, color: DriverColors.primary, size: 30),
+            child: const Icon(Icons.recycling_rounded, color: AppColors.primary, size: 30),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -145,12 +209,12 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
               children: [
                 const Text(
                   'Jadwal & Estimasi',
-                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w800, color: DriverColors.textDark),
+                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$tanggal ($waktuDari - $waktuSampai)',
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -160,12 +224,12 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: DriverColors.softBlue,
+                        color: AppColors.softBlue,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         'Estimasi: $berat',
-                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.primary, fontSize: 12, fontWeight: FontWeight.w700),
+                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700),
                       ),
                     ),
                     Container(
@@ -176,7 +240,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                       ),
                       child: Text(
                         jenis,
-                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark, fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -199,7 +263,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: DriverStyles.cardRadius,
-        border: Border.all(color: DriverColors.border),
+        border: Border.all(color: AppColors.border),
         boxShadow: DriverStyles.cardShadow,
       ),
       padding: const EdgeInsets.all(20),
@@ -210,10 +274,10 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: DriverColors.softBlue,
+                backgroundColor: AppColors.softBlue,
                 child: Text(
                   inisial,
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: DriverColors.primary, fontSize: 16),
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
                 ),
               ),
               const SizedBox(width: 14),
@@ -223,51 +287,77 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                   children: [
                     Text(
                       nama,
-                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 16, color: DriverColors.textDark),
+                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textDark),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Telp: $noTelp',
-                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 13),
+                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: DriverColors.primary,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Menghubungi $nama ($noTelp)...')));
-                  },
-                  icon: const Icon(Icons.phone_rounded, color: Colors.white, size: 20),
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(color: const Color(0xFF25D366), borderRadius: BorderRadius.circular(14)),
+                    child: IconButton(
+                      onPressed: () => _launchUrl('https://wa.me/$noTelp'),
+                      icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(14)),
+                    child: IconButton(
+                      onPressed: () => _launchUrl('tel:$noTelp'),
+                      icon: const Icon(Icons.phone_rounded, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(color: DriverColors.border, height: 1),
+          const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: DriverColors.softBlue, borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.location_on_rounded, color: DriverColors.primary, size: 20),
+                decoration: BoxDecoration(color: AppColors.softBlue, borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Alamat Penjemputan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+                    const Text('Alamat Penjemputan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 4),
-                    Text(alamat, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w600, fontSize: 14, color: DriverColors.textDark)),
+                    Text(alamat, style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textDark)),
+                    const SizedBox(height: 10),
+                    if (task['latitude'] != null && task['longitude'] != null)
+                      TextButton.icon(
+                        onPressed: () {
+                          final lat = task['latitude'];
+                          final lng = task['longitude'];
+                          _launchUrl('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+                        },
+                        icon: const Icon(Icons.map_rounded, size: 18),
+                        label: const Text('Buka di Google Maps', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700)),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 30),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -287,7 +377,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: DriverStyles.cardRadius,
-        border: Border.all(color: DriverColors.border),
+        border: Border.all(color: AppColors.border),
         boxShadow: DriverStyles.cardShadow,
       ),
       padding: const EdgeInsets.all(20),
@@ -296,7 +386,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
         children: [
           const Text(
             'Kategori Sampah Siap Angkut',
-            style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textDark, fontWeight: FontWeight.w800, fontSize: 15),
+            style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontWeight: FontWeight.w800, fontSize: 15),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -306,18 +396,18 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: DriverColors.softBlue,
+                  color: AppColors.softBlue,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: DriverColors.primary.withValues(alpha: 0.2)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.check_circle_rounded, color: DriverColors.primary, size: 16),
+                    const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       cat,
-                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.primary, fontWeight: FontWeight.w700, fontSize: 13),
+                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 13),
                     ),
                   ],
                 ),
@@ -346,11 +436,36 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
       );
     }
 
-    final isPendingOrAccepted = status == 'pending' || status == 'accepted' || status == 'menunggu';
-    final isOnTheWay = status == 'on_the_way' || status == 'dalam_perjalanan';
+    final isPendingOrAccepted = status == 'pending' || status == 'accepted' || status == 'menunggu_konfirmasi' || status == 'driver_ditugaskan';
+    final isOnTheWay = status == 'on_the_way' || status == 'dalam_perjalanan' || status == 'driver_menuju_lokasi';
+    
+    final bool canArrive = isOnTheWay && _distanceToPickup <= 100; // 100 meters
 
     return Column(
       children: [
+        if (isOnTheWay && _distanceToPickup > 100)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.badgeOnTheWay.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.badgeOnTheWay.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, color: AppColors.badgeOnTheWay, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Jarak ke lokasi: ${_distanceToPickup > 1000 ? '${(_distanceToPickup / 1000).toStringAsFixed(1)} km' : '${_distanceToPickup.toStringAsFixed(0)} m'}. Tombol "Saya Sudah Tiba" akan aktif saat jarak < 100m.',
+                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -359,48 +474,77 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (_) => const Center(child: CircularProgressIndicator(color: DriverColors.primary)),
+                  builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
                 );
                 final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
-                final res = await ApiService().updateOrderStatus(orderId, 'on_the_way');
+                final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_MENUJU_LOKASI');
                 if (context.mounted) Navigator.of(context).pop();
                 if (res['success'] == true) {
                   setState(() {
-                    _task['status'] = 'on_the_way';
+                    _task['status'] = 'DRIVER_MENUJU_LOKASI';
                   });
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('Status diperbarui: Dalam Perjalanan ke lokasi warga!'),
-                      backgroundColor: DriverColors.primary,
+                      backgroundColor: AppColors.primary,
                     ));
                   }
                 } else {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                       content: Text(res['message']?.toString() ?? 'Gagal memperbarui status'),
-                      backgroundColor: DriverColors.badgeCancelled,
+                      backgroundColor: AppColors.badgeCancelled,
                     ));
                   }
                 }
               } else if (isOnTheWay) {
-                Navigator.of(context).pushNamed('/pickup-verify', arguments: _task);
+                if (canArrive) {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  );
+                  final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
+                  final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_TIBA');
+                  if (context.mounted) Navigator.of(context).pop();
+                  if (res['success'] == true) {
+                    setState(() {
+                      _task['status'] = 'DRIVER_TIBA';
+                    });
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Status diperbarui: Anda sudah tiba!'),
+                        backgroundColor: AppColors.primary,
+                      ));
+                    }
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(res['message']?.toString() ?? 'Gagal memperbarui status'),
+                        backgroundColor: AppColors.badgeCancelled,
+                      ));
+                    }
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda belum berada di radius 100m dari lokasi penjemputan.')));
+                }
               } else {
-                // picked_up or others -> complete pickup or verify
+                // driver_tiba or picked_up or others -> verify
                 Navigator.of(context).pushNamed('/pickup-verify', arguments: _task);
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: DriverColors.primary,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               padding: const EdgeInsets.symmetric(vertical: 16),
               elevation: 4,
-              shadowColor: DriverColors.primary.withValues(alpha: 0.3),
+              shadowColor: AppColors.primary.withValues(alpha: 0.3),
             ),
             child: Text(
               isPendingOrAccepted
                   ? 'Konfirmasi & Mulai Jalan'
-                  : (isOnTheWay ? 'Lakukan Verifikasi Sampah Warga' : 'Verifikasi & Selesai'),
+                  : (isOnTheWay ? 'Saya Sudah Tiba' : 'Lakukan Verifikasi Sampah Warga'),
               style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 16),
             ),
           ),
@@ -409,9 +553,9 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
         Text(
           isPendingOrAccepted
               ? 'Tekan tombol di atas saat Anda mulai berangkat menuju alamat warga.'
-              : 'Verifikasi berat dan kondisi sampah langsung di lokasi penjemputan.',
+              : (isOnTheWay ? 'Pastikan Anda sudah berada di lokasi sebelum menekan tombol ini.' : 'Verifikasi berat dan kondisi sampah langsung di lokasi penjemputan.'),
           textAlign: TextAlign.center,
-          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: DriverColors.textMuted, fontSize: 12),
+          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 12),
         ),
       ],
     );

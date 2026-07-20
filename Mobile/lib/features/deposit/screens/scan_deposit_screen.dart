@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../../../core/navigation/app_page_transitions.dart';
 import '../../../core/repositories/detect_repository.dart';
 import '../../../core/models/waste_item.dart';
+import '../../../core/constants/app_colors.dart';
 import '../widgets/scan_frame_widget.dart';
 import '../widgets/camera_button_widget.dart';
 import 'manual_deposit_screen.dart';
@@ -254,7 +255,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF22C55E),
+              backgroundColor: AppColors.primaryBlue,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -373,7 +374,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
               ElevatedButton(
                 onPressed: () => openAppSettings(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF22C55E),
+                  backgroundColor: AppColors.primaryBlue,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),

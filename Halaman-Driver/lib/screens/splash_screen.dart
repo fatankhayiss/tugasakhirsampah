@@ -57,8 +57,8 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              DriverColors.primary,
-              DriverColors.secondary,
+              AppColors.primary,
+              AppColors.secondary,
             ],
           ),
         ),
@@ -72,26 +72,31 @@ class _SplashScreenState extends State<SplashScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 110,
-                      height: 110,
+                      width: 120,
+                      height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          width: 2,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(22),
                       child: Image.asset(
                         'assets/splash/logo.png',
+                        color: Colors.white,
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.local_shipping_rounded,
                           size: 54,
-                          color: DriverColors.primary,
+                          color: Colors.white,
                         ),
                       ),
                     ),

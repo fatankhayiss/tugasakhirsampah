@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_images.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/app_initializer_service.dart';
 
@@ -227,7 +228,7 @@ class _SplashScreenState extends State<SplashScreen>
                       _runInitializationSequence();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2DAA63),
+                      backgroundColor: AppColors.primaryBlue,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       elevation: 0,
                       shape: RoundedRectangleBorder(

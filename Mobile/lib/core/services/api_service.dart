@@ -80,6 +80,11 @@ class ApiService {
         });
       }
       final headers = await _headers();
+      debugPrint('==================================================');
+      debugPrint('API REQUEST (GET)');
+      debugPrint('URL: $uri');
+      debugPrint('HEADERS: $headers');
+      debugPrint('==================================================');
       final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
       return _parseResponse(response);
     } catch (e) {
@@ -93,6 +98,11 @@ class ApiService {
     try {
       final uri = Uri.parse(url);
       final headers = await _headers();
+      debugPrint('==================================================');
+      debugPrint('API REQUEST (POST)');
+      debugPrint('URL: $uri');
+      debugPrint('HEADERS: $headers');
+      debugPrint('==================================================');
       final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
       return _parseResponse(response);
     } catch (e) {
@@ -125,6 +135,11 @@ class ApiService {
           ));
         }
       }
+      debugPrint('==================================================');
+      debugPrint('API REQUEST (MULTIPART POST)');
+      debugPrint('URL: $uri');
+      debugPrint('HEADERS: ${request.headers}');
+      debugPrint('==================================================');
       final streamed = await request.send().timeout(const Duration(seconds: 15));
       final response = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 15));
       return _parseResponse(response);
@@ -140,6 +155,11 @@ class ApiService {
       final uri = Uri.parse(url);
       final headers = await _headers();
       headers['Content-Type'] = 'application/json';
+      debugPrint('==================================================');
+      debugPrint('API REQUEST (PUT)');
+      debugPrint('URL: $uri');
+      debugPrint('HEADERS: $headers');
+      debugPrint('==================================================');
       final response = await http.put(
         uri,
         headers: headers,

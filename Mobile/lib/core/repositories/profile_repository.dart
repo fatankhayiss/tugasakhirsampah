@@ -34,6 +34,8 @@ class ProfileRepository {
           phone: d['no_telepon']?.toString(),
           totalWaste: (d['total_waste_kg'] ?? 0).toDouble().round(),
           totalPoints: ((d['saldo'] ?? 0).toDouble()).round(),
+          latitude: d['latitude'] != null ? (d['latitude'] as num).toDouble() : null,
+          longitude: d['longitude'] != null ? (d['longitude'] as num).toDouble() : null,
         );
       }
     } catch (_) {
@@ -53,6 +55,8 @@ class ProfileRepository {
         phone: saved['no_telepon']?.toString(),
         totalWaste: (saved['total_waste_kg'] ?? 0).toDouble().round(),
         totalPoints: ((saved['saldo'] ?? 0).toDouble()).round(),
+        latitude: saved['latitude'] != null ? (saved['latitude'] as num).toDouble() : null,
+        longitude: saved['longitude'] != null ? (saved['longitude'] as num).toDouble() : null,
       );
     }
 
@@ -73,6 +77,8 @@ class ProfileRepository {
     String? alamat,
     String? noTelepon,
     String? email,
+    double? latitude,
+    double? longitude,
     bool? removeFoto,
   }) async {
     final body = <String, String>{};
@@ -81,6 +87,8 @@ class ProfileRepository {
     if (alamat != null) body['alamat'] = alamat;
     if (noTelepon != null) body['no_telepon'] = noTelepon;
     if (email != null) body['email'] = email;
+    if (latitude != null) body['latitude'] = latitude.toString();
+    if (longitude != null) body['longitude'] = longitude.toString();
     if (removeFoto == true) body['remove_foto'] = '1';
 
     final response = await _api.post(ApiConfig.profile, body: body);

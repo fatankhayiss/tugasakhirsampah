@@ -75,7 +75,7 @@ To develop, test, and run the complete Bank Sampah Bersinar ecosystem on your lo
 
 ### A. Backend & Web Admin (`/bank_sampah`)
 Ensure the local web server serves the backend directory directly at:
-- **Base URL**: `http://localhost/tugasakhirsampah/bank_sampah/` (or your local LAN IP such as `http://192.168.31.220/tugasakhirsampah/bank_sampah/` when testing on physical mobile devices).
+- **Base URL**: `http://localhost/tugasakhirsampah/bank_sampah/` (or your local LAN IP such as `http://192.168.110.61/tugasakhirsampah/bank_sampah/` when testing on physical mobile devices).
 - **Demo Web Admin Login**:
   - URL: `http://localhost/tugasakhirsampah/bank_sampah/admin.php`
   - Username: `admin` | Password: `admin123`
@@ -88,7 +88,7 @@ Ensure the local web server serves the backend directory directly at:
 2. Verify the backend IP address inside `lib/core/constants/api_config.dart`:
    ```dart
    // Use 10.0.2.2 for Android Emulator, localhost for iOS Simulator, or your LAN IP for physical hardware
-   static const String baseUrl = 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
+   static const String baseUrl = 'http://192.168.110.61/tugasakhirsampah/bank_sampah/';
    ```
 3. Install dependencies and run the app:
    ```powershell

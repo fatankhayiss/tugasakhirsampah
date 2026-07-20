@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/models/order_model.dart';
 import '../../../core/repositories/order_repository.dart';
 import '../../deposit/widgets/deposit_method_modal.dart';
 import '../models/history_item_model.dart';
@@ -40,10 +39,20 @@ class _OrdersScreenState extends State<OrdersScreen> {
     _loadHistory();
     _loadOngoing();
 
-    if (widget.newOrder is OrderModel) {
-      _repository.addOrder(widget.newOrder as OrderModel);
-      _selectedTab = 0; // Override to Ongoing when new order arrives
+    _repository.addListener(_onRepositoryUpdated);
+  }
+
+  void _onRepositoryUpdated() {
+    if (mounted) {
+      _loadHistory();
+      _loadOngoing();
     }
+  }
+
+  @override
+  void dispose() {
+    _repository.removeListener(_onRepositoryUpdated);
+    super.dispose();
   }
 
   Future<void> _loadHistory() async {

@@ -13,14 +13,14 @@ class AlertDetailScreen extends StatelessWidget {
     final tipe = args?['tipe']?.toString() ?? 'info';
 
     return Scaffold(
-      backgroundColor: DriverColors.background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: DriverColors.background,
+        backgroundColor: AppColors.background,
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded, color: DriverColors.textDark),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
         ),
         title: const Text(
           'Detail Notifikasi',
@@ -28,7 +28,7 @@ class AlertDetailScreen extends StatelessWidget {
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: DriverColors.textDark,
+            color: AppColors.textDark,
           ),
         ),
       ),
@@ -43,7 +43,7 @@ class AlertDetailScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: DriverStyles.cardRadius,
-                border: Border.all(color: DriverColors.border),
+                border: Border.all(color: AppColors.border),
                 boxShadow: DriverStyles.cardShadow,
               ),
               child: Column(
@@ -54,12 +54,12 @@ class AlertDetailScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: DriverColors.softBlue,
+                          color: AppColors.softBlue,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Icon(
                           tipe.toLowerCase() == 'order' ? Icons.local_shipping_rounded : Icons.notifications_active_rounded,
-                          color: DriverColors.primary,
+                          color: AppColors.primary,
                           size: 26,
                         ),
                       ),
@@ -74,7 +74,7 @@ class AlertDetailScreen extends StatelessWidget {
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
-                                color: DriverColors.textDark,
+                                color: AppColors.textDark,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -83,7 +83,7 @@ class AlertDetailScreen extends StatelessWidget {
                               style: const TextStyle(
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontSize: 12,
-                                color: DriverColors.textMuted,
+                                color: AppColors.textMuted,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -93,7 +93,7 @@ class AlertDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  const Divider(color: DriverColors.border, height: 1),
+                  const Divider(color: AppColors.border, height: 1),
                   const SizedBox(height: 20),
                   const Text(
                     'PESAN SISTEM',
@@ -101,7 +101,7 @@ class AlertDetailScreen extends StatelessWidget {
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: DriverColors.textMuted,
+                      color: AppColors.textMuted,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -112,7 +112,7 @@ class AlertDetailScreen extends StatelessWidget {
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: DriverColors.textDark,
+                      color: AppColors.textDark,
                       height: 1.6,
                     ),
                   ),
@@ -122,7 +122,7 @@ class AlertDetailScreen extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: DriverColors.primary,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

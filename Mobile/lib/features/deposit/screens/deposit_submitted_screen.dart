@@ -251,11 +251,11 @@ class DepositSubmittedScreen extends StatelessWidget {
               icon: Icons.local_shipping_outlined,
               isGreen: false,
               onPressed: () {
-                Navigator.pushReplacement(
+                MainNavigationScreen.switchTab(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderDetailScreen(orderId: orderId),
-                  ),
+                  1,
+                  ordersInitialTabIndex: 0,
+                  targetOrderId: orderId,
                 );
               },
             ),
@@ -265,13 +265,10 @@ class DepositSubmittedScreen extends StatelessWidget {
               height: 54,
               child: OutlinedButton(
                 onPressed: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MainNavigationScreen(initialIndex: 0),
-                    ),
-                    (r) => false,
-                  );
+                MainNavigationScreen.switchTab(
+                  context,
+                  0,
+                );
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.border, width: 1.5),

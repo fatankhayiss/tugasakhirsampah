@@ -3,6 +3,7 @@ import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/repositories/waste_repository.dart';
+import '../../../core/repositories/profile_repository.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
 import '../../../core/navigation/app_page_transitions.dart';
@@ -256,6 +257,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                     TextField(
                       controller: weightController,
                       focusNode: weightFocusNode,
+                      cursorColor: AppColors.primary,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       autofocus: true,
                       style: const TextStyle(
@@ -277,7 +279,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryBlue,
+                          color: AppColors.primary,
                         ),
                         filled: true,
                         fillColor: const Color(0xFFF8FAF8),
@@ -292,7 +294,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+                          borderSide: const BorderSide(color: AppColors.primary, width: 2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -330,10 +332,10 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                                 ),
                               ),
                               selected: isSelected,
-                              selectedColor: AppColors.primaryBlue,
+                              selectedColor: AppColors.primary,
                               backgroundColor: const Color(0xFFF8FAF8),
                               side: BorderSide(
-                                color: isSelected ? AppColors.primaryBlue : AppColors.border,
+                                color: isSelected ? AppColors.primary : AppColors.border,
                               ),
                               onSelected: (selected) {
                                 if (selected) {
@@ -797,25 +799,44 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               PrimaryButton(
                 text: isAiFlow ? 'Setorkan Sampah' : 'Lanjutkan Penjemputan',
                 isGreen: false,
-                onPressed: cartItems.isEmpty || (_activeScannedItem != null && _activeScannedItem!.weight <= 0)
-                    ? null
-                    : () {
-                        if (cartItems.any((i) => i.weight <= 0)) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Pastikan berat semua sampah lebih dari 0 Kg.'),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                          return;
-                        }
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => CheckoutScreen(cartItems: cartItems),
-                          ),
-                        );
-                      },
+                        onPressed: cartItems.isEmpty || (_activeScannedItem != null && _activeScannedItem!.weight <= 0)
+                            ? null
+                            : () async {
+                                if (cartItems.any((i) => i.weight <= 0)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Pastikan berat semua sampah lebih dari 0 Kg.'),
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                // Show loading dialog
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                                );
+
+                                try {
+                                  final profile = await ProfileRepository().getProfile();
+                                  if (!mounted) return;
+                                  Navigator.pop(context); // Close dialog
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CheckoutScreen(cartItems: cartItems, profile: profile),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  Navigator.pop(context); // Close dialog
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Gagal mengambil profil: $e'), backgroundColor: Colors.redAccent),
+                                  );
+                                }
+                              },
               ),
             ],
           ),
@@ -1013,6 +1034,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               const SizedBox(height: 10),
               TextField(
                 controller: _topWeightController,
+                cursorColor: AppColors.primary,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
@@ -1028,7 +1050,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primaryBlue,
+                    color: AppColors.primary,
                   ),
                   filled: true,
                   fillColor: const Color(0xFFF8FAF8),
@@ -1043,7 +1065,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
                 onChanged: (val) {

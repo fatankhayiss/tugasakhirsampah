@@ -8,6 +8,8 @@ class ProfileModel {
   final String? phone;
   final int totalWaste; // in kg
   final int totalPoints;
+  final double? latitude;
+  final double? longitude;
 
   ProfileModel({
     required this.name,
@@ -19,5 +21,7 @@ class ProfileModel {
     this.phone,
     required this.totalWaste,
     required this.totalPoints,
+    this.latitude,
+    this.longitude,
   });
 }

@@ -236,10 +236,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $user_id = (int)$auth_user['id_pengguna'];
     $alamat = isset($_POST['alamat_jemput']) ? trim($_POST['alamat_jemput']) : '';
-    $lat = isset($_POST['latitude']) ? $_POST['latitude'] : null;
-    $lng = isset($_POST['longitude']) ? $_POST['longitude'] : null;
-    $waktu_dari = isset($_POST['waktu_jemput_dari']) ? $_POST['waktu_jemput_dari'] : null;
-    $waktu_sampai = isset($_POST['waktu_jemput_sampai']) ? $_POST['waktu_jemput_sampai'] : null;
+    $lat = isset($_POST['latitude']) ? floatval($_POST['latitude']) : null;
+    $lng = isset($_POST['longitude']) ? floatval($_POST['longitude']) : null;
+    $waktu_dari = isset($_POST['waktu_jemput_dari']) ? trim($_POST['waktu_jemput_dari']) : null;
+    $waktu_sampai = isset($_POST['waktu_jemput_sampai']) ? trim($_POST['waktu_jemput_sampai']) : null;
     $estimasi_berat = isset($_POST['estimasi_berat']) ? trim($_POST['estimasi_berat']) : null;
     $estimasi_poin = isset($_POST['estimasi_poin']) ? (int)$_POST['estimasi_poin'] : 0;
     $catatan = isset($_POST['catatan']) ? trim($_POST['catatan']) : null;
@@ -256,9 +256,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Insert order
     $sql = "INSERT INTO orders (id_warga, alamat_jemput, latitude, longitude, waktu_jemput_dari, waktu_jemput_sampai, estimasi_berat, estimasi_poin, catatan, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'MENUNGGU_KONFIRMASI')";
     $stmt = mysqli_prepare($koneksi, $sql);
-    mysqli_stmt_bind_param($stmt, "issddsssi", $user_id, $alamat, $lat, $lng, $waktu_dari, $waktu_sampai, $estimasi_berat, $estimasi_poin, $catatan);
+    mysqli_stmt_bind_param($stmt, "isddsssis", $user_id, $alamat, $lat, $lng, $waktu_dari, $waktu_sampai, $estimasi_berat, $estimasi_poin, $catatan);
 
     if (!mysqli_stmt_execute($stmt)) {
         api_respond(false, 'Gagal membuat order: ' . mysqli_error($koneksi), null, 500);
@@ -281,9 +281,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Buat notifikasi untuk warga
-    $notif_sql = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES (?, 'Order penjemputan berhasil dibuat', 'Pesanan Anda telah dikonfirmasi. Menunggu driver menerima.', 'pickup')";
+    $notif_sql = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Permintaan Berhasil Dibuat', 'Permintaan penjemputan sampah Anda berhasil dikirim.\nSaat ini permintaan sedang menunggu konfirmasi dari Admin Bank Sampah.', 'pickup', ?)";
     $stmt_n = mysqli_prepare($koneksi, $notif_sql);
-    mysqli_stmt_bind_param($stmt_n, "i", $user_id);
+    mysqli_stmt_bind_param($stmt_n, "ii", $user_id, $order_id);
     mysqli_stmt_execute($stmt_n);
     mysqli_stmt_close($stmt_n);
 
@@ -312,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         api_respond(false, 'id_order dan status wajib diisi', null, 400);
     }
 
-    $valid_statuses = ['pending', 'accepted', 'on_the_way', 'picked_up', 'validating', 'completed', 'cancelled'];
+    $valid_statuses = ['MENUNGGU_KONFIRMASI', 'DRIVER_DITUGASKAN', 'DRIVER_MENUJU_LOKASI', 'DRIVER_TIBA', 'SAMPAH_DIJEMPUT', 'VALIDASI_BANK_SAMPAH', 'SELESAI', 'DIBATALKAN'];
     if (!in_array($new_status, $valid_statuses)) {
         api_respond(false, 'Status tidak valid', null, 400);
     }
@@ -321,7 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $berat_aktual = isset($data['berat_aktual']) ? $data['berat_aktual'] : (isset($data['estimasi_berat']) ? $data['estimasi_berat'] : null);
 
     // Jika driver accept, assign driver_id
-    if ($new_status === 'accepted') {
+    if ($new_status === 'DRIVER_DITUGASKAN') {
         $sql = "UPDATE orders SET status = ?, id_driver = ? WHERE id_order = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
         mysqli_stmt_bind_param($stmt, "sii", $new_status, $driver_id, $order_id);
@@ -347,20 +347,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
         if ($warga_row) {
             $notif_messages = [
-                'accepted' => ['Driver sedang menuju lokasi Anda', 'Penjemputan Anda telah diterima oleh driver.', 'pickup'],
-                'on_the_way' => ['Driver dalam perjalanan', 'Driver sedang menuju ke lokasi penjemputan Anda.', 'pickup'],
-                'picked_up' => ['Sampah berhasil dijemput', 'Driver telah menjemput sampah Anda. Menunggu proses verifikasi.', 'pickup'],
-                'validating' => ['Validasi Bank Sampah', 'Sampah Anda telah sampai di Bank Sampah dan sedang dalam proses pengecekan akhir oleh Admin.', 'pickup'],
-                'completed' => ['Penjemputan selesai', 'Penjemputan sampah Anda telah selesai. Poin akan segera ditambahkan.', 'reward'],
-                'cancelled' => ['Penjemputan dibatalkan', 'Pesanan penjemputan Anda telah dibatalkan.', 'info'],
+                'MENUNGGU_KONFIRMASI' => ['Menunggu Konfirmasi', 'Permintaan Anda sedang menunggu konfirmasi dari Admin Bank Sampah.', 'pickup'],
+                'DRIVER_DITUGASKAN' => ['Driver Ditugaskan', 'Driver telah ditugaskan untuk melakukan penjemputan sampah Anda.', 'pickup'],
+                'DRIVER_MENUJU_LOKASI' => ['Driver Menuju Lokasi', 'Driver sedang menuju lokasi Anda.\nSilakan siapkan sampah yang akan diserahkan.', 'pickup'],
+                'DRIVER_TIBA' => ['Driver Tiba', 'Driver telah tiba di lokasi Anda.', 'pickup'],
+                'SAMPAH_DIJEMPUT' => ['Sampah Berhasil Dijemput', 'Sampah telah berhasil dijemput.\nPetugas sedang melakukan validasi berat sampah.', 'pickup'],
+                'VALIDASI_BANK_SAMPAH' => ['Sedang Divalidasi', 'Petugas sedang memvalidasi berat sampah Anda.', 'pickup'],
+                'SELESAI' => ['Validasi Selesai', 'Validasi selesai.\nPoin telah berhasil ditambahkan ke saldo Anda.', 'reward'],
+                'DIBATALKAN' => ['Penjemputan Dibatalkan', 'Pesanan penjemputan Anda telah dibatalkan.', 'info']
             ];
 
             if (isset($notif_messages[$new_status])) {
                 $nm = $notif_messages[$new_status];
-                $notif_sql = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES (?, ?, ?, ?)";
+                $notif_sql = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, ?, ?, ?, ?)";
                 $stmt_n = mysqli_prepare($koneksi, $notif_sql);
                 $warga_id = (int)$warga_row['id_warga'];
-                mysqli_stmt_bind_param($stmt_n, "isss", $warga_id, $nm[0], $nm[1], $nm[2]);
+                mysqli_stmt_bind_param($stmt_n, "isssi", $warga_id, $nm[0], $nm[1], $nm[2], $order_id);
                 mysqli_stmt_execute($stmt_n);
                 mysqli_stmt_close($stmt_n);
             }

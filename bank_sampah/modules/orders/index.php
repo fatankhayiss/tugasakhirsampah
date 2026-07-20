@@ -7,19 +7,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_driver'])) {
     $id_driver = (int)$_POST['id_driver'];
 
     if ($id_order > 0 && $id_driver > 0) {
-        $update = "UPDATE orders SET id_driver = ?, status = 'accepted' WHERE id_order = ?";
+        $update = "UPDATE orders SET id_driver = ?, status = 'DRIVER_DITUGASKAN' WHERE id_order = ?";
         $stmt_upd = mysqli_prepare($koneksi, $update);
         mysqli_stmt_bind_param($stmt_upd, "ii", $id_driver, $id_order);
         
         if (mysqli_stmt_execute($stmt_upd)) {
+            // Get id_warga
+            $get_warga = "SELECT id_warga FROM orders WHERE id_order = ?";
+            $stmt_w = mysqli_prepare($koneksi, $get_warga);
+            mysqli_stmt_bind_param($stmt_w, "i", $id_order);
+            mysqli_stmt_execute($stmt_w);
+            $wr = mysqli_stmt_get_result($stmt_w);
+            $warga_data = mysqli_fetch_assoc($wr);
+
             // Notifikasi ke Driver
             $pesan = "Anda mendapat tugas penjemputan baru (Order #$id_order). Segera berangkat!";
-            $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES (?, 'Tugas Jemput Baru', ?, 'info')";
+            $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Tugas Jemput Baru', ?, 'info', ?)";
             $stmt_notif = mysqli_prepare($koneksi, $ins_notif);
-            mysqli_stmt_bind_param($stmt_notif, "is", $id_driver, $pesan);
+            mysqli_stmt_bind_param($stmt_notif, "isi", $id_driver, $pesan, $id_order);
             mysqli_stmt_execute($stmt_notif);
             
-            echo "<script>alert('Berhasil menugaskan driver!'); window.location.href='index.php?page=orders/data';</script>";
+            // Notifikasi ke Warga (Citizen)
+            if ($warga_data) {
+                $id_warga = $warga_data['id_warga'];
+                $pesan_warga = "Driver telah ditugaskan untuk melakukan penjemputan sampah Anda.";
+                $ins_notif_w = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Konfirmasi Penjemputan', ?, 'pickup', ?)";
+                $stmt_notif_w = mysqli_prepare($koneksi, $ins_notif_w);
+                mysqli_stmt_bind_param($stmt_notif_w, "isi", $id_warga, $pesan_warga, $id_order);
+                mysqli_stmt_execute($stmt_notif_w);
+            }
+            
+            echo "<script>alert('Berhasil menugaskan driver dan mengonfirmasi order!'); window.location.href='index.php?page=orders/data';</script>";
             exit;
         }
     }
@@ -28,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_driver'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_order'])) {
     $id_order = (int)$_POST['id_order'];
     if ($id_order > 0) {
-        $update = "UPDATE orders SET status = 'completed' WHERE id_order = ?";
+        $update = "UPDATE orders SET status = 'SELESAI' WHERE id_order = ?";
         $stmt_upd = mysqli_prepare($koneksi, $update);
         mysqli_stmt_bind_param($stmt_upd, "i", $id_order);
         
@@ -42,9 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_order'])) {
             if ($row = mysqli_fetch_assoc($wr)) {
                 $id_warga = $row['id_warga'];
                 $pesan = "Penjemputan sampah Anda telah selesai. Poin akan segera ditambahkan.";
-                $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES (?, 'Penjemputan selesai', ?, 'reward')";
+                $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Penjemputan selesai', ?, 'reward', ?)";
                 $stmt_notif = mysqli_prepare($koneksi, $ins_notif);
-                mysqli_stmt_bind_param($stmt_notif, "is", $id_warga, $pesan);
+                mysqli_stmt_bind_param($stmt_notif, "isi", $id_warga, $pesan, $id_order);
                 mysqli_stmt_execute($stmt_notif);
             }
             
@@ -88,7 +106,8 @@ $total_pages = max(1, ceil($total / $limit));
 
 // Data
 $sql = "SELECT o.*, w.nama_lengkap as nama_warga, w.no_telepon as telp_warga,
-               d.nama_lengkap as nama_driver
+               d.nama_lengkap as nama_driver,
+               (SELECT GROUP_CONCAT(js.nama_sampah SEPARATOR ', ') FROM order_items oi JOIN jenis_sampah js ON oi.id_jenis_sampah = js.id_jenis_sampah WHERE oi.id_order = o.id_order) as waste_types
         FROM orders o
         JOIN pengguna w ON o.id_warga = w.id_pengguna
         LEFT JOIN pengguna d ON o.id_driver = d.id_pengguna
@@ -126,12 +145,13 @@ if ($res_drivers) {
 }
 
 $status_labels = [
-    'pending' => ['label' => 'Menunggu', 'class' => 'bg-yellow-100 text-yellow-800'],
-    'accepted' => ['label' => 'Ditugaskan', 'class' => 'bg-blue-100 text-blue-800'],
-    'on_the_way' => ['label' => 'Dalam Perjalanan', 'class' => 'bg-indigo-100 text-indigo-800'],
-    'picked_up' => ['label' => 'Dijemput', 'class' => 'bg-purple-100 text-purple-800'],
-    'completed' => ['label' => 'Selesai', 'class' => 'bg-green-100 text-green-800'],
-    'cancelled' => ['label' => 'Dibatalkan', 'class' => 'bg-red-100 text-red-800'],
+    'MENUNGGU_KONFIRMASI' => ['label' => 'Menunggu', 'class' => 'bg-yellow-100 text-yellow-800'],
+    'DRIVER_DITUGASKAN' => ['label' => 'Ditugaskan', 'class' => 'bg-blue-100 text-blue-800'],
+    'DRIVER_MENUJU_LOKASI' => ['label' => 'Dalam Perjalanan', 'class' => 'bg-indigo-100 text-indigo-800'],
+    'SAMPAH_DIJEMPUT' => ['label' => 'Dijemput', 'class' => 'bg-purple-100 text-purple-800'],
+    'VALIDASI_BANK_SAMPAH' => ['label' => 'Divalidasi', 'class' => 'bg-orange-100 text-orange-800'],
+    'SELESAI' => ['label' => 'Selesai', 'class' => 'bg-green-100 text-green-800'],
+    'DIBATALKAN' => ['label' => 'Dibatalkan', 'class' => 'bg-red-100 text-red-800'],
 ];
 ?>
 
@@ -148,12 +168,13 @@ $status_labels = [
         <?php
         $filter_options = [
             '' => 'Semua',
-            'pending' => 'Menunggu',
-            'accepted' => 'Ditugaskan',
-            'on_the_way' => 'Dalam Perjalanan',
-            'picked_up' => 'Dijemput',
-            'completed' => 'Selesai',
-            'cancelled' => 'Dibatalkan',
+            'MENUNGGU_KONFIRMASI' => 'Menunggu',
+            'DRIVER_DITUGASKAN' => 'Ditugaskan',
+            'DRIVER_MENUJU_LOKASI' => 'Dalam Perjalanan',
+            'SAMPAH_DIJEMPUT' => 'Dijemput',
+            'VALIDASI_BANK_SAMPAH' => 'Divalidasi',
+            'SELESAI' => 'Selesai',
+            'DIBATALKAN' => 'Dibatalkan',
         ];
         foreach ($filter_options as $val => $label):
             $active = ($status_filter === $val) ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200';
@@ -179,6 +200,7 @@ $status_labels = [
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Warga</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Sampah (Estimasi)</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Alamat Jemput</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Waktu</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Driver</th>
@@ -197,6 +219,10 @@ $status_labels = [
                             <td class="px-4 py-3 text-sm">
                                 <div class="font-medium text-gray-800"><?php echo htmlspecialchars($order['nama_warga']); ?></div>
                                 <div class="text-xs text-gray-500"><?php echo htmlspecialchars($order['telp_warga'] ?? '-'); ?></div>
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                <div class="font-medium text-gray-800"><?php echo htmlspecialchars($order['waste_types'] ?? '-'); ?></div>
+                                <div class="text-xs text-gray-500"><?php echo htmlspecialchars($order['estimasi_berat'] ?? '0'); ?> Kg</div>
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-600 max-w-[200px] truncate" title="<?php echo htmlspecialchars($order['alamat_jemput']); ?>">
                                 <?php echo htmlspecialchars($order['alamat_jemput']); ?>
@@ -218,8 +244,8 @@ $status_labels = [
                                 <?php echo format_tanggal_indonesia($order['created_at'], false); ?>
                             </td>
                             <td class="px-4 py-3 text-sm">
-                                <?php if ($st === 'pending'): ?>
-                                    <form method="POST" action="" class="flex items-center space-x-2">
+                                <?php if ($st === 'MENUNGGU_KONFIRMASI'): ?>
+                                    <form method="POST" action="" class="flex items-center space-x-2" onsubmit="return confirm('Konfirmasi penjemputan dan tugaskan driver ini?');">
                                         <input type="hidden" name="id_order" value="<?php echo $order['id_order']; ?>">
                                         <select name="id_driver" required class="text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500">
                                             <option value="">-- Pilih Driver --</option>
@@ -233,7 +259,7 @@ $status_labels = [
                                             Tugaskan
                                         </button>
                                     </form>
-                                <?php elseif ($st === 'picked_up'): ?>
+                                <?php elseif ($st === 'SAMPAH_DIJEMPUT' || $st === 'VALIDASI_BANK_SAMPAH'): ?>
                                     <form method="POST" action="" class="flex items-center space-x-2">
                                         <input type="hidden" name="id_order" value="<?php echo $order['id_order']; ?>">
                                         <button type="submit" name="verify_order" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded text-xs font-medium transition" onclick="return confirm('Selesaikan order ini?');">
