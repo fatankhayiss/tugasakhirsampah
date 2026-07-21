@@ -54,7 +54,7 @@ try {
         }
 
         // Cari user berdasarkan username, email, nama_lengkap, ATAU no_telepon (baik mentah maupun angka saja)
-        $query = "SELECT id_pengguna, nama_lengkap, username, password, level, alamat, no_telepon, email, saldo, foto_profil, tanggal_daftar, status, latitude, longitude
+        $query = "SELECT id_pengguna, nama_lengkap, username, password, level, alamat, no_telepon, email, saldo, foto_profil, tanggal_daftar, latitude, longitude
                   FROM pengguna
                   WHERE username = ? OR email = ? OR no_telepon = ? OR nama_lengkap = ? OR username = ? OR no_telepon = ?
                   LIMIT 1";
@@ -203,8 +203,8 @@ try {
 
         $requested_level = (isset($_POST['level']) && $_POST['level'] === 'driver') ? 'driver' : 'warga';
 
-        $insert = "INSERT INTO pengguna (nama_lengkap, username, password, level, alamat, no_telepon, email, google_uid, saldo, api_token, status, latitude, longitude)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.00, ?, 'aktif', ?, ?)";
+        $insert = "INSERT INTO pengguna (nama_lengkap, username, password, level, alamat, no_telepon, email, google_uid, saldo, api_token, latitude, longitude)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.00, ?, ?, ?)";
         $stmt_insert = mysqli_prepare($koneksi, $insert);
         mysqli_stmt_bind_param($stmt_insert, "sssssssssdd", $nama, $username, $hashed_password, $requested_level, $alamat, $no_telepon, $email, $google_uid, $token, $latitude, $longitude);
 
@@ -277,7 +277,7 @@ try {
         }
 
         // Cari user berdasarkan google_uid atau email
-        $query = "SELECT id_pengguna, nama_lengkap, username, level, alamat, no_telepon, email, google_uid, saldo, foto_profil, tanggal_daftar, status, latitude, longitude
+        $query = "SELECT id_pengguna, nama_lengkap, username, level, alamat, no_telepon, email, google_uid, saldo, foto_profil, tanggal_daftar, latitude, longitude
                   FROM pengguna
                   WHERE (google_uid = ? AND google_uid IS NOT NULL AND google_uid != '') OR (email = ? AND email IS NOT NULL AND email != '')
                   LIMIT 1";
@@ -360,8 +360,8 @@ try {
             $alamat_default = '';
             $no_telp_default = '';
 
-            $insert = "INSERT INTO pengguna (nama_lengkap, username, password, level, alamat, no_telepon, email, google_uid, foto_profil, saldo, api_token, status)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0.00, ?, 'aktif')";
+            $insert = "INSERT INTO pengguna (nama_lengkap, username, password, level, alamat, no_telepon, email, google_uid, foto_profil, saldo, api_token)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0.00, ?)";
             $stmt_insert = mysqli_prepare($koneksi, $insert);
             mysqli_stmt_bind_param($stmt_insert, "ssssssssss", $nama, $username, $password_random, $level, $alamat_default, $no_telp_default, $email, $google_uid, $foto_profil, $token);
 
