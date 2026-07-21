@@ -56,6 +56,73 @@ if (!$auth_user) {
 
 $user_id = (int)$auth_user['id_pengguna'];
 
+function sanitize_notif_payload($row) {
+    $title = trim(strip_tags($row['judul'] ?? ''));
+    $message = trim(strip_tags($row['pesan'] ?? ''));
+    $type = strtolower(trim($row['tipe'] ?? 'info'));
+
+    // Detect and sanitize any raw JSON/JS/PHP traceback or placeholder text
+    if (strpos($message, '{') !== false || strpos($message, 'function') !== false || strpos($message, 'var ') !== false || strpos($message, 'console.') !== false || strpos($message, '<?php') !== false) {
+        $message = preg_replace('/\{.*?\}/s', '', $message);
+        $message = trim($message);
+    }
+
+    // Direct mappings for legacy or raw status strings
+    $msg_upper = strtoupper($message);
+    $title_upper = strtoupper($title);
+
+    if ($msg_upper === 'ORDER CREATED' || $msg_upper === 'SUBMITTED' || $title_upper === 'ORDER CREATED') {
+        $title = 'Permintaan Dikirim';
+        $message = 'Permintaan penjemputan berhasil dibuat.';
+    } elseif ($msg_upper === 'ADMIN APPROVED' || $msg_upper === 'MENUNGGU_KONFIRMASI' || $title_upper === 'ADMIN APPROVED') {
+        $title = 'Permintaan Dikonfirmasi';
+        $message = 'Permintaan Anda telah dikonfirmasi.';
+    } elseif ($msg_upper === 'PICKER ASSIGNED' || $msg_upper === 'DRIVER_DITUGASKAN' || $title_upper === 'PICKER ASSIGNED') {
+        $title = 'Picker Ditugaskan';
+        $message = 'Picker telah ditugaskan.';
+    } elseif ($msg_upper === 'PICKER ON THE WAY' || $msg_upper === 'DRIVER_MENUJU_LOKASI' || $title_upper === 'PICKER ON THE WAY') {
+        $title = 'Picker Menuju Lokasi';
+        $message = 'Picker sedang menuju lokasi Anda.';
+    } elseif ($msg_upper === 'PICKER NEARBY' || $msg_upper === 'DRIVER_TIBA' || $title_upper === 'PICKER NEARBY') {
+        $title = 'Picker Hampir Tiba';
+        $message = 'Picker sudah dekat.';
+    } elseif ($msg_upper === 'WEIGHT VALIDATION' || $msg_upper === 'PENIMBANGAN' || $title_upper === 'WEIGHT VALIDATION') {
+        $title = 'Penimbangan Berat';
+        $message = 'Picker sedang melakukan penimbangan.';
+    } elseif ($msg_upper === 'WASTE PICKED UP' || $msg_upper === 'SAMPAH_DIJEMPUT' || $title_upper === 'WASTE PICKED UP') {
+        $title = 'Sampah Dijemput';
+        $message = 'Sampah berhasil dijemput.';
+    } elseif ($msg_upper === 'HEADING TO WASTE BANK' || $msg_upper === 'MENUJU_BANK_SAMPAH' || $title_upper === 'HEADING TO WASTE BANK') {
+        $title = 'Menuju Bank Sampah';
+        $message = 'Sampah sedang dibawa ke Bank Sampah.';
+    } elseif ($msg_upper === 'ADMIN VALIDATION' || $msg_upper === 'VALIDASI_BANK_SAMPAH' || $title_upper === 'ADMIN VALIDATION') {
+        $title = 'Validasi Bank Sampah';
+        $message = 'Sampah sedang diverifikasi oleh petugas Bank Sampah.';
+    } elseif ($msg_upper === 'POINT CALCULATION' || $msg_upper === 'POIN_DIPROSES' || $title_upper === 'POINT CALCULATION') {
+        $title = 'Poin Diproses';
+        $message = 'Poin sedang dihitung.';
+    } elseif ($msg_upper === 'COMPLETED' || $msg_upper === 'SELESAI' || $title_upper === 'COMPLETED') {
+        $title = 'Penjemputan Selesai';
+        $message = "Penjemputan selesai.\nPoin telah ditambahkan ke akun Anda.";
+    } elseif ($msg_upper === 'CANCELLED' || $msg_upper === 'DIBATALKAN' || $title_upper === 'CANCELLED') {
+        $title = 'Penjemputan Dibatalkan';
+        $message = 'Permintaan penjemputan berhasil dibatalkan.';
+    }
+
+    if (empty($title)) $title = 'Notifikasi Sistem';
+    if (empty($message)) $message = 'Aktivitas Anda telah diperbarui.';
+
+    return [
+        'id' => (int)$row['id_notifikasi'],
+        'judul' => $title,
+        'pesan' => $message,
+        'tipe' => $type,
+        'is_read' => (bool)$row['is_read'],
+        'related_id' => $row['related_id'] ? (int)$row['related_id'] : null,
+        'created_at' => $row['created_at'],
+    ];
+}
+
 // =====================
 // GET — List notifikasi
 // =====================
@@ -82,15 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $items = [];
     while ($row = mysqli_fetch_assoc($result)) {
-        $items[] = [
-            'id' => (int)$row['id_notifikasi'],
-            'judul' => $row['judul'],
-            'pesan' => $row['pesan'],
-            'tipe' => $row['tipe'],
-            'is_read' => (bool)$row['is_read'],
-            'related_id' => $row['related_id'] ? (int)$row['related_id'] : null,
-            'created_at' => $row['created_at'],
-        ];
+        $items[] = sanitize_notif_payload($row);
     }
     mysqli_stmt_close($stmt);
 

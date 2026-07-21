@@ -4,6 +4,8 @@
 // GET  — List orders (filter by user_id, driver_id, status)
 // POST — Buat order baru (warga)
 // PUT  — Update status order (driver / admin)
+error_reporting(0);
+ini_set('display_errors', '0');
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS');
@@ -17,38 +19,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../../config/database.php';
 
+if (!isset($raw_input) || empty($raw_input)) {
+    $raw_input = file_get_contents('php://input');
+}
+
 function api_respond($success, $message, $data = null, $code = 200) {
-    http_response_code($code);
+    if (ob_get_length()) ob_clean();
+    if ($code !== 200) {
+        http_response_code($code);
+    }
+    header('Content-Type: application/json; charset=utf-8');
     $response = ['success' => $success, 'message' => $message];
     if ($data !== null) $response['data'] = $data;
-    echo json_encode($response);
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 function get_auth_user($koneksi) {
+    global $raw_input;
     $token = null;
-    $headers = getallheaders();
-    foreach ($headers as $key => $value) {
-        if (strtolower($key) === 'authorization') {
-            $token = str_replace('Bearer ', '', $value);
-            break;
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $token = str_replace('Bearer ', '', $_SERVER['HTTP_AUTHORIZATION']);
+    } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $token = str_replace('Bearer ', '', $_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+    } else {
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        foreach ($headers as $key => $value) {
+            if (strtolower($key) === 'authorization') {
+                $token = str_replace('Bearer ', '', $value);
+                break;
+            }
         }
     }
     if (!$token && isset($_GET['token'])) $token = $_GET['token'];
     if (!$token && isset($_POST['token'])) $token = $_POST['token'];
-    // Also check raw JSON body for PUT requests
-    if (!$token) {
-        $raw = file_get_contents('php://input');
-        $json = json_decode($raw, true);
+    if (!$token && !empty($raw_input)) {
+        $json = json_decode($raw_input, true);
         if ($json && isset($json['token'])) $token = $json['token'];
     }
+    
     if (!$token) return null;
 
     $stmt = mysqli_prepare($koneksi, "SELECT id_pengguna, level FROM pengguna WHERE api_token = ? LIMIT 1");
+    if (!$stmt) {
+        @file_put_contents('C:/Users/Kevin/.gemini/antigravity-ide/brain/438c7f10-cb6b-47c1-a497-f19002dee1b4/scratch/debug.log', "Prepare failed: " . mysqli_error($koneksi) . "\n", FILE_APPEND);
+        return null;
+    }
     mysqli_stmt_bind_param($stmt, "s", $token);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
-    $user = mysqli_fetch_assoc($result);
+    $user = $result ? mysqli_fetch_assoc($result) : null;
     mysqli_stmt_close($stmt);
     return $user;
 }
@@ -62,18 +82,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
     $driver_id = isset($_GET['driver_id']) ? (int)$_GET['driver_id'] : null;
     $status = isset($_GET['status']) ? $_GET['status'] : null;
-    $order_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+    $raw_id = isset($_GET['id']) ? trim($_GET['id']) : null;
+    $has_id_param = ($raw_id !== null && $raw_id !== '');
+    $order_id = $has_id_param ? (int)preg_replace('/[^\d]/', '', $raw_id) : null;
     $page = max(1, (int)($_GET['page'] ?? 1));
     $limit = max(1, (int)($_GET['limit'] ?? 20));
     $offset = ($page - 1) * $limit;
 
-    // Detail single order
-    if ($order_id) {
-        $sql = "SELECT o.*, w.nama_lengkap as nama_warga, w.no_telepon as telp_warga, w.alamat as alamat_warga,
-                       d.nama_lengkap as nama_driver
+    // Detail single order if id query parameter was provided
+    if ($has_id_param) {
+        if (!$order_id) {
+            api_respond(false, 'Order tidak ditemukan', null, 404);
+        }
+        $sql = "SELECT o.*, 
+                       w.nama_lengkap as nama_warga, w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga,
+                       d.nama_lengkap as nama_driver, d.no_telepon as telp_driver, d.foto_profil as foto_driver,
+                       COALESCE(dv.vehicle_type, dd.jenis_kendaraan, dd.tipe_kendaraan) as jenis_kendaraan,
+                       COALESCE(dv.license_plate, dd.plat_nomor) as plat_nomor
                 FROM orders o
-                JOIN pengguna w ON o.id_warga = w.id_pengguna
+                LEFT JOIN pengguna w ON o.id_warga = w.id_pengguna
                 LEFT JOIN pengguna d ON o.id_driver = d.id_pengguna
+                LEFT JOIN detail_driver dd ON d.id_pengguna = dd.id_pengguna
+                LEFT JOIN driver_daily_vehicle dv ON d.id_pengguna = dv.driver_id AND dv.date = CURDATE()
                 WHERE o.id_order = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
         mysqli_stmt_bind_param($stmt, "i", $order_id);
@@ -89,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Get order items
         $items_sql = "SELECT oi.*, js.nama_sampah, js.harga_per_kg
                       FROM order_items oi
-                      JOIN jenis_sampah js ON oi.id_jenis_sampah = js.id_jenis_sampah
+                      LEFT JOIN jenis_sampah js ON oi.id_jenis_sampah = js.id_jenis_sampah
                       WHERE oi.id_order = ?";
         $stmt_i = mysqli_prepare($koneksi, $items_sql);
         mysqli_stmt_bind_param($stmt_i, "i", $order_id);
@@ -107,22 +137,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         mysqli_stmt_close($stmt_i);
 
+        $base_upload_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/assets/uploads/";
+
+        $foto_warga = $order['foto_warga'];
+        if ($foto_warga && !str_starts_with($foto_warga, 'http://') && !str_starts_with($foto_warga, 'https://')) {
+            $foto_warga_full = $base_upload_url . $foto_warga;
+        } else {
+            $foto_warga_full = $foto_warga;
+        }
+
+        $foto_driver = $order['foto_driver'];
+        if ($foto_driver && !str_starts_with($foto_driver, 'http://') && !str_starts_with($foto_driver, 'https://')) {
+            $foto_driver_full = $base_upload_url . $foto_driver;
+        } else {
+            $foto_driver_full = $foto_driver;
+        }
+
+        $vehicle_display = $order['jenis_kendaraan'] ?? $order['tipe_kendaraan'] ?? 'Motor Box';
+        $plat_nomor_display = $order['plat_nomor'] ?? '-';
+
         $data = [
-            'id' => (int)$order['id_order'],
-            'nama_warga' => $order['nama_warga'],
-            'telp_warga' => $order['telp_warga'],
-            'nama_driver' => $order['nama_driver'],
-            'alamat_jemput' => $order['alamat_jemput'],
-            'latitude' => $order['latitude'] ? floatval($order['latitude']) : null,
-            'longitude' => $order['longitude'] ? floatval($order['longitude']) : null,
-            'waktu_jemput_dari' => $order['waktu_jemput_dari'],
-            'waktu_jemput_sampai' => $order['waktu_jemput_sampai'],
-            'estimasi_berat' => $order['estimasi_berat'],
-            'estimasi_poin' => (int)$order['estimasi_poin'],
-            'status' => $order['status'],
-            'catatan' => $order['catatan'],
-            'created_at' => $order['created_at'],
-            'updated_at' => $order['updated_at'],
+            'id' => (int)($order['id_order'] ?? 0),
+            'id_order' => (int)($order['id_order'] ?? 0),
+            'id_warga' => isset($order['id_warga']) ? (int)$order['id_warga'] : null,
+            'nama_warga' => $order['nama_warga'] ?? '',
+            'telp_warga' => $order['telp_warga'] ?? null,
+            'foto_warga' => $foto_warga_full,
+            'id_driver' => !empty($order['id_driver']) ? (int)$order['id_driver'] : null,
+            'nama_driver' => $order['nama_driver'] ?? null,
+            'telp_driver' => $order['telp_driver'] ?? null,
+            'foto_driver' => $foto_driver_full,
+            'jenis_kendaraan' => $vehicle_display,
+            'plat_nomor' => $plat_nomor_display,
+            'alamat_jemput' => $order['alamat_jemput'] ?? '',
+            'latitude' => !empty($order['latitude']) ? floatval($order['latitude']) : null,
+            'longitude' => !empty($order['longitude']) ? floatval($order['longitude']) : null,
+            'waktu_jemput_dari' => $order['waktu_jemput_dari'] ?? '',
+            'waktu_jemput_sampai' => $order['waktu_jemput_sampai'] ?? '',
+            'tanggal_order' => $order['tanggal_order'] ?? $order['created_at'] ?? '',
+            'estimasi_berat' => $order['estimasi_berat'] ?? '0',
+            'berat_aktual' => (isset($order['berat_aktual']) && $order['berat_aktual'] !== null) ? floatval($order['berat_aktual']) : null,
+            'estimasi_poin' => (int)($order['estimasi_poin'] ?? 0),
+            'status' => $order['status'] ?? 'MENUNGGU_KONFIRMASI',
+            'catatan' => $order['catatan'] ?? '',
+            'created_at' => $order['created_at'] ?? '',
+            'updated_at' => $order['updated_at'] ?? '',
             'items' => $items,
         ];
 
@@ -173,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $sql = "SELECT o.*, w.nama_lengkap as nama_warga, w.no_telepon as telp_warga,
                    d.nama_lengkap as nama_driver
             FROM orders o
-            JOIN pengguna w ON o.id_warga = w.id_pengguna
+            LEFT JOIN pengguna w ON o.id_warga = w.id_pengguna
             LEFT JOIN pengguna d ON o.id_driver = d.id_pengguna
             $where_sql
             ORDER BY o.created_at DESC
@@ -207,13 +266,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'telp_warga' => $row['telp_warga'],
             'nama_driver' => $row['nama_driver'],
             'alamat_jemput' => $row['alamat_jemput'],
-            'waktu_jemput' => $row['waktu_jemput_dari'] . ' - ' . $row['waktu_jemput_sampai'],
+            'waktu_jemput_dari' => $row['waktu_jemput_dari'] ?? '',
+            'waktu_jemput_sampai' => $row['waktu_jemput_sampai'] ?? '',
+            'tanggal_order' => $row['tanggal_order'] ?? $row['created_at'] ?? '',
+            'waktu_jemput' => ($row['waktu_jemput_dari'] ?? '') . ' - ' . ($row['waktu_jemput_sampai'] ?? ''),
             'estimasi_berat' => $row['estimasi_berat'],
+            'berat_aktual' => $row['berat_aktual'] !== null ? floatval($row['berat_aktual']) : null,
             'estimasi_poin' => (int)$row['estimasi_poin'],
             'status' => $row['status'],
             'catatan' => $row['catatan'],
             'items_count' => $items_count,
             'created_at' => $row['created_at'],
+            'updated_at' => $row['updated_at'] ?? '',
         ];
     }
     mysqli_stmt_close($stmt);
@@ -281,7 +345,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Buat notifikasi untuk warga
-    $notif_sql = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Permintaan Berhasil Dibuat', 'Permintaan penjemputan sampah Anda berhasil dikirim.\nSaat ini permintaan sedang menunggu konfirmasi dari Admin Bank Sampah.', 'pickup', ?)";
+    $notif_sql = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Permintaan Dikirim', 'Permintaan penjemputan berhasil dibuat.', 'pickup', ?)";
     $stmt_n = mysqli_prepare($koneksi, $notif_sql);
     mysqli_stmt_bind_param($stmt_n, "ii", $user_id, $order_id);
     mysqli_stmt_execute($stmt_n);
@@ -298,16 +362,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         api_respond(false, 'Unauthorized', null, 401);
     }
 
-    $raw = file_get_contents('php://input');
-    $data = json_decode($raw, true);
-    if (!$data) {
-        // Try parse_str for form data
-        parse_str($raw, $data);
+    $data = json_decode($raw_input, true);
+    if (!is_array($data)) {
+        $data = [];
+        parse_str($raw_input, $data);
     }
 
-    $order_id = isset($data['id_order']) ? (int)$data['id_order'] : 0;
-    $new_status = isset($data['status']) ? $data['status'] : '';
+    $order_id = 0;
+    if (isset($data['id_order'])) {
+        $order_id = (int)$data['id_order'];
+    } elseif (isset($_POST['id_order'])) {
+        $order_id = (int)$_POST['id_order'];
+    } elseif (isset($_GET['id_order'])) {
+        $order_id = (int)$_GET['id_order'];
+    }
 
+    $new_status = '';
+    if (isset($data['status'])) {
+        $new_status = (string)$data['status'];
+    } elseif (isset($_POST['status'])) {
+        $new_status = (string)$_POST['status'];
+    } elseif (isset($_GET['status'])) {
+        $new_status = (string)$_GET['status'];
+    }
     if (!$order_id || empty($new_status)) {
         api_respond(false, 'id_order dan status wajib diisi', null, 400);
     }
@@ -318,60 +395,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     }
 
     $driver_id = (int)$auth_user['id_pengguna'];
-    $berat_aktual = isset($data['berat_aktual']) ? $data['berat_aktual'] : (isset($data['estimasi_berat']) ? $data['estimasi_berat'] : null);
+    $raw_berat = isset($data['berat_aktual']) && !empty($data['berat_aktual']) ? trim((string)$data['berat_aktual']) : null;
 
-    // Jika driver accept, assign driver_id
+    // Update query depending on params
     if ($new_status === 'DRIVER_DITUGASKAN') {
         $sql = "UPDATE orders SET status = ?, id_driver = ? WHERE id_order = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
-        mysqli_stmt_bind_param($stmt, "sii", $new_status, $driver_id, $order_id);
-    } elseif ($berat_aktual !== null) {
-        $sql = "UPDATE orders SET status = ?, estimasi_berat = ? WHERE id_order = ?";
+        if ($stmt) mysqli_stmt_bind_param($stmt, "sii", $new_status, $driver_id, $order_id);
+    } elseif ($raw_berat !== null) {
+        $sql = "UPDATE orders SET status = ?, berat_aktual = ? WHERE id_order = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
-        mysqli_stmt_bind_param($stmt, "ssi", $new_status, $berat_aktual, $order_id);
+        if ($stmt) mysqli_stmt_bind_param($stmt, "ssi", $new_status, $raw_berat, $order_id);
     } else {
         $sql = "UPDATE orders SET status = ? WHERE id_order = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
-        mysqli_stmt_bind_param($stmt, "si", $new_status, $order_id);
+        if ($stmt) mysqli_stmt_bind_param($stmt, "si", $new_status, $order_id);
+    }
+
+    if (!$stmt) {
+        api_respond(false, 'Gagal menyiapkan query update: ' . mysqli_error($koneksi), null, 500);
     }
 
     if (mysqli_stmt_execute($stmt)) {
-        // Buat notifikasi untuk warga
-        $get_warga = "SELECT id_warga FROM orders WHERE id_order = ?";
-        $stmt_w = mysqli_prepare($koneksi, $get_warga);
-        mysqli_stmt_bind_param($stmt_w, "i", $order_id);
-        mysqli_stmt_execute($stmt_w);
-        $wr = mysqli_stmt_get_result($stmt_w);
-        $warga_row = mysqli_fetch_assoc($wr);
-        mysqli_stmt_close($stmt_w);
+        @mysqli_stmt_close($stmt);
+        $stmt = null;
+        // Fetch order details for notification & point calculation
+        $get_order_info = "SELECT id_warga, estimasi_berat, estimasi_poin, berat_aktual FROM orders WHERE id_order = ?";
+        $stmt_w = mysqli_prepare($koneksi, $get_order_info);
+        $warga_row = null;
+        if ($stmt_w) {
+            mysqli_stmt_bind_param($stmt_w, "i", $order_id);
+            mysqli_stmt_execute($stmt_w);
+            $wr = mysqli_stmt_get_result($stmt_w);
+            if ($wr) $warga_row = mysqli_fetch_assoc($wr);
+            mysqli_stmt_close($stmt_w);
+        }
+
+        if ($warga_row && $new_status === 'SELESAI') {
+            $warga_id = (int)$warga_row['id_warga'];
+            $actual_wt = floatval($warga_row['berat_aktual'] ?? $warga_row['estimasi_berat'] ?? 1.0);
+            $est_wt = floatval($warga_row['estimasi_berat'] ?? 1.0);
+            $est_pts = (int)($warga_row['estimasi_poin'] ?? 10);
+            
+            $final_points = $est_wt > 0 ? (int)round(($actual_wt / $est_wt) * $est_pts) : $est_pts;
+            if ($final_points <= 0) $final_points = $est_pts;
+
+            // Credit points and balance to citizen
+            $upd_poin = "UPDATE pengguna SET poin = COALESCE(poin, 0) + ?, saldo = COALESCE(saldo, 0) + ? WHERE id_pengguna = ?";
+            $stmt_p = mysqli_prepare($koneksi, $upd_poin);
+            if ($stmt_p) {
+                $total_rupiah = $final_points * 1000;
+                mysqli_stmt_bind_param($stmt_p, "idi", $final_points, $total_rupiah, $warga_id);
+                mysqli_stmt_execute($stmt_p);
+                mysqli_stmt_close($stmt_p);
+            }
+        }
 
         if ($warga_row) {
             $notif_messages = [
-                'MENUNGGU_KONFIRMASI' => ['Menunggu Konfirmasi', 'Permintaan Anda sedang menunggu konfirmasi dari Admin Bank Sampah.', 'pickup'],
-                'DRIVER_DITUGASKAN' => ['Driver Ditugaskan', 'Driver telah ditugaskan untuk melakukan penjemputan sampah Anda.', 'pickup'],
-                'DRIVER_MENUJU_LOKASI' => ['Driver Menuju Lokasi', 'Driver sedang menuju lokasi Anda.\nSilakan siapkan sampah yang akan diserahkan.', 'pickup'],
-                'DRIVER_TIBA' => ['Driver Tiba', 'Driver telah tiba di lokasi Anda.', 'pickup'],
-                'SAMPAH_DIJEMPUT' => ['Sampah Berhasil Dijemput', 'Sampah telah berhasil dijemput.\nPetugas sedang melakukan validasi berat sampah.', 'pickup'],
-                'VALIDASI_BANK_SAMPAH' => ['Sedang Divalidasi', 'Petugas sedang memvalidasi berat sampah Anda.', 'pickup'],
-                'SELESAI' => ['Validasi Selesai', 'Validasi selesai.\nPoin telah berhasil ditambahkan ke saldo Anda.', 'reward'],
-                'DIBATALKAN' => ['Penjemputan Dibatalkan', 'Pesanan penjemputan Anda telah dibatalkan.', 'info']
+                'SUBMITTED'            => ['Permintaan Dikirim', 'Permintaan penjemputan berhasil dibuat.', 'pickup'],
+                'MENUNGGU_KONFIRMASI' => ['Permintaan Dikonfirmasi', 'Permintaan Anda telah dikonfirmasi.', 'pickup'],
+                'DRIVER_DITUGASKAN'    => ['Picker Ditugaskan', 'Picker telah ditugaskan.', 'pickup'],
+                'DRIVER_MENUJU_LOKASI'  => ['Picker Menuju Lokasi', 'Picker sedang menuju lokasi Anda.', 'pickup'],
+                'DRIVER_TIBA'           => ['Picker Hampir Tiba', 'Picker sudah dekat.', 'pickup'],
+                'PENIMBANGAN'          => ['Penimbangan Berat', 'Picker sedang melakukan penimbangan.', 'pickup'],
+                'SAMPAH_DIJEMPUT'       => ['Sampah Dijemput', 'Sampah berhasil dijemput.', 'pickup'],
+                'MENUJU_BANK_SAMPAH'   => ['Menuju Bank Sampah', 'Sampah sedang dibawa ke Bank Sampah.', 'pickup'],
+                'VALIDASI_BANK_SAMPAH' => ['Validasi Bank Sampah', 'Petugas Admin sedang memverifikasi berat dan menghitung poin.', 'pickup'],
+                'POIN_DIPROSES'        => ['Poin Diproses', 'Poin sedang dihitung.', 'reward'],
+                'SELESAI'              => ['Penjemputan Selesai', "Penjemputan selesai.\nPoin telah ditambahkan ke akun Anda.", 'reward'],
+                'DIBATALKAN'           => ['Penjemputan Dibatalkan', 'Permintaan penjemputan berhasil dibatalkan.', 'info']
             ];
 
             if (isset($notif_messages[$new_status])) {
                 $nm = $notif_messages[$new_status];
                 $notif_sql = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, ?, ?, ?, ?)";
                 $stmt_n = mysqli_prepare($koneksi, $notif_sql);
-                $warga_id = (int)$warga_row['id_warga'];
-                mysqli_stmt_bind_param($stmt_n, "isssi", $warga_id, $nm[0], $nm[1], $nm[2], $order_id);
-                mysqli_stmt_execute($stmt_n);
-                mysqli_stmt_close($stmt_n);
+                if ($stmt_n) {
+                    $warga_id = (int)$warga_row['id_warga'];
+                    $n_title = (string)$nm[0];
+                    $n_msg = (string)$nm[1];
+                    $n_type = (string)$nm[2];
+                    mysqli_stmt_bind_param($stmt_n, "isssi", $warga_id, $n_title, $n_msg, $n_type, $order_id);
+                    mysqli_stmt_execute($stmt_n);
+                    mysqli_stmt_close($stmt_n);
+                }
+            }
+
+            if ($new_status === 'VALIDASI_BANK_SAMPAH') {
+                $adm_res = mysqli_query($koneksi, "SELECT id_pengguna FROM pengguna WHERE level IN ('admin', 'petugas') OR level LIKE '%admin%'");
+                if ($adm_res) {
+                    while ($adm = mysqli_fetch_assoc($adm_res)) {
+                        $adm_id = (int)$adm['id_pengguna'];
+                        mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES ($adm_id, 'Validasi Setoran Baru', 'Penjemputan baru menunggu validasi.', 'pickup', $order_id)");
+                    }
+                }
             }
         }
 
-        api_respond(true, 'Status order berhasil diupdate');
+        $resp_msg = ($new_status === 'DIBATALKAN') ? 'Pesanan berhasil dibatalkan.' : (($new_status === 'SAMPAH_DIJEMPUT' || $raw_berat !== null) ? 'Berat berhasil dikonfirmasi.' : 'Status order berhasil diupdate');
+
+        echo json_encode([
+            'success' => true,
+            'message' => $resp_msg,
+            'order_status' => $new_status,
+            'actual_weight' => $raw_berat
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     } else {
-        api_respond(false, 'Gagal mengupdate status: ' . mysqli_error($koneksi), null, 500);
+        $err = mysqli_error($koneksi);
+        if ($stmt) mysqli_stmt_close($stmt);
+        api_respond(false, 'Gagal mengupdate status: ' . $err, null, 500);
     }
-    mysqli_stmt_close($stmt);
 }
 ?>

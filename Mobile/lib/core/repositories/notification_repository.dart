@@ -21,25 +21,28 @@ class NotificationRepository extends ChangeNotifier {
   /// Fetch notifications from API.
   Future<List<NotificationModel>> fetchNotifications() async {
     try {
+      debugPrint('==================================================');
+      debugPrint('Fetching Notifications');
+      final userData = await _api.getUserData();
+      final userId = userData?['id']?.toString() ?? 'N/A';
+      debugPrint('User ID: $userId');
+      debugPrint('Request URL: ${ApiConfig.notifikasi}');
+      debugPrint('Request Body: N/A (GET)');
+
       final response = await _api.get(ApiConfig.notifikasi);
+
+      debugPrint('Response Success: ${response.success}');
+      debugPrint('Response Message: ${response.message}');
+      debugPrint('Decoded JSON: ${response.data}');
+      debugPrint('==================================================');
+
       if (response.success && response.data != null) {
         _unreadCount = response.data['unread_count'] ?? 0;
         final items = response.data['items'] as List? ?? [];
         
-        _notifications = items.map<NotificationModel>((item) {
-          final dt = DateTime.tryParse(item['created_at'] ?? '') ?? DateTime.now();
-          return NotificationModel(
-            id: item['id'].toString(),
-            title: item['judul'] ?? '',
-            message: item['pesan'] ?? '',
-            time: _formatTimeAgo(item['created_at'] ?? ''),
-            type: item['tipe'] ?? 'info',
-            isRead: item['is_read'] == true,
-            createdAt: dt,
-            priority: item['priority'] ?? item['prioritas'], // Handling possible priority fields
-            relatedId: item['related_id'] != null ? int.tryParse(item['related_id'].toString()) : null,
-          );
-        }).toList();
+        _notifications = items
+            .map<NotificationModel>((item) => NotificationModel.fromJson(Map<String, dynamic>.from(item)))
+            .toList();
 
         // Sort descending by date
         _notifications.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
@@ -50,7 +53,8 @@ class NotificationRepository extends ChangeNotifier {
         throw Exception(response.message.isEmpty ? 'Gagal memuat notifikasi' : response.message);
       }
     } catch (e) {
-      throw Exception('Gagal memuat notifikasi: $e');
+      debugPrint('NotificationRepository.fetchNotifications Exception: $e');
+      throw Exception('HTTP Status / Error: $e');
     }
   }
 
@@ -128,45 +132,89 @@ class NotificationRepository extends ChangeNotifier {
   }) {
     String title = '';
     String message = customMessage ?? '';
-    switch (status.toLowerCase()) {
+    final cleanStatus = status.toLowerCase();
+
+    switch (cleanStatus) {
+      case 'submitted':
+      case 'order_created':
+        title = 'Permintaan Dikirim';
+        message = 'Permintaan penjemputan berhasil dibuat.';
+        break;
       case 'pending':
-        title = 'Menunggu Konfirmasi Admin';
-        if (message.isEmpty) message = 'Permintaan setoran sampah #$orderId sedang menunggu verifikasi admin dan penugasan driver.';
+      case 'menunggu_konfirmasi':
+        title = 'Permintaan Dikonfirmasi';
+        message = 'Permintaan Anda telah dikonfirmasi.';
         break;
       case 'accepted':
-        title = 'Pesanan Diterima & Driver Ditugaskan';
-        if (message.isEmpty) message = 'Driver telah ditugaskan untuk pesanan #$orderId dan bersiap menuju lokasi Anda.';
+      case 'driver_ditugaskan':
+      case 'picker_assigned':
+        title = 'Picker Ditugaskan';
+        message = 'Picker telah ditugaskan.';
         break;
       case 'on_the_way':
-        title = 'Driver Sedang Menuju Lokasi';
-        if (message.isEmpty) message = 'Driver dalam perjalanan menuju alamat penjemputan pesanan #$orderId.';
+      case 'driver_menuju_lokasi':
+      case 'picker_on_the_way':
+        title = 'Picker Menuju Lokasi';
+        message = 'Picker sedang menuju lokasi Anda.';
+        break;
+      case 'arrived':
+      case 'driver_tiba':
+      case 'picker_nearby':
+        title = 'Picker Hampir Tiba';
+        message = 'Picker sudah dekat.';
+        break;
+      case 'penimbangan':
+      case 'weight_validation':
+        title = 'Penimbangan Berat';
+        message = 'Picker sedang melakukan penimbangan.';
         break;
       case 'picked_up':
-        title = 'Sampah Berhasil Dijemput';
-        if (message.isEmpty) message = 'Sampah pesanan #$orderId telah diangkut driver dan menuju gudang Bank Sampah.';
+      case 'sampah_dijemput':
+      case 'waste_picked_up':
+        title = 'Sampah Dijemput';
+        message = 'Sampah berhasil dijemput.';
+        break;
+      case 'heading_to_waste_bank':
+      case 'menuju_bank_sampah':
+        title = 'Menuju Bank Sampah';
+        message = 'Sampah sedang dibawa ke Bank Sampah.';
         break;
       case 'validating':
-        title = 'Proses Penimbangan & Validasi';
-        if (message.isEmpty) message = 'Sampah pesanan #$orderId sedang ditimbang dan divalidasi oleh petugas gudang.';
+      case 'validasi_bank_sampah':
+      case 'admin_validation':
+        title = 'Validasi Bank Sampah';
+        message = 'Sampah sedang diverifikasi oleh petugas Bank Sampah.';
+        break;
+      case 'poin_diproses':
+      case 'point_calculation':
+        title = 'Poin Diproses';
+        message = 'Poin sedang dihitung.';
         break;
       case 'completed':
-        title = 'Setoran Selesai! Poin Ditambahkan';
-        if (message.isEmpty) message = 'Proses validasi pesanan #$orderId selesai. Poin reward telah masuk ke saldo Anda.';
+      case 'selesai':
+        title = 'Penjemputan Selesai';
+        message = "Penjemputan selesai.\nPoin telah ditambahkan ke akun Anda.";
+        break;
+      case 'cancelled':
+      case 'dibatalkan':
+        title = 'Penjemputan Dibatalkan';
+        message = 'Permintaan penjemputan berhasil dibatalkan.';
         break;
       default:
-        title = 'Pembaruan Status Pesanan';
-        if (message.isEmpty) message = 'Pesanan #$orderId kini berstatus ${status.toUpperCase()}.';
+        title = 'Permintaan Dikonfirmasi';
+        if (message.isEmpty) message = 'Permintaan Anda telah dikonfirmasi.';
     }
 
     addNotification(
       NotificationModel(
-        id: '${status.toLowerCase()}_$orderId',
+        id: '${cleanStatus}_$orderId',
         title: title,
         message: message,
         time: 'Baru saja',
-        type: status.toLowerCase(),
+        type: 'pickup',
         isRead: false,
         createdAt: DateTime.now(),
+        relatedId: int.tryParse(orderId),
       ),
     );
   }
@@ -216,20 +264,5 @@ class NotificationRepository extends ChangeNotifier {
         createdAt: DateTime.now(),
       ),
     );
-  }
-
-  String _formatTimeAgo(String dateStr) {
-    if (dateStr.isEmpty) return '';
-    try {
-      final dt = DateTime.parse(dateStr);
-      final diff = DateTime.now().difference(dt);
-      if (diff.inDays > 30) return '${(diff.inDays / 30).floor()} bulan lalu';
-      if (diff.inDays > 0) return '${diff.inDays} hari lalu';
-      if (diff.inHours > 0) return '${diff.inHours} jam lalu';
-      if (diff.inMinutes > 0) return '${diff.inMinutes} menit lalu';
-      return 'Baru saja';
-    } catch (_) {
-      return dateStr;
-    }
   }
 }

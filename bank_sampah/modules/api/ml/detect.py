@@ -22,6 +22,7 @@ if __name__ == '__main__':
 
     try:
         # Menggunakan package ultralytics karena sangat mendukung format YOLO ke ONNX
+        # pyrefly: ignore [missing-import]3
         from ultralytics import YOLO
     except ImportError:
         # Menulis error ke stderr agar PHP tidak menganggapnya sebagai output JSON yang valid

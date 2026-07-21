@@ -380,30 +380,43 @@ elseif ($action === 'save_daily_vehicle') {
 }
 
 // ============================================================
+// ACTION: get_driver_status
+// ============================================================
+elseif ($action === 'get_driver_status') {
+    $stmt = mysqli_prepare($koneksi, "SELECT COALESCE(driver_status, 'offline') as driver_status FROM pengguna WHERE id_pengguna = ? AND level = 'driver'");
+    mysqli_stmt_bind_param($stmt, "i", $id_driver);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    $row = mysqli_fetch_assoc($res);
+    mysqli_stmt_close($stmt);
+
+    $driverStatus = $row['driver_status'] ?? 'offline';
+    api_respond(true, 'Berhasil mengambil status driver', [
+        'driver_status' => $driverStatus
+    ]);
+}
+
+// ============================================================
 // ACTION: update_driver_status
 // ============================================================
 elseif ($action === 'update_driver_status') {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!$input) $input = $_POST;
 
-    $status        = isset($input['driver_status']) ? trim($input['driver_status']) : '';
-    $valid_statuses = ['offline', 'available', 'ready', 'on_the_way', 'picking_up'];
+    $status = isset($input['driver_status']) ? trim(strtolower($input['driver_status'])) : '';
+    $valid_statuses = ['online', 'offline'];
 
     if (!in_array($status, $valid_statuses)) {
-        api_respond(false, 'Status tidak valid. Pilih: ' . implode(', ', $valid_statuses), null, 400);
+        api_respond(false, 'Status tidak valid. Pilih: online atau offline', null, 400);
     }
 
-    // Auto-create column if it doesn't exist (migration safety)
-    $col_check = mysqli_query($koneksi, "SHOW COLUMNS FROM pengguna LIKE 'driver_status'");
-    if (mysqli_num_rows($col_check) === 0) {
-        mysqli_query($koneksi, "ALTER TABLE pengguna ADD COLUMN driver_status VARCHAR(20) DEFAULT 'offline'");
-    }
-
-    $stmt = mysqli_prepare($koneksi, "UPDATE pengguna SET driver_status = ? WHERE id_pengguna = ?");
+    $stmt = mysqli_prepare($koneksi, "UPDATE pengguna SET driver_status = ? WHERE id_pengguna = ? AND level = 'driver'");
     mysqli_stmt_bind_param($stmt, "si", $status, $id_driver);
     if (mysqli_stmt_execute($stmt)) {
         mysqli_stmt_close($stmt);
-        api_respond(true, 'Status driver berhasil diperbarui');
+        api_respond(true, 'Status driver berhasil diperbarui', [
+            'driver_status' => $status
+        ]);
     } else {
         api_respond(false, 'Gagal memperbarui status: ' . mysqli_error($koneksi), null, 500);
     }

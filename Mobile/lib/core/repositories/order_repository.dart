@@ -20,6 +20,27 @@ class OrderRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Helper to format Pickup Schedule (tanggal_order + waktu_jemput_dari) as e.g. "23 Juli 2026, 08.00 WIB"
+  static String formatPickupSchedule(String? rawDate, String? rawTimeFrom) {
+    final dtStr = (rawDate != null && rawDate.isNotEmpty) ? rawDate : '';
+    if (dtStr.isEmpty) return '-';
+
+    final dt = DateTime.tryParse(dtStr) ?? DateTime.now();
+    final months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    final dateFormatted = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+
+    final timeStr = (rawTimeFrom != null && rawTimeFrom.isNotEmpty) ? rawTimeFrom : '';
+    if (timeStr.isEmpty) return dateFormatted;
+
+    final cleanTime = timeStr.replaceAll(':', '.');
+    final parts = cleanTime.split('.');
+    final timeFormatted = parts.length >= 2 ? '${parts[0]}.${parts[1]} WIB' : '$cleanTime WIB';
+    return '$dateFormatted, $timeFormatted';
+  }
+
   /// Create a new pickup order via API.
   Future<int?> createOrder({
     required String alamatJemput,
@@ -60,18 +81,29 @@ class OrderRepository extends ChangeNotifier {
       if (userId.isNotEmpty) {
         final response = await _api.get(ApiConfig.orders, queryParams: {
           'user_id': userId,
-          'status': 'MENUNGGU_KONFIRMASI,DRIVER_DITUGASKAN,DRIVER_MENUJU_LOKASI,SAMPAH_DIJEMPUT,VALIDASI_BANK_SAMPAH',
+          'status': 'MENUNGGU_KONFIRMASI,DRIVER_DITUGASKAN,DRIVER_MENUJU_LOKASI,DRIVER_TIBA,PENIMBANGAN,SAMPAH_DIJEMPUT,MENUJU_BANK_SAMPAH,VALIDASI_BANK_SAMPAH,POIN_DIPROSES',
         });
 
         if (response.success && response.data != null) {
           final items = response.data['items'] as List? ?? [];
           final apiOrders = items.map<OngoingOrderModel>((item) {
             final status = _mapStatus(item['status'] ?? 'pending');
+            final scheduleDateStr = formatPickupSchedule(
+              item['tanggal_order']?.toString() ?? item['created_at']?.toString(),
+              item['waktu_jemput_dari']?.toString(),
+            );
+
+            final rawBerat = item['estimasi_berat']?.toString() ?? '0';
+            final cleanBerat = rawBerat.replaceAll(RegExp(r'[^\d.]'), '');
+            final beratVal = double.tryParse(cleanBerat) ?? (double.tryParse(rawBerat) ?? 0.0);
+            final beratStr = '${beratVal.toStringAsFixed(1)} Kg';
+            final itemsCnt = item['items_count'] ?? 1;
+
             return OngoingOrderModel(
               id: item['id'].toString(),
               title: 'Jemput Sampah',
-              date: _formatDate(item['created_at'] ?? ''),
-              subtitle: '${item['estimasi_berat'] ?? '-'} · ${item['items_count'] ?? 0} jenis',
+              date: scheduleDateStr,
+              subtitle: '$beratStr · $itemsCnt Jenis',
               status: status,
               estimatedPoints: '+${item['estimasi_poin'] ?? 0} poin',
               driverName: item['nama_driver'],
@@ -193,32 +225,105 @@ class OrderRepository extends ChangeNotifier {
 
   Future<Map<String, dynamic>?> getOrderById(String orderId) async {
     try {
-      final response = await _api.get(ApiConfig.orders, queryParams: {
-        'id': orderId,
-      });
-      if (response.success && response.data != null) {
-        return response.data as Map<String, dynamic>;
+      final cleanId = orderId.replaceAll(RegExp(r'[^\d]'), '');
+      debugPrint('==================================================');
+      debugPrint('Opening Detail Order');
+      debugPrint('Order ID: $orderId (Cleaned: $cleanId)');
+      
+      final userData = await _api.getUserData();
+      final userId = userData?['id']?.toString() ?? 'N/A';
+      debugPrint('User ID: $userId');
+
+      if (cleanId.isEmpty) {
+        debugPrint('ERROR: Cleaned Order ID is empty!');
+        debugPrint('==================================================');
+        return null;
       }
-    } catch (_) {}
+
+      final url = '${ApiConfig.orders}?id=$cleanId';
+      debugPrint('Request URL: $url');
+      debugPrint('Request Body: N/A (GET)');
+
+      final response = await _api.get(ApiConfig.orders, queryParams: {
+        'id': cleanId,
+      });
+
+      debugPrint('Response Success: ${response.success}');
+      debugPrint('Response Message: ${response.message}');
+      debugPrint('Decoded JSON: ${response.data}');
+      debugPrint('==================================================');
+
+      if (response.success && response.data != null && response.data is Map<String, dynamic>) {
+        final dataMap = response.data as Map<String, dynamic>;
+        if (dataMap.containsKey('id_order') || dataMap.containsKey('status')) {
+          return dataMap;
+        }
+      }
+    } catch (e) {
+      debugPrint('OrderRepository.getOrderById Exception: $e');
+    }
     return null;
   }
 
   /// Cancel an order (set status to cancelled)
-  Future<bool> cancelOrder(String orderId) async {
+  Future<ApiResponse> cancelOrder(String orderId) async {
     try {
+      final cleanId = orderId.replaceAll(RegExp(r'[^\d]'), '');
       final response = await _api.put(ApiConfig.orders, body: {
-        'id_order': orderId,
-        'status': 'cancelled',
+        'id_order': cleanId,
+        'status': 'DIBATALKAN',
       });
-      return response.success;
-    } catch (_) {
-      return false;
+      return response;
+    } catch (e) {
+      return ApiResponse(success: false, message: e.toString());
     }
   }
 
-  /// Fetch history (completed transactions & redemptions) from API.
+  /// Fetch history (completed transactions, cancelled orders & redemptions) from API.
   Future<List<HistoryItemModel>> getHistoryItems() async {
     final List<HistoryItemModel> allItems = [];
+
+    // 1. Fetch completed & cancelled orders from orders_api.php
+    try {
+      final userData = await _api.getUserData();
+      final userId = userData?['id']?.toString() ?? '';
+      if (userId.isNotEmpty) {
+        final response = await _api.get(ApiConfig.orders, queryParams: {
+          'user_id': userId,
+          'status': 'SELESAI,DIBATALKAN',
+        });
+        if (response.success && response.data != null) {
+          final items = response.data['items'] as List? ?? [];
+          for (final item in items) {
+            final rawStatus = item['status']?.toString().toUpperCase() ?? 'SELESAI';
+            final isCancelled = rawStatus == 'DIBATALKAN';
+            final scheduleStr = formatPickupSchedule(
+              item['tanggal_order']?.toString() ?? item['created_at']?.toString(),
+              item['waktu_jemput_dari']?.toString(),
+            );
+            final rawBerat = item['berat_aktual']?.toString() ?? item['estimasi_berat']?.toString() ?? '0';
+            final cleanBerat = rawBerat.replaceAll(RegExp(r'[^\d.]'), '');
+            final beratVal = double.tryParse(cleanBerat) ?? (double.tryParse(rawBerat) ?? 0.0);
+            final beratStr = '${beratVal.toStringAsFixed(1)} Kg';
+            final itemsCnt = item['items_count'] ?? 1;
+            final pts = (item['estimasi_poin'] as num?)?.toInt() ?? 0;
+
+            allItems.add(
+              HistoryItemModel(
+                id: item['id'].toString(),
+                title: 'Jemput Sampah',
+                date: scheduleStr,
+                points: isCancelled ? '0 POIN' : '+$pts POIN',
+                type: HistoryType.setor,
+                weight: '$beratStr · $itemsCnt Jenis',
+                statusLabel: isCancelled ? 'Dibatalkan' : 'Selesai',
+                rawStatus: rawStatus,
+              ),
+            );
+          }
+        }
+      }
+    } catch (_) {}
 
     try {
       final response = await _api.get(ApiConfig.transaksi);
@@ -233,10 +338,10 @@ class OrderRepository extends ChangeNotifier {
             HistoryItemModel(
               id: item['id'].toString(),
               title: isSetor ? 'Penjemputan' : 'Tukar Poin',
-              date: _formatDate(item['tanggal'] ?? ''),
+              date: formatPickupSchedule(item['tanggal'] ?? '', null),
               points: isSetor ? '+${nilai.toInt()} POIN' : '-${nilai.toInt()} Poin',
               type: isSetor ? HistoryType.setor : HistoryType.pencairan,
-              weight: berat != null ? '${berat.toStringAsFixed(2)} kg terkumpul' : null,
+              weight: berat != null ? '${berat.toStringAsFixed(1)} Kg terkumpul' : null,
               statusLabel: 'Selesai',
             ),
           );

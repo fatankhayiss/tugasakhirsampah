@@ -12,6 +12,7 @@ import 'screens/profile_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/edit_profile_screen.dart';
 import 'constants/api_config.dart';
+import 'screens/pickup_success_screen.dart';
 import 'constants/app_colors.dart';
 
 void main() {
@@ -70,6 +71,7 @@ class MainApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/history': (context) => const HistoryScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),
+        '/pickup-success': (context) => const PickupSuccessScreen(),
       },
     );
   }

@@ -45,7 +45,7 @@ if (!defined('BASE_URL')) {
         define('BASE_URL', $baseUrl);
     } else {
         // Fallback for CLI or when server vars are unavailable
-        define('BASE_URL', 'http://localhost/bank_sampah/');
+        define('BASE_URL', 'http://192.168.110.61/tugasakhirsampah/bank_sampah/');
     }
 }
 

@@ -84,6 +84,7 @@ if (!isset($_SESSION['admin_logged_in']) && $page !== 'login' && $page !== 'pros
 <?php if (isset($_SESSION['admin_logged_in'])): ?>
     <nav class="admin-nav">
         <a href="admin.php?page=dashboard" class="<?php echo ($page === 'dashboard' || $page === '') ? 'active' : ''; ?>">Dashboard</a>
+        <a href="admin.php?page=menunggu_validasi" class="<?php echo ($page === 'menunggu_validasi') ? 'active' : ''; ?>">Menunggu Validasi</a>
         <a href="admin.php?page=nasabah_list" class="<?php echo (strpos($page, 'nasabah') === 0) ? 'active' : ''; ?>">Kelola Nasabah</a>
         <a href="admin.php?page=setor_sampah" class="<?php echo ($page === 'setor_sampah') ? 'active' : ''; ?>">Input Setoran</a>
         <a href="admin.php?page=jenis_sampah" class="<?php echo ($page === 'jenis_sampah') ? 'active' : ''; ?>">Jenis Sampah</a>
@@ -161,6 +162,144 @@ switch ($page) {
         $_SESSION['flash_message'] = ['type' => 'info', 'text' => 'Anda telah berhasil logout.'];
         header('Location: admin.php?page=login'); 
         exit;
+        break;
+
+    case 'menunggu_validasi':
+        if (!isset($_SESSION['admin_logged_in'])) { header('Location: admin.php?page=login'); exit; }
+        $sql_q = "SELECT o.*, 
+                         w.nama_lengkap AS nama_warga, w.no_telepon AS telp_warga,
+                         d.nama_lengkap AS nama_driver, d.no_telepon AS telp_driver,
+                         COALESCE(dv.vehicle_type, dd.jenis_kendaraan, 'Motor Box') as vehicle_type,
+                         COALESCE(dv.license_plate, dd.plat_nomor, '-') as license_plate
+                  FROM orders o
+                  LEFT JOIN pengguna w ON o.id_warga = w.id_pengguna
+                  LEFT JOIN pengguna d ON o.id_driver = d.id_pengguna
+                  LEFT JOIN detail_driver dd ON d.id_pengguna = dd.id_pengguna
+                  LEFT JOIN driver_daily_vehicle dv ON d.id_pengguna = dv.driver_id AND dv.date = CURDATE()
+                  WHERE o.status IN ('VALIDASI_BANK_SAMPAH', 'MENUNGGU_VALIDASI_ADMIN')
+                  ORDER BY o.updated_at DESC";
+        $res_q = mysqli_query($conn, $sql_q);
+        ?>
+        <h2 class="admin-title">Antrean Menunggu Validasi</h2>
+        <p>Daftar penjemputan sampah yang telah diserahkan oleh Picker dan menunggu verifikasi serta penentuan poin oleh Admin Bank Sampah.</p>
+        
+        <?php if (!$res_q || mysqli_num_rows($res_q) == 0): ?>
+            <p class="message info">Belum ada penjemputan yang menunggu validasi.</p>
+        <?php else: ?>
+            <div class="table-responsive-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Penyetor</th>
+                            <th>Picker & Kendaraan</th>
+                            <th>Jadwal / Waktu</th>
+                            <th>Estimasi Berat</th>
+                            <th>Berat Aktual</th>
+                            <th>Alamat Jemput</th>
+                            <th>Waktu Submisi</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = mysqli_fetch_assoc($res_q)): ?>
+                        <tr>
+                            <td><strong>#<?php echo htmlspecialchars($row['id_order']); ?></strong></td>
+                            <td>
+                                <strong><?php echo htmlspecialchars($row['nama_warga'] ?? 'Penyetor'); ?></strong><br>
+                                <small style="color:#666;"><?php echo htmlspecialchars($row['telp_warga'] ?? '-'); ?></small>
+                            </td>
+                            <td>
+                                <strong><?php echo htmlspecialchars($row['nama_driver'] ?? 'Picker'); ?></strong><br>
+                                <small style="color:#2563EB; font-weight:600;"><?php echo htmlspecialchars($row['vehicle_type']); ?> (<?php echo htmlspecialchars($row['license_plate']); ?>)</small><br>
+                                <small style="color:#666;"><?php echo htmlspecialchars($row['telp_driver'] ?? '-'); ?></small>
+                            </td>
+                            <td><?php echo htmlspecialchars($row['tanggal_order'] ?? '-'); ?></td>
+                            <td><?php echo htmlspecialchars($row['estimasi_berat'] ?? '0'); ?> Kg</td>
+                            <td><span style="color:#2563EB; font-weight:bold;"><?php echo htmlspecialchars($row['berat_aktual'] ?? $row['estimasi_berat'] ?? '0'); ?> Kg</span></td>
+                            <td><small><?php echo htmlspecialchars($row['alamat_jemput'] ?? '-'); ?></small></td>
+                            <td><small><?php echo htmlspecialchars($row['updated_at'] ?? $row['created_at'] ?? '-'); ?></small></td>
+                            <td class="actions">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="openValidasiModal(<?php echo $row['id_order']; ?>, '<?php echo htmlspecialchars(addslashes($row['nama_warga'] ?? 'Penyetor')); ?>', '<?php echo htmlspecialchars(addslashes($row['berat_aktual'] ?? $row['estimasi_berat'] ?? '1.5')); ?>', <?php echo (int)($row['estimasi_poin'] ?? 10); ?>)">Validasi Setoran</button>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Modal Validasi Setoran -->
+            <div id="modalValidasi" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+                <div style="background:#fff; width:90%; max-width:480px; margin:100px auto; padding:24px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+                    <h3 style="margin-top:0; color:#2E8B57; border-bottom:2px solid #2E8B57; padding-bottom:10px;">Form Validasi Setoran Sampah</h3>
+                    <form class="form-admin" method="POST" action="admin.php?page=proses_validasi_admin">
+                        <input type="hidden" id="v_id_order" name="id_order">
+                        <div class="form-group">
+                            <label>Penyetor:</label>
+                            <input type="text" id="v_nama_warga" readonly style="background:#f1f5f9;">
+                        </div>
+                        <div class="form-group">
+                            <label>Berat Aktual (Kg):</label>
+                            <input type="text" id="v_berat_aktual" name="berat_aktual" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Jumlah Poin yang Diberikan:</label>
+                            <input type="number" id="v_poin_final" name="poin_final" required min="1">
+                        </div>
+                        <div style="margin-top:20px; text-align:right;">
+                            <button type="button" class="btn" style="background:#6c757d; color:#fff;" onclick="closeValidasiModal()">Batal</button>
+                            <button type="submit" class="btn btn-primary" style="margin-left:10px;">Konfirmasi & Tambahkan Poin</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <script>
+                function openValidasiModal(idOrder, namaWarga, beratAktual, estimasiPoin) {
+                    document.getElementById('v_id_order').value = idOrder;
+                    document.getElementById('v_nama_warga').value = namaWarga;
+                    document.getElementById('v_berat_aktual').value = beratAktual;
+                    document.getElementById('v_poin_final').value = estimasiPoin;
+                    document.getElementById('modalValidasi').style.display = 'block';
+                }
+                function closeValidasiModal() {
+                    document.getElementById('modalValidasi').style.display = 'none';
+                }
+            </script>
+        <?php endif; ?>
+        <?php
+        break;
+
+    case 'proses_validasi_admin':
+        if (!isset($_SESSION['admin_logged_in'])) { header('Location: admin.php?page=login'); exit; }
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $order_id = (int)$_POST['id_order'];
+            $berat_aktual = trim($_POST['berat_aktual']);
+            $poin_final = (int)$_POST['poin_final'];
+
+            $res_o = mysqli_query($conn, "SELECT id_warga FROM orders WHERE id_order = $order_id");
+            if ($row_o = mysqli_fetch_assoc($res_o)) {
+                $warga_id = (int)$row_o['id_warga'];
+
+                // 1. Update order status to SELESAI
+                $sql_upd = "UPDATE orders SET status = 'SELESAI', berat_aktual = '" . mysqli_real_escape_string($conn, $berat_aktual) . "', estimasi_poin = $poin_final WHERE id_order = $order_id";
+                mysqli_query($conn, $sql_upd);
+
+                // 2. Add points & balance to Penyetor
+                $total_rupiah = $poin_final * 1000;
+                $sql_poin = "UPDATE pengguna SET poin = COALESCE(poin, 0) + $poin_final, saldo = COALESCE(saldo, 0) + $total_rupiah WHERE id_pengguna = $warga_id";
+                mysqli_query($conn, $sql_poin);
+
+                // 3. Generate Notification for Penyetor
+                $n_title = 'Penjemputan Selesai';
+                $n_msg = "Penjemputan selesai.\nPoin telah berhasil ditambahkan ke akun Anda.";
+                $notif_sql = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES ($warga_id, '$n_title', '$n_msg', 'reward', $order_id)";
+                mysqli_query($conn, $notif_sql);
+
+                $_SESSION['flash_message'] = ['type' => 'success', 'text' => 'Order #' . $order_id . ' berhasil divalidasi. Poin telah ditambahkan ke Penyetor!'];
+            }
+            header('Location: admin.php?page=menunggu_validasi');
+            exit;
+        }
         break;
 
     // --- Manajemen Nasabah ---

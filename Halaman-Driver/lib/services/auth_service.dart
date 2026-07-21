@@ -43,5 +43,13 @@ class AuthService {
 
   Future<void> deleteUser() => _api.clearAuth();
 
-  Future<void> logout() => _api.clearAuth();
+  Future<void> logout() async {
+    try {
+      await _api.post(
+        ApiConfig.driverUpdateDriverStatus,
+        body: {'driver_status': 'offline'},
+      );
+    } catch (_) {}
+    await _api.clearAuth();
+  }
 }

@@ -221,7 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           child: Text(
                             _showUsername
                                 ? '@${_userData?['username'] ?? 'username'}'
-                                : (nama.isNotEmpty ? nama : 'Driver iTrashy'),
+                                : (nama.isNotEmpty ? nama : 'Picker iTrashy'),
                             key: ValueKey(_showUsername),
                             style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
                             maxLines: 1,
@@ -230,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _userData?['level']?.toString().toUpperCase() ?? 'DRIVER',
+                          _userData?['level']?.toString().toUpperCase() ?? 'PICKER',
                           style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.7)),
                         ),
                       ],
@@ -561,13 +561,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         ),
       ],
     );
-  }
-
-  IconData _getVehicleIcon(String? type) {
-    if (type == null) return Icons.local_shipping_rounded;
-    final t = type.toLowerCase();
-    if (t.contains('motor')) return Icons.two_wheeler_rounded;
-    return Icons.local_shipping_rounded;
   }
 }
 

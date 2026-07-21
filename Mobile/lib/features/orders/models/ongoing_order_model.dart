@@ -11,35 +11,37 @@ extension OngoingStatusExtension on OngoingStatus {
   String get label {
     switch (this) {
       case OngoingStatus.pending:
-        return 'Menunggu';
+        return 'Menunggu Konfirmasi';
       case OngoingStatus.processing:
-        return 'Diproses';
+        return 'Picker Ditugaskan';
       case OngoingStatus.pickup:
-        return 'Pickup';
+        return 'Picker Menuju Lokasi';
       case OngoingStatus.verifying:
-        return 'Verifikasi';
+        return 'Validasi Bank Sampah';
     }
   }
 
   Color get badgeBackground {
     switch (this) {
       case OngoingStatus.pending:
-        return const Color(0xFFEAF8EF); // Soft green
+        return const Color(0xFFFEF3C7);
       case OngoingStatus.processing:
       case OngoingStatus.pickup:
+        return const Color(0xFFEFF6FF);
       case OngoingStatus.verifying:
-        return const Color(0xFFDDF8E7); // Emerald green background for active states
+        return const Color(0xFFF3E8FF);
     }
   }
 
   Color get badgeText {
     switch (this) {
       case OngoingStatus.pending:
-        return const Color(0xFF16A34A); // Medium green text
+        return const Color(0xFFD97706);
       case OngoingStatus.processing:
       case OngoingStatus.pickup:
+        return const Color(0xFF2563EB);
       case OngoingStatus.verifying:
-        return const Color(0xFF15803D); // Deeper green text
+        return const Color(0xFF7E22CE);
     }
   }
 }

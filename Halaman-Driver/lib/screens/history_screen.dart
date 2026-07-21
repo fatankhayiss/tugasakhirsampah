@@ -237,7 +237,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 18),
                                               const SizedBox(width: 10),
                                               Text(
-                                                item['tanggal_order'] ?? '',
+                                                DriverStyles.formatPickupSchedule(item['tanggal_order'], item['waktu_jemput_dari']),
                                                 style: const TextStyle(
                                                   fontFamily: 'Plus Jakarta Sans',
                                                   fontSize: 13,

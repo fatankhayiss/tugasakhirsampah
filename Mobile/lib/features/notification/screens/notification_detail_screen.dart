@@ -279,9 +279,17 @@ class NotificationDetailScreen extends StatelessWidget {
                   ),
                   child: ElevatedButton(
                     onPressed: () {
-                      final orderId = notification.id
-                          .replaceAll('create_', '')
-                          .replaceAll('pickup_', '');
+                      final orderId = (notification.relatedId != null && notification.relatedId! > 0)
+                          ? notification.relatedId.toString()
+                          : notification.id.replaceAll(RegExp(r'[^\d]'), '');
+
+                      if (orderId.isEmpty || orderId == '0') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('ID Pesanan tidak valid.')),
+                        );
+                        return;
+                      }
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(

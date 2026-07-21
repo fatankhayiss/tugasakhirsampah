@@ -248,7 +248,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                                     const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 20),
                                                     const SizedBox(width: 10),
                                                     Text(
-                                                      '${item['tanggal_order'] ?? ''} (${item['waktu_jemput_dari'] ?? '08:00'} - ${item['waktu_jemput_sampai'] ?? '17:00'})',
+                                                      DriverStyles.formatPickupSchedule(item['tanggal_order'], item['waktu_jemput_dari']),
                                                       style: const TextStyle(
                                                         fontFamily: 'Plus Jakarta Sans',
                                                         fontSize: 13,

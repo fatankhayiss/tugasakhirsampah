@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../constants/api_config.dart';
+import '../widgets/vehicle_form_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:geolocator/geolocator.dart';
-import 'dart:async';
 
 class PickupDetailScreen extends StatefulWidget {
   const PickupDetailScreen({super.key});
@@ -15,6 +14,9 @@ class PickupDetailScreen extends StatefulWidget {
 class _PickupDetailScreenState extends State<PickupDetailScreen> {
   late Map<String, dynamic> _task;
   bool _initialized = false;
+  final TextEditingController _beratAktualController = TextEditingController();
+
+
 
   @override
   void didChangeDependencies() {
@@ -23,71 +25,177 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (args != null) {
         _task = Map<String, dynamic>.from(args);
+        final initialWeight = _task['berat_aktual']?.toString() ?? _task['estimasi_berat']?.toString() ?? '';
+        final cleanWeight = initialWeight.replaceAll(RegExp(r'[^0-9.]'), '');
+        _beratAktualController.text = cleanWeight.isNotEmpty ? cleanWeight : '1.0';
       } else {
         _task = {};
       }
       _initialized = true;
-      _initLocationTracking();
     }
   }
-
-  StreamSubscription<Position>? _positionStream;
-  double _distanceToPickup = double.infinity;
 
   @override
   void dispose() {
-    _positionStream?.cancel();
+    _beratAktualController.dispose();
     super.dispose();
   }
 
-  Future<void> _initLocationTracking() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
+  String _normalizeWhatsAppPhone(String rawPhone) {
+    if (rawPhone.isEmpty) return '';
+    String cleaned = rawPhone.trim();
+    if (cleaned.startsWith('+62')) {
+      cleaned = cleaned.substring(1);
     }
-    
-    if (permission == LocationPermission.deniedForever) return;
-
-    final latStr = _task['latitude']?.toString();
-    final lngStr = _task['longitude']?.toString();
-    if (latStr == null || lngStr == null) return;
-    
-    final targetLat = double.tryParse(latStr);
-    final targetLng = double.tryParse(lngStr);
-    if (targetLat == null || targetLng == null) return;
-
-    _positionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 10),
-    ).listen((Position position) {
-      final distance = Geolocator.distanceBetween(
-        position.latitude,
-        position.longitude,
-        targetLat,
-        targetLng,
-      );
-      if (mounted) {
-        setState(() {
-          _distanceToPickup = distance;
-        });
-      }
-    });
+    cleaned = cleaned.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleaned.startsWith('08')) {
+      cleaned = '62${cleaned.substring(1)}';
+    } else if (cleaned.startsWith('0')) {
+      cleaned = '62${cleaned.substring(1)}';
+    }
+    return cleaned;
   }
 
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat membuka aplikasi terkait.')));
+  Future<void> _launchWhatsApp(String phone) async {
+    if (phone.isEmpty || phone == '-') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nomor telepon Penyetor tidak tersedia.')),
+      );
+      return;
+    }
+
+    final normalized = _normalizeWhatsAppPhone(phone);
+    final webWaUrl = 'https://wa.me/$normalized';
+    final deepWaUrl = 'whatsapp://send?phone=$normalized';
+
+    final uriWeb = Uri.parse(webWaUrl);
+    final uriDeep = Uri.parse(deepWaUrl);
+
+    try {
+      if (await canLaunchUrl(uriDeep)) {
+        await launchUrl(uriDeep, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(uriWeb)) {
+        await launchUrl(uriWeb, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uriWeb, mode: LaunchMode.externalApplication);
       }
+    } catch (_) {
+      try {
+        await launchUrl(uriWeb, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tidak dapat membuka WhatsApp.')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _launchPhone(String phone) async {
+    if (phone.isEmpty || phone == '-') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nomor telepon Penyetor tidak tersedia.')),
+      );
+      return;
+    }
+
+    final cleanPhone = phone.trim().replaceAll(RegExp(r'[^0-9+]'), '');
+    final uri = Uri.parse('tel:$cleanPhone');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        await launchUrl(uri);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak dapat membuka aplikasi Telepon.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchGoogleMaps(dynamic latStr, dynamic lngStr) async {
+    // STEP 1 & STEP 2: Verify backend and Flutter receive latitude & longitude
+    debugPrint('Latitude Raw: $latStr');
+    debugPrint('Longitude Raw: $lngStr');
+
+    if (latStr == null || lngStr == null) {
+      debugPrint('Maps Launch Aborted: Latitude or Longitude is NULL');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Koordinat lokasi penjemputan tidak tersedia.')),
+        );
+      }
+      return;
+    }
+
+    final lat = latStr.toString().trim();
+    final lng = lngStr.toString().trim();
+
+    if (lat.isEmpty || lng.isEmpty || lat == '0' || lng == '0') {
+      debugPrint('Maps Launch Aborted: Latitude or Longitude is empty/zero');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Koordinat lokasi penjemputan tidak valid.')),
+        );
+      }
+      return;
+    }
+
+    // STEP 3 & STEP 5: Generate Navigation URI & Browser URI
+    final navString = 'google.navigation:q=$lat,$lng';
+    final webString = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
+
+    final navUri = Uri.parse(navString);
+    final webUri = Uri.parse(webString);
+
+    debugPrint('Latitude: $lat');
+    debugPrint('Longitude: $lng');
+    debugPrint('Generated Navigation URI: $navString');
+    debugPrint('Generated Browser URI: $webString');
+
+    bool launched = false;
+
+    // STEP 3: Attempt google.navigation with LaunchMode.externalApplication
+    try {
+      if (await canLaunchUrl(navUri)) {
+        launched = await launchUrl(navUri, mode: LaunchMode.externalApplication);
+        debugPrint('Launch Result (Navigation URI via canLaunchUrl): $launched');
+      } else {
+        launched = await launchUrl(navUri, mode: LaunchMode.externalApplication);
+        debugPrint('Launch Result (Navigation URI direct launch): $launched');
+      }
+    } catch (e) {
+      debugPrint('Navigation URI launch failed: $e');
+      launched = false;
+    }
+
+    // STEP 4: Fallback to Browser URI if first attempt failed
+    if (!launched) {
+      debugPrint('Falling back to Browser URI: $webString');
+      try {
+        if (await canLaunchUrl(webUri)) {
+          launched = await launchUrl(webUri, mode: LaunchMode.externalApplication);
+          debugPrint('Launch Result (Browser URI via canLaunchUrl): $launched');
+        } else {
+          launched = await launchUrl(webUri, mode: LaunchMode.externalApplication);
+          debugPrint('Launch Result (Browser URI direct launch): $launched');
+        }
+      } catch (e) {
+        debugPrint('Browser URI launch failed: $e');
+        launched = false;
+      }
+    }
+
+    debugPrint('Final Launch Result: $launched');
+
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal membuka lokasi di Google Maps.')),
+      );
     }
   }
 
@@ -103,7 +211,10 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
           ),
-          title: const Text('Detail Pesanan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.textDark)),
+          title: const Text(
+            'Detail Penjemputan',
+            style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.textDark),
+          ),
         ),
         body: const Center(
           child: Text('Data pesanan tidak ditemukan', style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted)),
@@ -111,7 +222,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
       );
     }
 
-    final statusStr = _task['status']?.toString().toLowerCase() ?? 'pending';
+    final statusStr = _task['status']?.toString().toUpperCase() ?? 'PENDING';
     final statusLabel = DriverStyles.getStatusLabel(statusStr);
     final statusColor = DriverStyles.getStatusColor(statusStr);
 
@@ -125,14 +236,29 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
         ),
-        title: Text(
-          'Pesanan #${_task['id_order'] ?? ''}',
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textDark,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Detail Penjemputan',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+            Text(
+              'Order ID : #${_task['id_order'] ?? ''}',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ],
         ),
         actions: [
           Container(
@@ -175,9 +301,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
   }
 
   Widget _buildTaskSummary(Map<String, dynamic> task) {
-    final waktuDari = task['waktu_jemput_dari'] ?? '08:00';
-    final waktuSampai = task['waktu_jemput_sampai'] ?? '17:00';
-    final tanggal = task['tanggal_order'] ?? '';
+    final scheduleStr = DriverStyles.formatPickupSchedule(task['tanggal_order'], task['waktu_jemput_dari']);
     final berat = '${task['estimasi_berat'] ?? '0'} Kg';
     final jenis = task['jenis_sampah'] ?? 'Campuran';
 
@@ -213,7 +337,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$tanggal ($waktuDari - $waktuSampai)',
+                  scheduleStr,
                   style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 12),
@@ -254,10 +378,10 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
   }
 
   Widget _buildCustomerDetail(Map<String, dynamic> task) {
-    final nama = task['nama_warga'] ?? 'Warga';
-    final inisial = nama.toString().isNotEmpty ? nama.toString().substring(0, nama.toString().length > 1 ? 2 : 1).toUpperCase() : 'W';
+    final nama = task['nama_warga'] ?? task['nama_penyetor'] ?? 'Penyetor';
+    final inisial = nama.toString().isNotEmpty ? nama.toString().substring(0, nama.toString().length > 1 ? 2 : 1).toUpperCase() : 'P';
     final alamat = task['alamat_jemput'] ?? '-';
-    final noTelp = task['no_telepon_warga'] ?? task['no_telepon'] ?? '-';
+    final noTelp = task['telp_warga'] ?? task['no_telepon_warga'] ?? task['no_telepon'] ?? '-';
 
     return Container(
       decoration: BoxDecoration(
@@ -304,7 +428,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                     height: 44,
                     decoration: BoxDecoration(color: const Color(0xFF25D366), borderRadius: BorderRadius.circular(14)),
                     child: IconButton(
-                      onPressed: () => _launchUrl('https://wa.me/$noTelp'),
+                      onPressed: () => _launchWhatsApp(noTelp),
                       icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
                     ),
                   ),
@@ -314,7 +438,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                     height: 44,
                     decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(14)),
                     child: IconButton(
-                      onPressed: () => _launchUrl('tel:$noTelp'),
+                      onPressed: () => _launchPhone(noTelp),
                       icon: const Icon(Icons.phone_rounded, color: Colors.white, size: 20),
                     ),
                   ),
@@ -344,11 +468,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                     const SizedBox(height: 10),
                     if (task['latitude'] != null && task['longitude'] != null)
                       TextButton.icon(
-                        onPressed: () {
-                          final lat = task['latitude'];
-                          final lng = task['longitude'];
-                          _launchUrl('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
-                        },
+                        onPressed: () => _launchGoogleMaps(task['latitude'], task['longitude']),
                         icon: const Icon(Icons.map_rounded, size: 18),
                         label: const Text('Buka di Google Maps', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700)),
                         style: TextButton.styleFrom(
@@ -420,74 +540,115 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, Map<String, dynamic> task, String status) {
-    if (status == 'completed' || status == 'selesai' || status == 'cancelled' || status == 'dibatalkan') {
+    final st = status.toUpperCase();
+
+    if (st == 'SELESAI' || st == 'COMPLETED' || st == 'DIBATALKAN' || st == 'CANCELLED') {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
         child: Text(
-          'Pesanan ini telah selesai / dibatalkan.',
-          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, color: DriverStyles.getStatusColor(status)),
+          st == 'SELESAI' || st == 'COMPLETED' ? 'Penjemputan ini telah selesai.' : 'Pesanan ini telah dibatalkan.',
+          style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, color: DriverStyles.getStatusColor(st)),
         ),
       );
     }
 
-    final isPendingOrAccepted = status == 'pending' || status == 'accepted' || status == 'menunggu_konfirmasi' || status == 'driver_ditugaskan';
-    final isOnTheWay = status == 'on_the_way' || status == 'dalam_perjalanan' || status == 'driver_menuju_lokasi';
-    
-    final bool canArrive = isOnTheWay && _distanceToPickup <= 100; // 100 meters
-
-    return Column(
-      children: [
-        if (isOnTheWay && _distanceToPickup > 100)
-          Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.badgeOnTheWay.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.badgeOnTheWay.withValues(alpha: 0.3)),
-            ),
-            child: Row(
+    if (st == 'VALIDASI_BANK_SAMPAH') {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFCCFBF1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF99F6E4)),
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                const Icon(Icons.info_outline_rounded, color: AppColors.badgeOnTheWay, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Jarak ke lokasi: ${_distanceToPickup > 1000 ? '${(_distanceToPickup / 1000).toStringAsFixed(1)} km' : '${_distanceToPickup.toStringAsFixed(0)} m'}. Tombol "Saya Sudah Tiba" akan aktif saat jarak < 100m.',
-                    style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontSize: 12),
+                Icon(Icons.check_circle_rounded, color: Color(0xFF0D9488), size: 22),
+                SizedBox(width: 10),
+                Text(
+                  'Menunggu Validasi Bank Sampah',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: Color(0xFF115E59),
                   ),
                 ),
               ],
             ),
-          ),
+            SizedBox(height: 8),
+            Text(
+              'Sampah telah diserahkan dan sedang diverifikasi oleh Petugas Admin di Bank Sampah.',
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: Color(0xFF134E4A)),
+            ),
+          ],
+        ),
+      );
+    }
 
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () async {
-              if (isPendingOrAccepted) {
+    if (st == 'SAMPAH_DIJEMPUT') {
+      return Column(
+        children: [
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFBFDBFE)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.local_shipping_rounded, color: Color(0xFF2563EB), size: 22),
+                    SizedBox(width: 10),
+                    Text(
+                      'Menuju Bank Sampah',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        color: Color(0xFF1E40AF),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Sampah telah berhasil diangkut. Silakan bawa sampah menuju Bank Sampah.',
+                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: Color(0xFF1E3A8A)),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
                   builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
                 );
                 final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
-                final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_MENUJU_LOKASI');
+                final res = await ApiService().updateOrderStatus(orderId, 'VALIDASI_BANK_SAMPAH');
                 if (context.mounted) Navigator.of(context).pop();
+
                 if (res['success'] == true) {
-                  setState(() {
-                    _task['status'] = 'DRIVER_MENUJU_LOKASI';
-                  });
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Status diperbarui: Dalam Perjalanan ke lokasi warga!'),
-                      backgroundColor: AppColors.primary,
-                    ));
+                    Navigator.of(context).pushReplacementNamed('/pickup-success');
                   }
                 } else {
                   if (context.mounted) {
@@ -497,23 +658,99 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                     ));
                   }
                 }
-              } else if (isOnTheWay) {
-                if (canArrive) {
+              },
+              icon: const Icon(Icons.check_circle_rounded, size: 20),
+              label: const Text(
+                'Sampah Sudah Diserahkan',
+                style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                elevation: 4,
+                shadowColor: AppColors.primary.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (st == 'DRIVER_TIBA' || st == 'PICKER_HAMPIR_TIBA') {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: DriverStyles.cardRadius,
+          border: Border.all(color: AppColors.border),
+          boxShadow: DriverStyles.cardShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.scale_rounded, color: AppColors.primary, size: 22),
+                SizedBox(width: 10),
+                Text(
+                  'Penimbangan Berat',
+                  style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textDark),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Estimasi Berat:', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: AppColors.textMuted)),
+                Text('${task['estimasi_berat'] ?? '0'} Kg', style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textDark)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Text('Berat Aktual Timbangan (Kg):', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _beratAktualController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                hintText: 'Contoh: 1.5',
+                suffixText: 'Kg',
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final inputWeight = _beratAktualController.text.trim();
+                  if (inputWeight.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Masukkan berat aktual timbangan terlebih dahulu.')));
+                    return;
+                  }
+                  final formattedWeight = '$inputWeight Kg';
+
                   showDialog(
                     context: context,
                     barrierDismissible: false,
                     builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
                   );
                   final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
-                  final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_TIBA');
+                  final res = await ApiService().updateOrderStatus(orderId, 'SAMPAH_DIJEMPUT', beratAktual: formattedWeight);
                   if (context.mounted) Navigator.of(context).pop();
+
                   if (res['success'] == true) {
                     setState(() {
-                      _task['status'] = 'DRIVER_TIBA';
+                      _task['status'] = 'SAMPAH_DIJEMPUT';
+                      _task['berat_aktual'] = formattedWeight;
                     });
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Status diperbarui: Anda sudah tiba!'),
+                        content: Text('Konfirmasi Berat Sukses: Sampah telah diangkut!'),
                         backgroundColor: AppColors.primary,
                       ));
                     }
@@ -525,12 +762,107 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                       ));
                     }
                   }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda belum berada di radius 100m dari lokasi penjemputan.')));
+                },
+                icon: const Icon(Icons.check_circle_rounded, size: 20),
+                label: const Text('Konfirmasi Berat', style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation: 4,
+                  shadowColor: AppColors.primary.withValues(alpha: 0.3),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final isPendingOrAccepted = st == 'PENDING' || st == 'ACCEPTED' || st == 'MENUNGGU_KONFIRMASI' || st == 'DRIVER_DITUGASKAN';
+    final isOnTheWay = st == 'ON_THE_WAY' || st == 'DALAM_PERJALANAN' || st == 'DRIVER_MENUJU_LOKASI';
+
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () async {
+              final ctx = context;
+              // Vehicle Check
+              final vRes = await ApiService().getDailyVehicle();
+              if (vRes['success'] != true || vRes['data'] == null) {
+                if (!mounted) return;
+                // ignore: use_build_context_synchronously
+                final fill = await VehicleFormSheet.showValidationDialog(ctx);
+                if (fill == true && mounted) {
+                  // ignore: use_build_context_synchronously
+                  await VehicleFormSheet.showVehicleSheet(ctx);
                 }
-              } else {
-                // driver_tiba or picked_up or others -> verify
-                Navigator.of(context).pushNamed('/pickup-verify', arguments: _task);
+                return;
+              }
+
+              if (isPendingOrAccepted) {
+                if (!mounted) return;
+                // ignore: use_build_context_synchronously
+                showDialog(
+                  // ignore: use_build_context_synchronously
+                  context: ctx,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                );
+                final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
+                final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_MENUJU_LOKASI');
+                if (!mounted) return;
+                // ignore: use_build_context_synchronously
+                Navigator.of(ctx).pop();
+                if (res['success'] == true) {
+                  setState(() {
+                    _task['status'] = 'DRIVER_MENUJU_LOKASI';
+                  });
+                  // ignore: use_build_context_synchronously
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                    content: Text('Status diperbarui: Picker Menuju Lokasi!'),
+                    backgroundColor: AppColors.primary,
+                  ));
+                } else {
+                  // ignore: use_build_context_synchronously
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: Text(res['message']?.toString() ?? 'Gagal memperbarui status'),
+                    backgroundColor: AppColors.badgeCancelled,
+                  ));
+                }
+              } else if (isOnTheWay) {
+                if (!mounted) return;
+                // ignore: use_build_context_synchronously
+                showDialog(
+                  // ignore: use_build_context_synchronously
+                  context: ctx,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                );
+                final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
+                final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_TIBA');
+                if (!mounted) return;
+                // ignore: use_build_context_synchronously
+                Navigator.of(ctx).pop();
+                if (res['success'] == true) {
+                  setState(() {
+                    _task['status'] = 'DRIVER_TIBA';
+                  });
+                  // ignore: use_build_context_synchronously
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                    content: Text('Status diperbarui: Picker Hampir Tiba!'),
+                    backgroundColor: AppColors.primary,
+                  ));
+                } else {
+                  // ignore: use_build_context_synchronously
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: Text(res['message']?.toString() ?? 'Gagal memperbarui status'),
+                    backgroundColor: AppColors.badgeCancelled,
+                  ));
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -544,7 +876,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
             child: Text(
               isPendingOrAccepted
                   ? 'Konfirmasi & Mulai Jalan'
-                  : (isOnTheWay ? 'Saya Sudah Tiba' : 'Lakukan Verifikasi Sampah Warga'),
+                  : 'Saya Sudah Dekat',
               style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 16),
             ),
           ),
@@ -552,8 +884,8 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
         const SizedBox(height: 10),
         Text(
           isPendingOrAccepted
-              ? 'Tekan tombol di atas saat Anda mulai berangkat menuju alamat warga.'
-              : (isOnTheWay ? 'Pastikan Anda sudah berada di lokasi sebelum menekan tombol ini.' : 'Verifikasi berat dan kondisi sampah langsung di lokasi penjemputan.'),
+              ? 'Tekan tombol di atas saat Anda mulai berangkat menuju alamat Penyetor.'
+              : 'Tekan tombol di atas saat Anda telah tiba di sekitar alamat Penyetor.',
           textAlign: TextAlign.center,
           style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 12),
         ),

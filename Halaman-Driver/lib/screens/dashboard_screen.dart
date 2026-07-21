@@ -8,6 +8,7 @@ import '../constants/api_config.dart';
 import '../widgets/floating_nav_bar.dart';
 import '../widgets/driver_status_chip.dart';
 import '../widgets/daily_vehicle_sheet.dart';
+import '../widgets/vehicle_form_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -65,6 +66,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _fetchAllData({bool silent = false}) async {
     if (!silent) {
       setState(() => _isLoading = true);
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final localPath = prefs.getString('local_avatar_path');
+    if (localPath != null && File(localPath).existsSync()) {
+      _localAvatarPath = localPath;
+    }
+    final user = await _authService.getSavedUser();
+    if (user != null && mounted) {
+      setState(() {
+        _userData = user;
+        _driverStatus = user['driver_status']?.toString() ?? _driverStatus;
+      });
     }
 
     // Fetch Active Task
@@ -142,22 +156,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
               title: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor: AppColors.primary,
-                    backgroundImage: _localAvatarPath != null ? FileImage(File(_localAvatarPath!)) : null,
-                    child: _localAvatarPath != null
-                        ? null
-                        : Text(
-                            _userData?['nama_lengkap'] != null && (_userData!['nama_lengkap'] as String).isNotEmpty
-                                ? (_userData!['nama_lengkap'] as String).substring(0, 2).toUpperCase()
-                                : 'DR',
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                  Builder(
+                    builder: (context) {
+                      ImageProvider? avatarImg;
+                      final fotoProfil = _userData?['foto_profil']?.toString();
+                      if (fotoProfil != null && fotoProfil.isNotEmpty) {
+                        final fullUrl = fotoProfil.startsWith('http')
+                            ? fotoProfil
+                            : 'http://192.168.110.61/tugasakhirsampah/bank_sampah/assets/uploads/$fotoProfil';
+                        avatarImg = NetworkImage(fullUrl);
+                      } else if (_localAvatarPath != null && File(_localAvatarPath!).existsSync()) {
+                        avatarImg = FileImage(File(_localAvatarPath!));
+                      }
+
+                      return CircleAvatar(
+                        radius: 22,
+                        backgroundColor: AppColors.primary,
+                        backgroundImage: avatarImg,
+                        child: avatarImg != null
+                            ? null
+                            : Text(
+                                _userData?['nama_lengkap'] != null && (_userData!['nama_lengkap'] as String).isNotEmpty
+                                    ? (_userData!['nama_lengkap'] as String).substring(0, 2).toUpperCase()
+                                    : 'PK',
+                                style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -166,12 +195,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Text(
-                          'Halo, Mitra Driver',
+                          'Halo, Mitra Picker',
                           style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: AppColors.textMuted),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _userData?['nama_lengkap'] ?? 'Driver iTrashy',
+                          _userData?['nama_lengkap'] ?? 'Picker iTrashy',
                           style: const TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 16,
@@ -213,6 +242,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildStatsCard(),
+                      const SizedBox(height: 16),
+                      _buildVehicleCard(),
                       const SizedBox(height: 24),
                       _buildActivePickup(),
                       const SizedBox(height: 24),
@@ -451,6 +482,159 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildVehicleCard() {
+    final hasVehicle = _todayVehicle != null &&
+        _todayVehicle!['vehicle_type'] != null &&
+        _todayVehicle!['license_plate'] != null;
+
+    final canEdit = _activeTask == null || _activeTask!['status'] == 'DRIVER_DITUGASKAN';
+
+    if (hasVehicle) {
+      final type = _todayVehicle!['vehicle_type'];
+      final plate = _todayVehicle!['license_plate'];
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFBFDBFE)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDBEAFE),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.directions_car_rounded, color: Color(0xFF2563EB), size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Kendaraan Hari Ini',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E40AF),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$type • $plate',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1E3A8A),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (canEdit)
+              TextButton.icon(
+                onPressed: () {
+                  VehicleFormSheet.showVehicleSheet(
+                    context,
+                    initialVehicle: _todayVehicle,
+                    onSaved: () => _fetchAllData(silent: true),
+                  );
+                },
+                icon: const Icon(Icons.edit_rounded, size: 15, color: Color(0xFF2563EB)),
+                label: const Text(
+                  'Edit',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3C7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFDE68A),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Data Kendaraan Belum Diisi',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Wajib diisi sebelum menjalankan tugas penjemputan',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11,
+                    color: Color(0xFFB45309),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              VehicleFormSheet.showVehicleSheet(
+                context,
+                onSaved: () => _fetchAllData(silent: true),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            child: const Text(
+              'Isi Data',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActivePickup() {
     if (_isLoading) {
       return const Center(
@@ -586,7 +770,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const Icon(Icons.access_time_rounded, color: AppColors.primary, size: 20),
                   const SizedBox(width: 10),
                   Text(
-                    '${_activeTask!['tanggal_order'] ?? ''} (${_activeTask!['waktu_jemput_dari'] ?? '08:00'} - ${_activeTask!['waktu_jemput_sampai'] ?? '17:00'})',
+                    DriverStyles.formatPickupSchedule(_activeTask!['tanggal_order'], _activeTask!['waktu_jemput_dari']),
                     style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -709,7 +893,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${item['tanggal_order'] ?? ''} (${item['waktu_jemput_dari'] ?? ''} - ${item['waktu_jemput_sampai'] ?? ''})',
+                            DriverStyles.formatPickupSchedule(item['tanggal_order'], item['waktu_jemput_dari']),
                             style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                         ],

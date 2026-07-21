@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/api_config.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 
 /// Widget chip interaktif yang menampilkan status operasional driver.
 /// Tap untuk membuka bottom sheet pilihan status.
@@ -23,11 +24,8 @@ class _DriverStatusChipState extends State<DriverStatusChip> {
   bool _isUpdating = false;
 
   static const _statusOptions = [
-    _StatusOption('ready',       'Siap Terima Order',    Icons.check_circle_rounded,        Color(0xFF10B981)),
-    _StatusOption('available',   'Tersedia',             Icons.radio_button_checked_rounded, Color(0xFF3B82F6)),
-    _StatusOption('on_the_way',  'Dalam Perjalanan',     Icons.directions_car_rounded,       Color(0xFF8B5CF6)),
-    _StatusOption('picking_up',  'Sedang Mengangkut',    Icons.local_shipping_rounded,       Color(0xFFF59E0B)),
-    _StatusOption('offline',     'Offline',              Icons.power_settings_new_rounded,   Color(0xFF94A3B8)),
+    _StatusOption('online',  'Online (Tersedia)', Icons.check_circle_rounded, Color(0xFF10B981)),
+    _StatusOption('offline', 'Offline (Tidak Tersedia)', Icons.power_settings_new_rounded, Color(0xFF94A3B8)),
   ];
 
   @override
@@ -76,7 +74,7 @@ class _DriverStatusChipState extends State<DriverStatusChip> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Admin hanya akan menugaskan order ke driver dengan status Siap.',
+              'Admin hanya akan menugaskan order ke driver dengan status Online.',
               style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: AppColors.textMuted),
             ),
             const SizedBox(height: 18),
@@ -129,16 +127,27 @@ class _DriverStatusChipState extends State<DriverStatusChip> {
 
   Future<void> _updateStatus(String newStatus) async {
     setState(() => _isUpdating = true);
-    final res = await ApiService.instance.post(
+
+    try {
+      final authService = AuthService();
+      final user = await authService.getSavedUser();
+      if (user != null) {
+        user['driver_status'] = newStatus;
+        await authService.saveUser(user);
+      }
+    } catch (_) {}
+
+    await ApiService.instance.post(
       ApiConfig.driverUpdateDriverStatus,
       body: {'driver_status': newStatus},
     );
+
     if (mounted) {
       setState(() {
-        if (res.success) _status = newStatus;
+        _status = newStatus;
         _isUpdating = false;
       });
-      if (res.success) widget.onStatusChanged?.call(newStatus);
+      widget.onStatusChanged?.call(newStatus);
     }
   }
 

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:convert';
 import '../../../core/navigation/app_page_transitions.dart';
 import '../../../core/repositories/detect_repository.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/constants/app_colors.dart';
 import '../widgets/scan_frame_widget.dart';
 import '../widgets/camera_button_widget.dart';
-import 'manual_deposit_screen.dart';
+import 'waste_scan_result_screen.dart';
 
 class ScanDepositScreen extends StatefulWidget {
   final List<WasteItem>? existingCartItems;
@@ -88,14 +87,13 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
 
   Future<void> _handleCapture() async {
     if (_isUploading || !_isCameraInitialized) return;
-    setState(() {
-      _isUploading = true;
-    });
+    setState(() => _isUploading = true);
 
     try {
       final xFile = await _cameraController!.takePicture();
       if (!mounted) return;
 
+      // ignore: use_build_context_synchronously
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -109,7 +107,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
               CircularProgressIndicator(color: Color(0xFF22C55E)),
               SizedBox(height: 20),
               Text(
-                'Foto berhasil diambil.',
+                'Mendeteksi jenis sampah...',
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 16,
@@ -119,7 +117,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
               ),
               SizedBox(height: 8),
               Text(
-                'Memproses identifikasi AI...',
+                'Mohon tunggu, AI sedang menganalisa gambar.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
@@ -133,88 +131,32 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
       );
 
       final repo = DetectRepository();
-      final resp = await repo.uploadFile(xFile.path);
-
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-
-      if (resp.statusCode == 200) {
-        try {
-          final parsed = jsonDecode(resp.body) as Map<String, dynamic>;
-          if (parsed['success'] == true && parsed.containsKey('data')) {
-            final data = Map<String, dynamic>.from(parsed['data']);
-            
-            final uploadedUrl = data['uploaded_file'] as String? ?? xFile.path;
-            final detections = (data['detections'] as List<dynamic>?) ?? [];
-            String name = 'Sampah Terdeteksi';
-            String category = 'Plastik';
-            String confidence = '95%';
-            double price = 250.0;
-
-            if (detections.isNotEmpty) {
-              final first = detections.first as Map<String, dynamic>;
-              name = first['nama_sampah']?.toString() ?? first['label']?.toString() ?? name;
-              category = first['kategori']?.toString() ?? category;
-              if (first['confidence'] != null) {
-                final confVal = double.tryParse(first['confidence'].toString()) ?? 0.95;
-                confidence = '${(confVal * 100).toInt()}%';
-              }
-              if (first['harga'] != null) {
-                price = double.tryParse(first['harga'].toString()) ?? price;
-              } else if (category.toLowerCase().contains('kertas') || category.toLowerCase().contains('kardus')) {
-                price = 150.0;
-              } else if (category.toLowerCase().contains('logam') || category.toLowerCase().contains('kaleng')) {
-                price = 300.0;
-              }
-            } else if (data['label'] != null) {
-              name = data['label'].toString();
-              category = data['kategori']?.toString() ?? category;
-            }
-
-            final newItem = WasteItem(
-              id: 'scan_${DateTime.now().millisecondsSinceEpoch}',
-              name: name,
-              imageAsset: 'water_bottle',
-              pricePerKg: price,
-              weight: 1.0,
-              imageUrl: uploadedUrl,
-              category: category,
-              confidence: confidence,
-              isScanned: true,
-            );
-
-            if (!mounted) return;
-            Navigator.pushReplacement(
-              context,
-              CustomPageRoute(
-                page: ManualDepositScreen(
-                  initialCartItems: widget.existingCartItems,
-                  activeScannedItem: newItem,
-                ),
-              ),
-            );
-            return;
-          }
-        } catch (e) {
-          debugPrint('JSON parse error: $e');
-        }
-      }
+      final result = await repo.detectImage(xFile.path);
 
       if (!mounted) return;
-      _showRecognitionErrorDialog();
+      // ignore: use_build_context_synchronously
+      Navigator.of(context, rootNavigator: true).pop();
+
+      if (!mounted) return;
+      // ignore: use_build_context_synchronously
+      Navigator.pushReplacement(
+        context,
+        CustomPageRoute(
+          page: WasteScanResultScreen(
+            result: result.withLocalImagePath(xFile.path),
+            existingCartItems: widget.existingCartItems,
+          ),
+        ),
+      );
     } catch (e) {
-      if (mounted && _isUploading) {
-        Navigator.of(context, rootNavigator: true).pop();
+      if (mounted) {
+        try { Navigator.of(context, rootNavigator: true).pop(); } catch (_) {}
       }
       if (!mounted) return;
+      // ignore: use_build_context_synchronously
       _showRecognitionErrorDialog();
     } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-      }
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 

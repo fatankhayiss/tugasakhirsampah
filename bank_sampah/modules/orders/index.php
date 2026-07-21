@@ -45,28 +45,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_driver'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_order'])) {
     $id_order = (int)$_POST['id_order'];
+    $berat_aktual = isset($_POST['berat_aktual']) && $_POST['berat_aktual'] !== '' ? floatval($_POST['berat_aktual']) : null;
+
     if ($id_order > 0) {
-        $update = "UPDATE orders SET status = 'SELESAI' WHERE id_order = ?";
-        $stmt_upd = mysqli_prepare($koneksi, $update);
-        mysqli_stmt_bind_param($stmt_upd, "i", $id_order);
+        if ($berat_aktual !== null) {
+            $update = "UPDATE orders SET status = 'SELESAI', berat_aktual = ? WHERE id_order = ?";
+            $stmt_upd = mysqli_prepare($koneksi, $update);
+            mysqli_stmt_bind_param($stmt_upd, "di", $berat_aktual, $id_order);
+        } else {
+            $update = "UPDATE orders SET status = 'SELESAI' WHERE id_order = ?";
+            $stmt_upd = mysqli_prepare($koneksi, $update);
+            mysqli_stmt_bind_param($stmt_upd, "i", $id_order);
+        }
         
         if (mysqli_stmt_execute($stmt_upd)) {
-            // Notifikasi ke Warga
-            $get_warga = "SELECT id_warga FROM orders WHERE id_order = ?";
+            // Notifikasi ke Penyetor
+            $get_warga = "SELECT id_warga, estimasi_berat, berat_aktual, estimasi_poin FROM orders WHERE id_order = ?";
             $stmt_w = mysqli_prepare($koneksi, $get_warga);
             mysqli_stmt_bind_param($stmt_w, "i", $id_order);
             mysqli_stmt_execute($stmt_w);
             $wr = mysqli_stmt_get_result($stmt_w);
             if ($row = mysqli_fetch_assoc($wr)) {
-                $id_warga = $row['id_warga'];
-                $pesan = "Penjemputan sampah Anda telah selesai. Poin akan segera ditambahkan.";
+                $id_warga = (int)$row['id_warga'];
+                $actual_wt = $row['berat_aktual'] !== null ? floatval($row['berat_aktual']) : floatval($row['estimasi_berat'] ?? 1.0);
+                $est_wt = floatval($row['estimasi_berat'] ?? 1.0);
+                $est_pts = (int)($row['estimasi_poin'] ?? 10);
+                $final_points = $est_wt > 0 ? (int)round(($actual_wt / $est_wt) * $est_pts) : $est_pts;
+                if ($final_points <= 0) $final_points = $est_pts;
+
+                $upd_poin = "UPDATE pengguna SET poin = COALESCE(poin, 0) + ?, saldo = COALESCE(saldo, 0) + ? WHERE id_pengguna = ?";
+                $stmt_p = mysqli_prepare($koneksi, $upd_poin);
+                $total_rupiah = $final_points * 1000;
+                mysqli_stmt_bind_param($stmt_p, "idi", $final_points, $total_rupiah, $id_warga);
+                mysqli_stmt_execute($stmt_p);
+                mysqli_stmt_close($stmt_p);
+
+                $pesan = "Penjemputan sampah Anda telah selesai. Total poin ($final_points pts) telah ditambahkan ke saldo Anda.";
                 $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Penjemputan selesai', ?, 'reward', ?)";
                 $stmt_notif = mysqli_prepare($koneksi, $ins_notif);
                 mysqli_stmt_bind_param($stmt_notif, "isi", $id_warga, $pesan, $id_order);
                 mysqli_stmt_execute($stmt_notif);
             }
             
-            echo "<script>alert('Order berhasil diselesaikan!'); window.location.href='index.php?page=orders/data';</script>";
+            echo "<script>alert('Order berhasil diselesaikan dan poin telah ditambahkan!'); window.location.href='index.php?page=orders/data';</script>";
             exit;
         }
     }
@@ -134,10 +155,10 @@ if (isset($stmt)) mysqli_stmt_close($stmt);
 
 // Fetch active drivers for dropdown
 $drivers = [];
-$res_drivers = mysqli_query($koneksi, "SELECT p.id_pengguna, p.nama_lengkap, d.tipe_kendaraan, d.plat_nomor 
+$res_drivers = mysqli_query($koneksi, "SELECT p.id_pengguna, p.nama_lengkap, p.driver_status, d.tipe_kendaraan, d.plat_nomor 
                                        FROM pengguna p 
                                        LEFT JOIN detail_driver d ON p.id_pengguna = d.id_pengguna 
-                                       WHERE p.level = 'driver' ORDER BY p.nama_lengkap ASC");
+                                       WHERE p.level = 'driver' ORDER BY p.driver_status DESC, p.nama_lengkap ASC");
 if ($res_drivers) {
     while($row = mysqli_fetch_assoc($res_drivers)) {
         $drivers[] = $row;
@@ -199,11 +220,11 @@ $status_labels = [
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Warga</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Penyetor</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Sampah (Estimasi)</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Alamat Jemput</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Waktu</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Driver</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Picker</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tanggal</th>
                             <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Aksi</th>
@@ -249,9 +270,12 @@ $status_labels = [
                                         <input type="hidden" name="id_order" value="<?php echo $order['id_order']; ?>">
                                         <select name="id_driver" required class="text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500">
                                             <option value="">-- Pilih Driver --</option>
-                                            <?php foreach ($drivers as $dr): ?>
-                                                <option value="<?php echo $dr['id_pengguna']; ?>">
-                                                    <?php echo htmlspecialchars($dr['nama_lengkap'] . " (" . ($dr['tipe_kendaraan'] ?? 'Kendaraan') . ")"); ?>
+                                            <?php foreach ($drivers as $dr): 
+                                                $isOnline = ($dr['driver_status'] ?? 'offline') === 'online';
+                                                $statusIcon = $isOnline ? '🟢 Online' : '🔴 Offline';
+                                            ?>
+                                                <option value="<?php echo $dr['id_pengguna']; ?>" <?php if (!$isOnline) echo 'disabled class="text-gray-400"'; ?>>
+                                                    [<?php echo $statusIcon; ?>] <?php echo htmlspecialchars($dr['nama_lengkap'] . " (" . ($dr['tipe_kendaraan'] ?? 'Kendaraan') . ")"); ?><?php if (!$isOnline) echo ' - Tidak Tersedia'; ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>

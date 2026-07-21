@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_config.dart';
@@ -113,23 +114,107 @@ class ApiService {
     final token = await getToken();
     if (token == null) return {'success': false, 'message': 'Not authenticated'};
 
+    final requestUrl = ApiConfig.ordersUpdateStatus;
+    final requestBody = jsonEncode({
+      'id_order': orderId,
+      'status': status,
+      if (beratAktual != null) 'berat_aktual': beratAktual,
+    });
+
+    debugPrint('Request URL: $requestUrl');
+    debugPrint('HTTP Method: PUT');
+    debugPrint('Request Body: $requestBody');
+
     try {
       final response = await http.put(
-        Uri.parse(ApiConfig.ordersUpdateStatus),
+        Uri.parse(requestUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: requestBody,
+      );
+
+      debugPrint('HTTP Status Code: ${response.statusCode}');
+      debugPrint('Raw Response Body: "${response.body}"');
+
+      if (response.body.trim().isEmpty) {
+        return {
+          'success': false,
+          'message': 'Gagal memperbarui status: Respons dari server kosong (HTTP ${response.statusCode}).',
+        };
+      }
+
+      try {
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+        return {
+          'success': false,
+          'message': 'Respons server tidak berformat JSON valid.',
+        };
+      } catch (e) {
+        debugPrint('JSON Decode Error: $e');
+        return {
+          'success': false,
+          'message': 'Gagal memproses respons server (Format JSON tidak valid).',
+        };
+      }
+    } catch (e) {
+      debugPrint('HTTP Exception: $e');
+      return {'success': false, 'message': 'Terjadi kesalahan jaringan: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getDailyVehicle() async {
+    final token = await getToken();
+    if (token == null) return {'success': false, 'message': 'Not authenticated'};
+
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConfig.driverGetDailyVehicle),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.body.trim().isEmpty) {
+        return {'success': false, 'message': 'Respons kosong'};
+      }
+      return json.decode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Koneksi gagal: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> saveDailyVehicle({
+    required String vehicleType,
+    required String licensePlate,
+    String? notes,
+  }) async {
+    final token = await getToken();
+    if (token == null) return {'success': false, 'message': 'Not authenticated'};
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.driverSaveDailyVehicle),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'id_order': orderId,
-          'status': status,
-          if (beratAktual != null) 'berat_aktual': beratAktual,
+          'vehicle_type': vehicleType,
+          'license_plate': licensePlate,
+          'notes': notes ?? '',
         }),
       );
-
+      if (response.body.trim().isEmpty) {
+        return {'success': false, 'message': 'Respons kosong'};
+      }
       return json.decode(response.body);
     } catch (e) {
-      return {'success': false, 'message': 'Terjadi kesalahan: $e'};
+      return {'success': false, 'message': 'Koneksi gagal: $e'};
     }
   }
 

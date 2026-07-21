@@ -18,29 +18,33 @@ class TransactionCard extends StatefulWidget {
 
 class _TransactionCardState extends State<TransactionCard> {
   Color _getBadgeBg(String? status) {
-    if (status == null) return const Color(0xFFDDF8E7);
+    if (status == null) return const Color(0xFFDCFCE7);
     final s = status.toLowerCase();
     if (s.contains('batal') || s.contains('gagal') || s.contains('cancel') || s.contains('tolak') || s.contains('reject')) {
       return const Color(0xFFFEE2E2);
-    } else if (s.contains('proses') || s.contains('processing')) {
-      return const Color(0xFFDBEAFE);
-    } else if (s.contains('tunggu') || s.contains('pending')) {
+    } else if (s.contains('proses') || s.contains('processing') || s.contains('tugask') || s.contains('menuju')) {
+      return const Color(0xFFEFF6FF);
+    } else if (s.contains('tunggu') || s.contains('pending') || s.contains('konfirm')) {
       return const Color(0xFFFEF3C7);
+    } else if (s.contains('validasi') || s.contains('timbang')) {
+      return const Color(0xFFF3E8FF);
     }
-    return const Color(0xFFDDF8E7);
+    return const Color(0xFFDCFCE7);
   }
 
   Color _getBadgeText(String? status) {
-    if (status == null) return const Color(0xFF2DAA63);
+    if (status == null) return const Color(0xFF16A34A);
     final s = status.toLowerCase();
     if (s.contains('batal') || s.contains('gagal') || s.contains('cancel') || s.contains('tolak') || s.contains('reject')) {
       return const Color(0xFFDC2626);
-    } else if (s.contains('proses') || s.contains('processing')) {
-      return const Color(0xFF1D4ED8);
-    } else if (s.contains('tunggu') || s.contains('pending')) {
+    } else if (s.contains('proses') || s.contains('processing') || s.contains('tugask') || s.contains('menuju')) {
+      return const Color(0xFF2563EB);
+    } else if (s.contains('tunggu') || s.contains('pending') || s.contains('konfirm')) {
       return const Color(0xFFD97706);
+    } else if (s.contains('validasi') || s.contains('timbang')) {
+      return const Color(0xFF7E22CE);
     }
-    return const Color(0xFF2DAA63);
+    return const Color(0xFF16A34A);
   }
 
   @override

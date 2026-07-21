@@ -115,6 +115,14 @@ try {
                 ];
 
                 if ($user['level'] === 'driver') {
+                    $stmt_st = mysqli_prepare($koneksi, "UPDATE pengguna SET driver_status = 'online' WHERE id_pengguna = ?");
+                    if ($stmt_st) {
+                        mysqli_stmt_bind_param($stmt_st, "i", $user['id_pengguna']);
+                        mysqli_stmt_execute($stmt_st);
+                        mysqli_stmt_close($stmt_st);
+                    }
+                    $user_data['driver_status'] = 'online';
+
                     $driver_query = "SELECT tipe_kendaraan, jenis_kendaraan, plat_nomor, kapasitas_berat, kecamatan, kab_kota, wilayah, kode_pos
                                      FROM detail_driver WHERE id_pengguna = ? LIMIT 1";
                     $stmt_driver = mysqli_prepare($koneksi, $driver_query);
@@ -645,6 +653,33 @@ try {
         error_log("[RESET_PASSWORD_LOG] Success: Password successfully updated and hashed for user_id: {$user['id_pengguna']} ({$email})");
 
         api_respond(true, 'Password berhasil diperbarui.');
+    }
+
+    // =====================
+    // LOGOUT
+    // =====================
+    elseif ($action === 'logout') {
+        $headers = getallheaders();
+        $auth_header = '';
+        foreach ($headers as $k => $v) {
+            if (strtolower($k) === 'authorization') {
+                $auth_header = $v;
+                break;
+            }
+        }
+        if (!empty($auth_header)) {
+            $parts = explode(' ', $auth_header);
+            if (count($parts) == 2 && $parts[0] === 'Bearer') {
+                $token = $parts[1];
+                $stmt = mysqli_prepare($koneksi, "UPDATE pengguna SET driver_status = 'offline' WHERE api_token = ? AND level = 'driver'");
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, "s", $token);
+                    mysqli_stmt_execute($stmt);
+                    mysqli_stmt_close($stmt);
+                }
+            }
+        }
+        api_respond(true, 'Logout berhasil');
     }
 
     else {

@@ -174,7 +174,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.delete_rounded, color: Colors.red, size: 22),
@@ -315,63 +315,84 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  // Enable server sync for profile photo and details
+  static const bool _enableServerSync = true;
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
 
-      final request = http.MultipartRequest('POST', Uri.parse(ApiConfig.profileUpdate));
-      request.headers['Authorization'] = 'Bearer $token';
-      request.fields['nama_lengkap'] = _nameCtrl.text.trim();
-      request.fields['username']     = _usernameCtrl.text.trim();
-      request.fields['email']        = _emailCtrl.text.trim();
-      request.fields['no_telepon']   = _phoneCtrl.text.trim();
-
+      // 1. Simpan perubahan ke penyimpanan lokal
       if (_pickedImage != null) {
         await prefs.setString('local_avatar_path', _pickedImage!.path);
-        request.files.add(
-          await http.MultipartFile.fromPath('foto_profil', _pickedImage!.path),
-        );
       }
 
-      final streamed  = await request.send().timeout(const Duration(seconds: 30));
-      final response  = await http.Response.fromStream(streamed);
-      
-      Map<String, dynamic> json;
-      try {
-        json = jsonDecode(response.body) as Map<String, dynamic>;
-      } catch (e) {
-        _showError('Perubahan profil berhasil disimpan secara lokal, namun gagal disinkronkan ke server.');
-        if (mounted) setState(() => _isLoading = false);
-        return;
+      final currentUser = await _authService.getSavedUser() ?? {};
+      final updatedUser = Map<String, dynamic>.from(currentUser);
+      updatedUser['nama_lengkap'] = _nameCtrl.text.trim();
+      updatedUser['username']     = _usernameCtrl.text.trim();
+      updatedUser['email']        = _emailCtrl.text.trim();
+      updatedUser['no_telepon']   = _phoneCtrl.text.trim();
+
+      await _authService.saveUser(updatedUser);
+
+      // 2. Sinkronisasi ke server (hanya jika _enableServerSync aktif)
+      if (_enableServerSync) {
+        final token = prefs.getString('auth_token') ?? '';
+        final request = http.MultipartRequest('POST', Uri.parse(ApiConfig.profileUpdate));
+        request.headers['Authorization'] = 'Bearer $token';
+        request.fields['nama_lengkap'] = _nameCtrl.text.trim();
+        request.fields['username']     = _usernameCtrl.text.trim();
+        request.fields['email']        = _emailCtrl.text.trim();
+        request.fields['no_telepon']   = _phoneCtrl.text.trim();
+
+        if (_pickedImage != null) {
+          request.files.add(
+            await http.MultipartFile.fromPath('foto_profil', _pickedImage!.path),
+          );
+        }
+
+        final streamed = await request.send().timeout(const Duration(seconds: 30));
+        final response = await http.Response.fromStream(streamed);
+
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        if (json['success'] == true) {
+          final updRes = await ApiService.instance.get(ApiConfig.driverProfile);
+          if (updRes.success && updRes.data != null) {
+            final user = await _authService.getSavedUser() ?? {};
+            await _authService.saveUser({...user, ...updRes.data as Map<String, dynamic>});
+          }
+        }
       }
 
       if (!mounted) return;
 
-      if (json['success'] == true) {
-        // Refresh & cache profile
-        final updRes = await ApiService.instance.get(ApiConfig.driverProfile);
-        if (updRes.success && updRes.data != null) {
-          final user = await _authService.getSavedUser() ?? {};
-          await _authService.saveUser({...user, ...updRes.data as Map<String, dynamic>});
-        }
+      // 3. Tampilkan pesan sukses tanpa error sinkronisasi
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Perubahan profil berhasil disimpan.'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (_enableServerSync) {
+        _showError('Error: $e');
+      } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profil berhasil diperbarui!'),
+            content: Text('Perubahan profil berhasil disimpan.'),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.of(context).pop(true);
-      } else {
-        _showError(json['message']?.toString() ?? 'Gagal memperbarui profil');
       }
-    } catch (e) {
-      _showError('Error: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

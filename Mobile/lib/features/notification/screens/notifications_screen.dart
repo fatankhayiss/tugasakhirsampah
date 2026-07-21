@@ -657,15 +657,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       Row(
                         children: [
                           Icon(
-                            LucideIcons.calendar,
+                            LucideIcons.clock,
                             size: 12,
                             color: AppColors.textSoft,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            notification.createdAt != null
-                                ? '${notification.createdAt!.day} ${['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][notification.createdAt!.month - 1]} ${notification.createdAt!.year}'
-                                : notification.time,
+                            notification.time,
                             style: const TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
                               fontSize: 11,
@@ -673,24 +671,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               color: AppColors.textSoft,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          if (notification.createdAt != null) ...[
-                            Icon(
-                              LucideIcons.clock,
-                              size: 12,
-                              color: AppColors.textSoft,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${notification.createdAt!.hour.toString().padLeft(2, '0')}:${notification.createdAt!.minute.toString().padLeft(2, '0')}',
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textSoft,
-                              ),
-                            ),
-                          ],
                           if (notification.priority != null && notification.priority!.isNotEmpty) ...[
                             const SizedBox(width: 12),
                             Container(

@@ -4,7 +4,7 @@ export 'app_colors.dart';
 
 class ApiConfig {
   ApiConfig._();
-  static const String baseUrl = 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
+  static const String baseUrl = 'http://192.168.110.61/tugasakhirsampah/bank_sampah/';
 
   // Auth
   static const String authLogin           = '${baseUrl}modules/api/auth_api.php?action=login';
@@ -48,27 +48,25 @@ class DriverStyles {
     switch (status?.toUpperCase()) {
       case 'MENUNGGU_KONFIRMASI':
       case 'PENDING':
-        return AppColors.badgePending;
+        return const Color(0xFFD97706);
       case 'DRIVER_DITUGASKAN':
       case 'ACCEPTED':
-        return AppColors.badgeAccepted;
       case 'DRIVER_MENUJU_LOKASI':
       case 'ON_THE_WAY':
       case 'ONTHEWAY':
-        return AppColors.badgeOnTheWay;
       case 'DRIVER_TIBA':
-        return const Color(0xFF8B5CF6);
+        return const Color(0xFF2563EB);
       case 'SAMPAH_DIJEMPUT':
       case 'PICKED_UP':
-        return const Color(0xFFF59E0B);
+        return const Color(0xFF16A34A);
       case 'VALIDASI_BANK_SAMPAH':
-        return const Color(0xFF06B6D4);
+        return const Color(0xFF0D9488);
       case 'SELESAI':
       case 'COMPLETED':
-        return AppColors.badgeCompleted;
+        return const Color(0xFF16A34A);
       case 'DIBATALKAN':
       case 'CANCELLED':
-        return AppColors.badgeCancelled;
+        return const Color(0xFFDC2626);
       default:
         return AppColors.primary;
     }
@@ -79,11 +77,11 @@ class DriverStyles {
       case 'MENUNGGU_KONFIRMASI':
         return 'Menunggu Konfirmasi';
       case 'DRIVER_DITUGASKAN':
-        return 'Driver Ditugaskan';
+        return 'Picker Ditugaskan';
       case 'DRIVER_MENUJU_LOKASI':
-        return 'Menuju Lokasi';
+        return 'Picker Menuju Lokasi';
       case 'DRIVER_TIBA':
-        return 'Driver Tiba';
+        return 'Picker Hampir Tiba';
       case 'SAMPAH_DIJEMPUT':
         return 'Sampah Dijemput';
       case 'VALIDASI_BANK_SAMPAH':
@@ -108,5 +106,44 @@ class DriverStyles {
       default:
         return status ?? 'Unknown';
     }
+  }
+
+  static String formatPickupSchedule(dynamic rawDate, dynamic rawTimeFrom) {
+    if (rawDate == null && rawTimeFrom == null) return 'Jadwal -';
+    String datePart = rawDate?.toString().trim() ?? '';
+    String timePart = rawTimeFrom?.toString().trim() ?? '';
+
+    if (datePart.contains(' ')) {
+      datePart = datePart.split(' ').first;
+    }
+
+    String formattedDate = datePart;
+    if (datePart.contains('-')) {
+      final parts = datePart.split('-');
+      if (parts.length == 3) {
+        final year = parts[0];
+        final monthIdx = int.tryParse(parts[1]) ?? 1;
+        final day = int.tryParse(parts[2]) ?? 1;
+        final months = [
+          'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+          'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        if (monthIdx >= 1 && monthIdx <= 12) {
+          formattedDate = '$day ${months[monthIdx - 1]} $year';
+        }
+      }
+    }
+
+    String formattedTime = timePart;
+    if (timePart.contains(':')) {
+      final parts = timePart.split(':');
+      if (parts.length >= 2) {
+        formattedTime = '${parts[0].padLeft(2, '0')}.${parts[1].padLeft(2, '0')} WIB';
+      }
+    } else if (timePart.isEmpty) {
+      formattedTime = '08.00 WIB';
+    }
+
+    return '$formattedDate, $formattedTime';
   }
 }

@@ -52,14 +52,29 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
         ),
-        title: Text(
-          isAlreadyPickedUp ? 'Penyelesaian di Bank Sampah' : 'Verifikasi & Timbang Sampah',
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textDark,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Detail Penjemputan',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+            Text(
+              'Order ID : #${task['id_order'] ?? ''}',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(

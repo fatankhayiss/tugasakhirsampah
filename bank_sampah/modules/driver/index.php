@@ -20,7 +20,7 @@ if (!empty($search)) {
     }
 }
 
-$query_string = "SELECT p.id_pengguna, p.nama_lengkap, p.username, p.alamat, p.no_telepon, p.tanggal_daftar,
+$query_string = "SELECT p.id_pengguna, p.nama_lengkap, p.username, p.alamat, p.no_telepon, p.tanggal_daftar, p.driver_status,
                         d.tipe_kendaraan, d.jenis_kendaraan, d.plat_nomor, d.kapasitas_berat
                  FROM pengguna p
                  LEFT JOIN detail_driver d ON p.id_pengguna = d.id_pengguna
@@ -69,6 +69,7 @@ if ($stmt) {
                         <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Info Driver</th>
                         <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kendaraan</th>
                         <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Plat Nomor</th>
+                        <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status Driver</th>
                         <th scope="col" class="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
@@ -90,6 +91,17 @@ if ($stmt) {
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                     <?php echo htmlspecialchars($row['plat_nomor'] ?? '-'); ?>
                                 </span>
+                            </td>
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+                                <?php if (($row['driver_status'] ?? 'offline') === 'online'): ?>
+                                    <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        🟢 Online
+                                    </span>
+                                <?php else: ?>
+                                    <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        🔴 Offline
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                 <a href="<?php echo BASE_URL; ?>index.php?page=driver/edit&id=<?php echo $row['id_pengguna']; ?>" class="text-sky-600 hover:text-sky-800 mr-3 transition-colors duration-150" title="Edit Data Driver">
