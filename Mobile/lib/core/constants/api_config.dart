@@ -8,7 +8,7 @@ class ApiConfig {
   ApiConfig._();
 
   /// Base URL backend. Trailing slash wajib.
-  static const String baseUrl = 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
+  static const String baseUrl = 'https://itrashy.triki.cloud/';
 
   // API Endpoints
   static const String authLogin = '${baseUrl}modules/api/auth_api.php?action=login';
