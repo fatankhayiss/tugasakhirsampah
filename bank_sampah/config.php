@@ -2,15 +2,27 @@
 // config.php
 
 // Pengaturan Database (Sesuaikan dengan detail database Anda di Serv00)
-define('DB_HOST', 'localhost'); // Biasanya 'localhost' atau alamat server DB dari Serv00
-define('DB_USER', 'root'); // Username database Anda
-define('DB_PASS', ''); // Password database Anda
-define('DB_NAME', 'db_banksampah'); // Nama database Anda
+define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_PORT', getenv('DB_PORT') ?: 3306);
+
+$use_dummy_flag = __DIR__ . DIRECTORY_SEPARATOR . 'use_dummy_db';
+
+if (file_exists($use_dummy_flag)) {
+    define('DB_NAME', 'db_banksampah_dummy');
+} else {
+    define('DB_NAME', getenv('DB_NAME') ?: 'db_banksampah');
+}
   
 
-
-// Membuat Koneksi menggunakan MySQLi
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+// Membuat Koneksi
+$koneksi = mysqli_connect(
+    DB_HOST,
+    DB_USER,
+    DB_PASS,
+    DB_NAME
+);
 
 // Cek Koneksi
 if ($conn->connect_error) {
