@@ -382,6 +382,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
     final inisial = nama.toString().isNotEmpty ? nama.toString().substring(0, nama.toString().length > 1 ? 2 : 1).toUpperCase() : 'P';
     final alamat = task['alamat_jemput'] ?? '-';
     final noTelp = task['telp_warga'] ?? task['no_telepon_warga'] ?? task['no_telepon'] ?? '-';
+    final fotoWarga = task['foto_warga'] ?? task['profile_photo'] ?? task['photo_url'] ?? task['avatar'];
 
     return Container(
       decoration: BoxDecoration(
@@ -399,10 +400,36 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: AppColors.softBlue,
-                child: Text(
-                  inisial,
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
-                ),
+                child: (fotoWarga != null && fotoWarga.toString().isNotEmpty)
+                    ? ClipOval(
+                        child: Image.network(
+                          fotoWarga.toString(),
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Text(
+                              inisial,
+                              style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
+                            );
+                          },
+                        ),
+                      )
+                    : Text(
+                        inisial,
+                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -792,14 +819,21 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
               final ctx = context;
               // Vehicle Check
               final vRes = await ApiService().getDailyVehicle();
-              if (vRes['success'] != true || vRes['data'] == null) {
+              bool hasVehicle = vRes['success'] == true && vRes['data'] != null;
+              if (!hasVehicle) {
                 if (!mounted) return;
                 // ignore: use_build_context_synchronously
                 final fill = await VehicleFormSheet.showValidationDialog(ctx);
                 if (fill == true && mounted) {
                   // ignore: use_build_context_synchronously
-                  await VehicleFormSheet.showVehicleSheet(ctx);
+                  final saved = await VehicleFormSheet.showVehicleSheet(ctx);
+                  if (saved == true) {
+                    hasVehicle = true;
+                  }
                 }
+              }
+
+              if (!hasVehicle) {
                 return;
               }
 
@@ -834,6 +868,40 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                   ));
                 }
               } else if (isOnTheWay) {
+                if (!mounted) return;
+                // ignore: use_build_context_synchronously
+                final confirm = await showDialog<bool>(
+                  // ignore: use_build_context_synchronously
+                  context: ctx,
+                  builder: (dialogCtx) => AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: const Text(
+                      'Konfirmasi Lokasi',
+                      style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold),
+                    ),
+                    content: const Text(
+                      'Apakah Anda yakin sudah berada di lokasi Penyetor?',
+                      style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogCtx).pop(false),
+                        child: const Text('Batal', style: TextStyle(color: Colors.grey, fontFamily: 'Plus Jakarta Sans')),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(dialogCtx).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Ya', style: TextStyle(fontFamily: 'Plus Jakarta Sans')),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm != true) return;
+
                 if (!mounted) return;
                 // ignore: use_build_context_synchronously
                 showDialog(

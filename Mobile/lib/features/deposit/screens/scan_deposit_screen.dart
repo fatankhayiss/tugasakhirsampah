@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -90,9 +91,31 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
     setState(() => _isUploading = true);
 
     try {
+      debugPrint('\n==================================================');
+      debugPrint('STEP 1: FLUTTER CAMERA');
+      debugPrint('==================================================');
+      debugPrint('✓ Image capture started...');
       final xFile = await _cameraController!.takePicture();
+      
+      final fileLength = await File(xFile.path).length();
+      debugPrint('• Captured image path: ${xFile.path}');
+      debugPrint('• File exists: ${File(xFile.path).existsSync()}');
+      debugPrint('• File size: $fileLength bytes');
+      debugPrint('✓ Image captured successfully');
+
       if (!mounted) return;
 
+      // ── Copy image to a permanent path so it survives screen push ──
+      // The camera temp file can be deleted by the system between frames.
+      final permanentDir = Directory('${xFile.path.split('/').take(xFile.path.split('/').length - 1).join('/')}/scan_captured');
+      if (!permanentDir.existsSync()) {
+        permanentDir.createSync(recursive: true);
+      }
+      final permanentPath = '${permanentDir.path}/img_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      await File(xFile.path).copy(permanentPath);
+      debugPrint('• Permanent image path: $permanentPath');
+
+      if (!mounted) return;
       // ignore: use_build_context_synchronously
       showDialog(
         context: context,
@@ -131,24 +154,40 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
       );
 
       final repo = DetectRepository();
-      final result = await repo.detectImage(xFile.path);
+      final result = await repo.detectImage(permanentPath);
+      
+      debugPrint('\n==================================================');
+      debugPrint('STEP 7: UI UPDATE (ScanDepositScreen)');
+      debugPrint('==================================================');
+      debugPrint('✓ JSON received from repository');
+      debugPrint('• Result success: ${result.success}');
+      debugPrint('• Result labels: ${result.labels}');
+      
+      if (!result.success) {
+        debugPrint('❌ HTTP/API Error detected: ${result.errorMessage}');
+      }
 
       if (!mounted) return;
       // ignore: use_build_context_synchronously
       Navigator.of(context, rootNavigator: true).pop();
 
       if (!mounted) return;
+      debugPrint('🔵 [ScanDeposit] ⑥ Navigating ke WasteScanResultScreen');
+      debugPrint('   localImagePath akan disetel ke: $permanentPath');
       // ignore: use_build_context_synchronously
       Navigator.pushReplacement(
         context,
         CustomPageRoute(
           page: WasteScanResultScreen(
-            result: result.withLocalImagePath(xFile.path),
+            detectionId: result.detectionId,
+            localImagePath: permanentPath,
             existingCartItems: widget.existingCartItems,
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('🔴 [ScanDeposit] ERROR: $e');
+      debugPrint('   Stack: $st');
       if (mounted) {
         try { Navigator.of(context, rootNavigator: true).pop(); } catch (_) {}
       }

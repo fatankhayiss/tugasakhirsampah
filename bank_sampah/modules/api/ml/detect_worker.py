@@ -200,13 +200,15 @@ def _preprocess(image_path: str) -> "numpy.ndarray":  # type: ignore[name-define
     return np.ascontiguousarray(img_batch)
 
 
-def _postprocess(outputs, conf_threshold: float = CONFIDENCE) -> list[str]:
+def _postprocess(outputs, conf_threshold: float = CONFIDENCE) -> list[dict]:
     """
-    Decode YOLO ONNX output and return unique detected class names.
+    Decode YOLO ONNX output and return unique detected classes with confidence.
 
     YOLOv8 ONNX output shape: [1, 4+num_classes, num_anchors]
       - First 4 rows: cx, cy, w, h
       - Remaining rows: class scores (no objectness)
+
+    Returns: [{"label": str, "confidence": float}, ...] unique by label (highest confidence kept).
     """
     import numpy as np
 
@@ -223,22 +225,31 @@ def _postprocess(outputs, conf_threshold: float = CONFIDENCE) -> list[str]:
 
     # Filter by confidence
     mask = max_scores >= conf_threshold
-    detected_ids = class_ids[mask].tolist()
+    filtered_scores = max_scores[mask].tolist()
+    detected_ids    = class_ids[mask].tolist()
 
-    # Unique labels, preserving first-seen order
+    # Unique labels, keeping best confidence per class
+    best: dict[int, float] = {}
+    for cid, conf in zip(detected_ids, filtered_scores):
+        if cid not in best or conf > best[cid]:
+            best[cid] = conf
+
+    # Build result list in first-seen order
+    result: list[dict] = []
     seen: set[int] = set()
-    unique: list[str] = []
     for cid in detected_ids:
         if cid not in seen:
             seen.add(cid)
             label = _class_names[cid] if cid < len(_class_names) else f"class_{cid}"
-            unique.append(label)
+            conf  = round(float(best[cid]) * 100, 1)  # 0-100 scale, 1 decimal
+            result.append({"label": label, "confidence": conf})
 
-    return unique
+    return result
 
 
-def run_inference(image_path: str) -> list[str]:
-    """Run ONNX Runtime inference on `image_path`. Returns list of unique label names."""
+def run_inference(image_path: str) -> list[dict]:
+    """Run ONNX Runtime inference on `image_path`.
+    Returns list of {"label": str, "confidence": float} dicts."""
     if not os.path.isfile(image_path):
         raise FileNotFoundError(f"File gambar tidak ditemukan: {image_path}")
 
@@ -283,10 +294,25 @@ def handle_client(conn: socket.socket, addr):
                 _send_json(conn, {"success": False, "error": "Missing image_path"})
                 return
 
-            log.info(f"Inferensi: {image_path}")
-            labels = run_inference(image_path)
-            log.info(f"Hasil: {labels}")
-            _send_json(conn, {"success": True, "labels": labels})
+            log.info("\n==================================================")
+            log.info("STEP 4: PYTHON AI (detect_worker.py)")
+            log.info("==================================================")
+            log.info(f"✓ Image loaded from path: {image_path}")
+            log.info("✓ Model loaded: best.onnx")
+            
+            detections = run_inference(image_path)
+            labels = [d["label"] for d in detections]
+            log.info("✓ Detection success")
+            log.info(f"• Raw detections: {detections}")
+            
+            response_payload = {
+                "success": True,
+                "labels": labels,        # backward compat: list of label strings
+                "detections": detections, # [{label, confidence}, ...]
+            }
+            log.info(f"✓ JSON generated: {response_payload}")
+            
+            _send_json(conn, response_payload)
 
     except FileNotFoundError as e:
         log.warning(str(e))

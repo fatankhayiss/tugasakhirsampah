@@ -35,17 +35,24 @@ if (!$koneksi) {
 if (!defined('BASE_URL')) {
     if (php_sapi_name() !== 'cli' && isset($_SERVER['HTTP_HOST'])) {
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST']; // includes :port when using built-in server
-        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
-        // Strip trailing 'index.php' and ensure leading slash
-        $basePath = rtrim(str_replace('index.php', '', $scriptName), '/');
-        if ($basePath === '') { $basePath = '/'; }
+        $host = $_SERVER['HTTP_HOST'];
+        
+        $docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? '');
+        $appRoot = str_replace('\\', '/', dirname(__DIR__));
+        $basePath = '';
+        if ($docRoot && strpos($appRoot, $docRoot) === 0) {
+            $basePath = substr($appRoot, strlen($docRoot));
+        }
+        if (empty($basePath)) {
+            $basePath = '/tugasakhirsampah/bank_sampah';
+        }
+        
         // Ensure single trailing slash
         $baseUrl = rtrim($scheme . '://' . $host . $basePath, '/') . '/';
         define('BASE_URL', $baseUrl);
     } else {
         // Fallback for CLI or when server vars are unavailable
-        define('BASE_URL', 'http://192.168.110.61/tugasakhirsampah/bank_sampah/');
+        define('BASE_URL', 'http://192.168.31.220/tugasakhirsampah/bank_sampah/');
     }
 }
 

@@ -7,7 +7,6 @@ import '../services/api_service.dart';
 import '../constants/api_config.dart';
 import '../widgets/floating_nav_bar.dart';
 import '../widgets/driver_status_chip.dart';
-import '../widgets/daily_vehicle_sheet.dart';
 import '../widgets/vehicle_form_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -29,6 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _history = [];
   bool _isLoading = true;
   String? _localAvatarPath;
+  int _unreadNotifCount = 0;
 
   Timer? _pollingTimer;
 
@@ -81,13 +81,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     }
 
+    final prevTaskId = _activeTask?['id_order'];
+
     // Fetch Active Task
     final resTask = await ApiService.instance.get(ApiConfig.driverActiveTask);
+    Map<String, dynamic>? newActiveTask;
     if (resTask.success && resTask.data != null) {
-      _activeTask = resTask.data;
-    } else {
-      _activeTask = null;
+      newActiveTask = resTask.data as Map<String, dynamic>;
     }
+
+    if (newActiveTask != null && (prevTaskId == null || prevTaskId != newActiveTask['id_order'])) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.inventory_2_rounded, color: Colors.white),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text(
+                        'Penugasan Baru',
+                        style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      Text(
+                        'Anda mendapatkan penugasan baru.',
+                        style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'BUKA',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.of(context).pushNamed(
+                  '/pickup-detail',
+                  arguments: newActiveTask,
+                );
+              },
+            ),
+          ),
+        );
+      }
+    }
+    _activeTask = newActiveTask;
+
+    // Fetch Notifications for Unread Badge Count
+    int unreadCount = 0;
+    final resNotifs = await ApiService.instance.get(ApiConfig.driverNotifications);
+    if (resNotifs.success && resNotifs.data is List) {
+      final list = resNotifs.data as List;
+      unreadCount = list.where((n) => n['is_read'] == 0 || n['is_read'] == '0').length;
+    }
+    _unreadNotifCount = unreadCount;
 
     // Fetch Dashboard Stats
     final resStats = await ApiService.instance.get(ApiConfig.driverStats);
@@ -161,9 +217,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ImageProvider? avatarImg;
                       final fotoProfil = _userData?['foto_profil']?.toString();
                       if (fotoProfil != null && fotoProfil.isNotEmpty) {
-                        final fullUrl = fotoProfil.startsWith('http')
-                            ? fotoProfil
-                            : 'http://192.168.110.61/tugasakhirsampah/bank_sampah/assets/uploads/$fotoProfil';
+                        final String fullUrl;
+                        if (fotoProfil.startsWith('http')) {
+                          fullUrl = fotoProfil;
+                        } else if (fotoProfil.startsWith('assets/')) {
+                          fullUrl = '${ApiConfig.baseUrl}$fotoProfil';
+                        } else {
+                          fullUrl = '${ApiConfig.baseUrl}assets/uploads/$fotoProfil';
+                        }
                         avatarImg = NetworkImage(fullUrl);
                       } else if (_localAvatarPath != null && File(_localAvatarPath!).existsSync()) {
                         avatarImg = FileImage(File(_localAvatarPath!));
@@ -218,17 +279,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     onStatusChanged: (s) => setState(() => _driverStatus = s),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.border),
-                      boxShadow: DriverStyles.cardShadow,
-                    ),
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pushNamed('/alerts'),
-                      icon: const Icon(Icons.notifications_outlined, color: AppColors.textDark),
-                    ),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.border),
+                          boxShadow: DriverStyles.cardShadow,
+                        ),
+                        child: IconButton(
+                          onPressed: () async {
+                            await Navigator.of(context).pushNamed('/alerts');
+                            _fetchAllData(silent: true);
+                          },
+                          icon: const Icon(Icons.notifications_outlined, color: AppColors.textDark),
+                        ),
+                      ),
+                      if (_unreadNotifCount > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEF4444),
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '$_unreadNotifCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -241,6 +335,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _buildDynamicReminder(),
+                      const SizedBox(height: 16),
                       _buildStatsCard(),
                       const SizedBox(height: 16),
                       _buildVehicleCard(),
@@ -273,6 +369,183 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.of(context).pushReplacementNamed('/profile');
           }
         },
+      ),
+    );
+  }
+
+  Widget _buildDynamicReminder() {
+    // 1. Today's vehicle has not been entered (Highest Priority)
+    if (_todayVehicle == null) {
+      return _buildReminderCard(
+        title: 'Kendaraan Belum Diisi',
+        message: 'Silakan daftarkan kendaraan yang Anda gunakan hari ini terlebih dahulu.',
+        icon: Icons.directions_car_outlined,
+        color: const Color(0xFFD97706),
+        bgColor: const Color(0xFFFEF3C7),
+        borderColor: const Color(0xFFFDE68A),
+        onAction: () async {
+          final ok = await VehicleFormSheet.showVehicleSheet(context);
+          if (ok == true) _fetchAllData();
+        },
+      );
+    }
+
+    // 2. New pickup assigned (DRIVER_DITUGASKAN)
+    if (_activeTask != null && _activeTask!['status'] == 'DRIVER_DITUGASKAN') {
+      return _buildReminderCard(
+        title: 'Tugas Baru Ditugaskan',
+        message: 'Anda mendapatkan tugas penjemputan baru dari ${_activeTask!['nama_warga'] ?? 'Warga'}. Silakan periksa detailnya.',
+        icon: Icons.assignment_late_outlined,
+        color: const Color(0xFF2563EB),
+        bgColor: const Color(0xFFEFF6FF),
+        borderColor: const Color(0xFFBFDBFE),
+        actionLabel: 'Lihat Detail',
+        onAction: () {
+          Navigator.of(context).pushNamed(
+            '/pickup-detail',
+            arguments: _activeTask,
+          );
+        },
+      );
+    }
+
+    // 3. Pickup in progress (DRIVER_MENUJU_LOKASI, DRIVER_TIBA, SAMPAH_DIJEMPUT)
+    if (_activeTask != null &&
+        (_activeTask!['status'] == 'DRIVER_MENUJU_LOKASI' ||
+            _activeTask!['status'] == 'DRIVER_TIBA' ||
+            _activeTask!['status'] == 'SAMPAH_DIJEMPUT')) {
+      final statusLabel = DriverStyles.getStatusLabel(_activeTask!['status'] as String?);
+      return _buildReminderCard(
+        title: 'Penjemputan Sedang Berjalan',
+        message: 'Penjemputan aktif di ${_activeTask!['alamat_jemput'] ?? '-'}. Status: $statusLabel.',
+        icon: Icons.navigation_outlined,
+        color: const Color(0xFF059669),
+        bgColor: const Color(0xFFECFDF5),
+        borderColor: const Color(0xFFA7F3D0),
+        actionLabel: 'Lanjutkan',
+        onAction: () {
+          Navigator.of(context).pushNamed(
+            '/pickup-detail',
+            arguments: _activeTask,
+          );
+        },
+      );
+    }
+
+    // 4. Waiting confirmation (VALIDASI_BANK_SAMPAH)
+    if (_activeTask != null && _activeTask!['status'] == 'VALIDASI_BANK_SAMPAH') {
+      return _buildReminderCard(
+        title: 'Menunggu Validasi Admin',
+        message: 'Tugas penjemputan selesai dilakukan dan saat ini sedang dalam proses verifikasi berat oleh Admin.',
+        icon: Icons.hourglass_empty_rounded,
+        color: const Color(0xFF7C3AED),
+        bgColor: const Color(0xFFF5F3FF),
+        borderColor: const Color(0xFFDDD6FE),
+        actionLabel: 'Lihat Detail',
+        onAction: () {
+          Navigator.of(context).pushNamed(
+            '/pickup-detail',
+            arguments: _activeTask,
+          );
+        },
+      );
+    }
+
+    // 5. No pickup today (Fallback)
+    return _buildReminderCard(
+      title: 'Tidak Ada Tugas Aktif',
+      message: 'Semua tugas telah diselesaikan atau Anda belum menerima tugas penjemputan hari ini.',
+      icon: Icons.check_circle_outline_rounded,
+      color: const Color(0xFF0D9488),
+      bgColor: const Color(0xFFF0FDFA),
+      borderColor: const Color(0xFFCCFBF1),
+      actionLabel: null,
+      onAction: null,
+    );
+  }
+
+  Widget _buildReminderCard({
+    required String title,
+    required String message,
+    required IconData icon,
+    required Color color,
+    required Color bgColor,
+    required Color borderColor,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: DriverStyles.cardRadius,
+        border: Border.all(color: borderColor),
+        boxShadow: DriverStyles.cardShadow,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12.5,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                    color: color.withValues(alpha: 0.85),
+                  ),
+                ),
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: onAction,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      actionLabel,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -319,35 +592,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
               ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ] else ...[
-          GestureDetector(
-            onTap: () async {
-              final ok = await DailyVehicleSheet.show(context);
-              if (ok == true) _fetchAllData();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.badgePending.withValues(alpha: 0.08),
-                borderRadius: DriverStyles.cardRadius,
-                border: Border.all(color: AppColors.badgePending.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.directions_car_outlined, color: AppColors.badgePending, size: 22),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Belum daftar kendaraan hari ini — Ketuk untuk daftarkan',
-                      style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.badgePending),
-                    ),
-                  ),
-                  const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.badgePending, size: 14),
-                ],
-              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -563,76 +807,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEF3C7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFDE68A)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFDE68A),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 20),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Data Kendaraan Belum Diisi',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF92400E),
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Wajib diisi sebelum menjalankan tugas penjemputan',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11,
-                    color: Color(0xFFB45309),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              VehicleFormSheet.showVehicleSheet(
-                context,
-                onSaved: () => _fetchAllData(silent: true),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD97706),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            child: const Text(
-              'Isi Data',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildActivePickup() {
@@ -646,37 +821,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     if (_activeTask == null) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: DriverStyles.cardRadius,
-          border: Border.all(color: AppColors.border),
-          boxShadow: DriverStyles.cardShadow,
-        ),
-        child: Column(
-          children: const [
-            Icon(Icons.inbox_outlined, size: 52, color: AppColors.textMuted),
-            SizedBox(height: 12),
-            Text(
-              'Tidak ada penjemputan aktif',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textDark,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Saat ini Anda tidak memiliki pesanan yang sedang diproses atau dijadwalkan hari ini.',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: AppColors.textMuted),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return Column(
@@ -721,13 +866,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.softBlue,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.recycling_rounded, color: AppColors.primary, size: 26),
+                  Builder(
+                    builder: (context) {
+                      final nama = _activeTask!['nama_warga'] ?? 'Warga';
+                      final inisial = nama.toString().isNotEmpty ? nama.toString().substring(0, nama.toString().length > 1 ? 2 : 1).toUpperCase() : 'W';
+                      final fotoWarga = _activeTask!['foto_warga'] ?? _activeTask!['profile_photo'] ?? _activeTask!['photo_url'] ?? _activeTask!['avatar'];
+                      return CircleAvatar(
+                        radius: 24,
+                        backgroundColor: AppColors.softBlue,
+                        child: (fotoWarga != null && fotoWarga.toString().isNotEmpty)
+                            ? ClipOval(
+                                child: Image.network(
+                                  fotoWarga.toString(),
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Text(
+                                      inisial,
+                                      style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
+                                    );
+                                  },
+                                ),
+                              )
+                            : Text(
+                                inisial,
+                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
+                              ),
+                      );
+                    }
                   ),
                   const SizedBox(width: 14),
                   Expanded(

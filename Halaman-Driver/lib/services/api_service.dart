@@ -68,6 +68,23 @@ class ApiService {
     }
   }
 
+  Future<ApiResponse> put(String url, {Map<String, dynamic>? body}) async {
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: await _getHeaders(),
+        body: body,
+      ).timeout(const Duration(seconds: 15));
+      return _processResponse(response);
+    } catch (e) {
+      return ApiResponse(
+        success: false,
+        message: 'Koneksi gagal: $e',
+        statusCode: 500,
+      );
+    }
+  }
+
   ApiResponse _processResponse(http.Response response) {
     try {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -189,8 +206,10 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> saveDailyVehicle({
+    required String vehicleName,
     required String vehicleType,
     required String licensePlate,
+    String? capacity,
     String? notes,
   }) async {
     final token = await getToken();
@@ -204,8 +223,10 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
+          'vehicle_name': vehicleName,
           'vehicle_type': vehicleType,
           'license_plate': licensePlate,
+          'capacity': capacity ?? '',
           'notes': notes ?? '',
         }),
       );

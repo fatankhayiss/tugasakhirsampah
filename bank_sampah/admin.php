@@ -169,7 +169,7 @@ switch ($page) {
         $sql_q = "SELECT o.*, 
                          w.nama_lengkap AS nama_warga, w.no_telepon AS telp_warga,
                          d.nama_lengkap AS nama_driver, d.no_telepon AS telp_driver,
-                         COALESCE(dv.vehicle_type, dd.jenis_kendaraan, 'Motor Box') as vehicle_type,
+                         COALESCE(dv.vehicle_name, dv.vehicle_type, dd.jenis_kendaraan, 'Motor Box') as vehicle_type,
                          COALESCE(dv.license_plate, dd.plat_nomor, '-') as license_plate
                   FROM orders o
                   LEFT JOIN pengguna w ON o.id_warga = w.id_pengguna

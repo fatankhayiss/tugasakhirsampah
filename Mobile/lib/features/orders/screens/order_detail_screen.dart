@@ -97,22 +97,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     _launchUrl('tel:$cleanPhone');
   }
 
-  Future<void> _openMaps(double? lat, double? lng) async {
-    if (lat == null || lng == null) return;
-    final navUri = Uri.parse('google.navigation:q=$lat,$lng');
-    final webUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
-    try {
-      if (await canLaunchUrl(navUri)) {
-        await launchUrl(navUri, mode: LaunchMode.externalApplication);
-      } else {
-        await launchUrl(webUri, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {
-      try {
-        await launchUrl(webUri, mode: LaunchMode.externalApplication);
-      } catch (_) {}
-    }
-  }
+
 
 
 
@@ -150,9 +135,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'SUBMITTED':
       case 'MENUNGGU_KONFIRMASI':
         return const Color(0xFFFEF3C7);
+      case 'DRIVER_TIBA':
+        return const Color(0xFFDCFCE7);
       case 'DRIVER_DITUGASKAN':
       case 'DRIVER_MENUJU_LOKASI':
-      case 'DRIVER_TIBA':
       case 'PICKER_DITUGASKAN':
       case 'PICKER_MENUJU_LOKASI':
         return const Color(0xFFEFF6FF);
@@ -178,9 +164,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'SUBMITTED':
       case 'MENUNGGU_KONFIRMASI':
         return const Color(0xFFD97706);
+      case 'DRIVER_TIBA':
+        return const Color(0xFF16A34A);
       case 'DRIVER_DITUGASKAN':
       case 'DRIVER_MENUJU_LOKASI':
-      case 'DRIVER_TIBA':
       case 'PICKER_DITUGASKAN':
       case 'PICKER_MENUJU_LOKASI':
         return const Color(0xFF2563EB);
@@ -210,7 +197,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'DRIVER_MENUJU_LOKASI':
         return 'PICKER MENUJU LOKASI';
       case 'DRIVER_TIBA':
-        return 'PICKER HAMPIR TIBA';
+        return 'PICKER SUDAH DEKAT';
       case 'PENIMBANGAN':
         return 'PENIMBANGAN BERAT';
       case 'SAMPAH_DIJEMPUT':
@@ -218,11 +205,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'MENUJU_BANK_SAMPAH':
         return 'MENUJU BANK SAMPAH';
       case 'VALIDASI_BANK_SAMPAH':
-        return 'VALIDASI BANK SAMPAH';
       case 'POIN_DIPROSES':
-        return 'POIN DIPROSES';
+        return 'WAITING VALIDATION';
       case 'SELESAI':
-        return 'SELESAI';
+        return 'COMPLETED';
       case 'DIBATALKAN':
         return 'DIBATALKAN';
       default:
@@ -442,36 +428,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   title: 'Jadwal / Waktu',
                   content: waktu,
                 ),
-                if (lat != null && lng != null) ...[
-                  const Divider(height: 24, color: AppColors.border),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Navigasi Lokasi',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSoft,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => _openMaps(lat, lng),
-                        icon: const Icon(LucideIcons.map_pin, size: 16, color: AppColors.primary),
-                        label: const Text(
-                          'Buka di Google Maps',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+
                 if (catatan.isNotEmpty) ...[
                   const Divider(height: 24, color: AppColors.border),
                   _DetailRow(
@@ -793,10 +750,40 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: const Color(0xFFEAF8EF),
-            backgroundImage: hasPhoto ? NetworkImage(photoUrl) as ImageProvider : const AssetImage(AppImages.avatar),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: hasPhoto
+                  ? Image.network(
+                      photoUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset(
+                          AppImages.avatar,
+                          fit: BoxFit.cover,
+                        );
+                      },
+                    )
+                  : Image.asset(
+                      AppImages.avatar,
+                      fit: BoxFit.cover,
+                    ),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -919,25 +906,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       return Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: const Color(0xFFE0F2FE),
+          color: const Color(0xFFE8F5E9),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFBAE6FD)),
+          border: Border.all(color: const Color(0xFFC8E6C9)),
         ),
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(LucideIcons.map_pin_check, color: Color(0xFF0284C7), size: 20),
+                Icon(LucideIcons.map_pin, color: Color(0xFF2E7D32), size: 20),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Picker sudah dekat.',
+                    '📍 Picker Sudah Dekat',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: Color(0xFF0369A1),
+                      color: Color(0xFF1B5E20),
                     ),
                   ),
                 ),
@@ -945,11 +932,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             SizedBox(height: 6),
             Text(
-              'Silakan siapkan sampah Anda untuk diserahkan ke Picker.',
+              'Picker telah berada di sekitar lokasi Anda.\nSilakan siapkan sampah untuk proses penjemputan.',
               style: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontSize: 13,
-                color: Color(0xFF075985),
+                color: Color(0xFF2E7D32),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -1105,7 +1093,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Validasi Bank Sampah',
+                    'Waiting Validation',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontWeight: FontWeight.w800,
@@ -1118,7 +1106,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             SizedBox(height: 8),
             Text(
-              'Petugas Admin sedang memverifikasi berat dan menghitung poin.',
+              'Sedang divalidasi oleh Admin.',
               style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13, color: Color(0xFF581C87)),
             ),
           ],
@@ -1188,14 +1176,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _build7StageTimeline(String currentStatus) {
+    final isTiba = currentStatus.toUpperCase() == 'DRIVER_TIBA';
     final stages = [
       {'title': 'Permintaan Dikirim', 'desc': 'Permintaan penjemputan telah berhasil dibuat'},
       {'title': 'Menunggu Konfirmasi', 'desc': 'Menunggu konfirmasi dari Admin Bank Sampah'},
       {'title': 'Picker Ditugaskan', 'desc': 'Petugas Picker telah ditugaskan'},
-      {'title': 'Picker Menuju Lokasi', 'desc': 'Picker sedang dalam perjalanan ke lokasi Penyetor'},
+      {
+        'title': isTiba ? 'Picker Sudah Dekat' : 'Picker Menuju Lokasi', 
+        'desc': isTiba ? 'Picker telah berada di sekitar lokasi Anda. Silakan siapkan sampah untuk proses penjemputan.' : 'Picker sedang dalam perjalanan ke lokasi Penyetor'
+      },
       {'title': 'Sampah Dijemput', 'desc': 'Sampah berhasil diangkut oleh Picker'},
-      {'title': 'Validasi Bank Sampah', 'desc': 'Proses verifikasi & validasi di Bank Sampah'},
-      {'title': 'Selesai', 'desc': 'Penjemputan selesai, poin berhasil diterima'},
+      {'title': 'Waiting Validation', 'desc': 'Sedang divalidasi oleh Admin'},
+      {'title': 'Completed', 'desc': 'Penjemputan selesai, poin berhasil diterima'},
     ];
 
     final currentStepIndex = _getStepIndex(currentStatus);
@@ -1216,7 +1208,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: isCompleted
+                    color: isCompleted || (isActive && isTiba)
                         ? const Color(0xFF2DAA63)
                         : (isActive ? AppColors.primary : const Color(0xFFE2E8F0)),
                     shape: BoxShape.circle,

@@ -20,19 +20,21 @@ $allowed_pages = [
     'profil/proses_update_profil' => 'modules/profil/proses_update_profil.php',
     'profil/proses_ganti_password' => 'modules/profil/proses_ganti_password.php',
     
-    // Manajemen Warga (oleh Admin & Petugas)
-    'warga/data' => 'modules/warga/index.php',
-    'warga/tambah' => 'modules/warga/tambah.php',
-    'warga/edit' => 'modules/warga/edit.php',
-    'warga/proses_simpan' => 'modules/warga/proses_simpan.php',
-    'warga/hapus' => 'modules/warga/hapus.php',
+    // Manajemen Penyetor (oleh Admin & Petugas)
+    'penyetor/data' => 'modules/penyetor/index.php',
+    'penyetor/tambah' => 'modules/penyetor/tambah.php',
+    'penyetor/edit' => 'modules/penyetor/edit.php',
+    'penyetor/detail' => 'modules/penyetor/detail.php',
+    'penyetor/proses_simpan' => 'modules/penyetor/proses_simpan.php',
+    'penyetor/hapus' => 'modules/penyetor/hapus.php',
 
-    // Manajemen Driver (oleh Admin)
-    'driver/data' => 'modules/driver/index.php',
-    'driver/tambah' => 'modules/driver/tambah.php',
-    'driver/edit' => 'modules/driver/edit.php',
-    'driver/proses_simpan' => 'modules/driver/proses_simpan.php',
-    'driver/hapus' => 'modules/driver/hapus.php',
+    // Manajemen Picker (oleh Admin)
+    'picker/data' => 'modules/picker/index.php',
+    'picker/tambah' => 'modules/picker/tambah.php',
+    'picker/edit' => 'modules/picker/edit.php',
+    'picker/detail' => 'modules/picker/detail.php',
+    'picker/proses_simpan' => 'modules/picker/proses_simpan.php',
+    'picker/hapus' => 'modules/picker/hapus.php',
 
     // Manajemen Jenis Sampah (oleh Admin & Petugas)
     'jenis_sampah/data' => 'modules/jenis_sampah/index.php',
@@ -63,6 +65,8 @@ $allowed_pages = [
 
     // Orders Penjemputan (dari Mobile/Driver)
     'orders/data' => 'modules/orders/index.php',
+    'orders/detail' => 'modules/orders/detail.php',
+    'orders/validate' => 'modules/orders/detail.php',
 
     // Reward / Tukar Poin
     'reward/index' => 'modules/reward/index.php',
@@ -98,13 +102,13 @@ if (array_key_exists($page, $allowed_pages)) {
         $no_layout_pages = [
             'auth/proses_login', 
             'auth/logout', 
-            'warga/proses_simpan', 'warga/hapus', 
+            'penyetor/proses_simpan', 'penyetor/hapus', 
             'jenis_sampah/proses_simpan', 'jenis_sampah/hapus', 
             'transaksi/proses_setor',
             'profil/proses_update_profil', 'profil/proses_ganti_password',
             'laporan/export', // Halaman handler ekspor Excel tidak memerlukan layout
             'edukasi/proses_simpan', 'edukasi/hapus',
-            'driver/proses_simpan', 'driver/hapus',
+            'picker/proses_simpan', 'picker/hapus',
             'monitor_ai/data'
         ];
 

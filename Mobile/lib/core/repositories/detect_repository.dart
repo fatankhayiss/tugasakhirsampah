@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api_config.dart';
 import '../models/detect_result.dart';
+import '../models/scan_record.dart';
 import '../services/api_service.dart';
 
 /// Repository for uploading waste images and receiving YOLO detection results.
@@ -27,12 +28,18 @@ class DetectRepository {
   /// Returns a [DetectResult] with labels and detection details.
   Future<DetectResult> detectImage(String filePath) async {
     try {
+      debugPrint('\n==================================================');
+      debugPrint('STEP 2: IMAGE UPLOAD (DetectRepository)');
+      debugPrint('==================================================');
       final uri = Uri.parse(endpoint);
+      debugPrint('• API URL: $uri');
+      
       final request = http.MultipartRequest('POST', uri);
+      debugPrint('• Multipart request created');
 
-      request.files.add(
-        await http.MultipartFile.fromPath('image', filePath),
-      );
+      final file = await http.MultipartFile.fromPath('image', filePath);
+      request.files.add(file);
+      debugPrint('• Uploaded filename: ${file.filename}');
 
       // Attach user_id if logged in
       final userData = await ApiService.instance.getUserData();
@@ -40,10 +47,14 @@ class DetectRepository {
         request.fields['user_id'] = userData['id_pengguna'].toString();
       }
 
+      debugPrint('✓ Upload started');
       final streamedResponse = await request.send().timeout(_timeout);
       final response = await http.Response.fromStream(streamedResponse);
+      
+      debugPrint('• HTTP Status Code: ${response.statusCode}');
 
       if (response.statusCode != 200) {
+        debugPrint('❌ Upload failed with status: ${response.statusCode}');
         return DetectResult(
           success: false,
           labels: [],
@@ -51,9 +62,12 @@ class DetectRepository {
           errorMessage: 'HTTP ${response.statusCode}',
         );
       }
+      
+      debugPrint('✓ Upload success');
 
       final body = response.body.trim();
       if (body.isEmpty) {
+        debugPrint('❌ Upload failed: Respons server kosong');
         return DetectResult(
           success: false,
           labels: [],
@@ -62,10 +76,16 @@ class DetectRepository {
         );
       }
 
+      debugPrint('✓ JSON received: $body');
+
       final parsed = jsonDecode(body) as Map<String, dynamic>;
-      return DetectResult.fromJson(parsed);
+      final result = DetectResult.fromJson(parsed);
+      
+      debugPrint('✓ JSON parsed: success=${result.success}, labels=${result.labels.length}, detections=${result.detections.length}');
+      
+      return result;
     } catch (e) {
-      debugPrint('[DetectRepository] Error: $e');
+      debugPrint('\n❌ [DetectRepository] Error / Koneksi gagal: $e');
       return DetectResult(
         success: false,
         labels: [],
@@ -147,5 +167,52 @@ class DetectRepository {
     }
     final streamed = await request.send().timeout(_timeout);
     return await http.Response.fromStream(streamed);
+  }
+
+  // ─────────────────────────────────────────────
+  // Fetch specific scan record by ID
+  // ─────────────────────────────────────────────
+  Future<ScanRecord?> getScanRecord(int id) async {
+    try {
+      final baseUrl = endpoint.replaceAll('detect.php', 'get_scan_result.php');
+      final uri = Uri.parse('$baseUrl?id=$id');
+      final response = await http.get(uri).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true && body['data'] != null) {
+          return ScanRecord.fromJson(body['data']);
+        }
+      }
+    } catch (e) {
+      debugPrint('[DetectRepository] Error getScanRecord: $e');
+    }
+    return null;
+  }
+
+  // ─────────────────────────────────────────────
+  // Update scan record category and weight
+  // ─────────────────────────────────────────────
+  Future<bool> updateScanRecord(int id, String category, double weight) async {
+    try {
+      final baseUrl = endpoint.replaceAll('detect.php', 'update_scan_result.php');
+      final uri = Uri.parse(baseUrl);
+      final response = await http.post(
+        uri,
+        body: {
+          'id_deteksi': id.toString(),
+          'kategori_sampah': category,
+          'berat': weight.toString(),
+        },
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return body['success'] == true;
+      }
+    } catch (e) {
+      debugPrint('[DetectRepository] Error updateScanRecord: $e');
+    }
+    return false;
   }
 }

@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id_warga']) && isset($
 
     // Validasi dasar (keberadaan items sudah dicek di if utama)
     if (empty($id_warga) || empty($tanggal_transaksi) || !is_array($items) || count($items) === 0) {
-        $_SESSION['error_message'] = "Data warga, tanggal, dan minimal satu item sampah harus diisi.";
+        $_SESSION['error_message'] = "Data penyetor, tanggal, dan minimal satu item sampah harus diisi.";
         redirect(BASE_URL . 'index.php?page=transaksi/setor');
     }
 

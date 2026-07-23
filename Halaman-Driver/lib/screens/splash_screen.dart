@@ -102,7 +102,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const SizedBox(height: 28),
                     const Text(
-                      'iTrashy Driver',
+                      'iTrashy Picker',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         color: Colors.white,

@@ -63,7 +63,8 @@ mysqli_stmt_close($stmt);
 if ($action === 'get_active_task') {
     $sql = "SELECT o.id_order, o.alamat_jemput, o.latitude, o.longitude, o.tanggal_order,
                    o.waktu_jemput_dari, o.waktu_jemput_sampai, o.estimasi_berat, o.status,
-                   w.nama_lengkap as nama_warga, w.no_telepon as telp_warga
+                   w.id_pengguna as id_warga, w.username as username_warga, w.nama_lengkap as nama_warga, 
+                   w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga
             FROM orders o
             JOIN pengguna w ON o.id_warga = w.id_pengguna
             WHERE o.id_driver = ? AND o.status IN ('DRIVER_DITUGASKAN','DRIVER_MENUJU_LOKASI','DRIVER_TIBA','SAMPAH_DIJEMPUT')
@@ -82,6 +83,34 @@ if ($action === 'get_active_task') {
         while ($rj = mysqli_fetch_assoc($res_j)) { $jenis_list[] = $rj['nama_sampah']; }
         $order['jenis_sampah'] = !empty($jenis_list) ? implode(', ', $jenis_list) : 'Campuran';
         mysqli_stmt_close($stmt_j);
+
+        $base_url = "http://192.168.31.220/tugasakhirsampah/bank_sampah/";
+        $base_upload_url = $base_url . "assets/uploads/";
+        $foto_warga = $order['foto_warga'];
+        if ($foto_warga) {
+            if (str_starts_with($foto_warga, 'http://') || str_starts_with($foto_warga, 'https://')) {
+                $foto_warga_full = $foto_warga;
+            } elseif (str_starts_with($foto_warga, 'assets/')) {
+                $foto_warga_full = $base_url . $foto_warga;
+            } else {
+                $foto_warga_full = $base_upload_url . $foto_warga;
+            }
+        } else {
+            $foto_warga_full = null;
+        }
+        
+        $order['foto_warga'] = $foto_warga_full;
+        $order['profile_photo'] = $foto_warga_full;
+        $order['photo_url'] = $foto_warga_full;
+        $order['avatar'] = $foto_warga_full;
+        $order['id_warga'] = (int)($order['id_warga'] ?? 0);
+        $order['warga_id'] = $order['id_warga'];
+        $order['username_warga'] = $order['username_warga'] ?? null;
+        $order['warga_username'] = $order['username_warga'] ?? null;
+        $order['warga_full_name'] = $order['nama_warga'] ?? null;
+        $order['warga_phone'] = $order['telp_warga'] ?? null;
+        $order['alamat'] = $order['alamat_warga'] ?? '';
+
         api_respond(true, 'Tugas aktif ditemukan', $order);
     } else {
         api_respond(true, 'Tidak ada tugas aktif', null);
@@ -94,7 +123,7 @@ if ($action === 'get_active_task') {
 // ============================================================
 elseif ($action === 'get_dashboard_stats') {
     // Total completed (all time)
-    $stmt_c = mysqli_prepare($koneksi, "SELECT COUNT(*) as total_completed, COALESCE(SUM(estimasi_berat),0) as total_berat FROM orders WHERE id_driver = ? AND status = 'SELESAI'");
+    $stmt_c = mysqli_prepare($koneksi, "SELECT COUNT(*) as total_completed, COALESCE(SUM(estimasi_berat),0) as total_berat FROM orders WHERE id_driver = ? AND status IN ('VALIDASI_BANK_SAMPAH', 'SELESAI')");
     mysqli_stmt_bind_param($stmt_c, "i", $id_driver);
     mysqli_stmt_execute($stmt_c);
     $row_c = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_c));
@@ -108,14 +137,14 @@ elseif ($action === 'get_dashboard_stats') {
     mysqli_stmt_close($stmt_t);
 
     // Today's completed
-    $stmt_td = mysqli_prepare($koneksi, "SELECT COUNT(*) as today_completed FROM orders WHERE id_driver = ? AND status = 'SELESAI' AND tanggal_order = CURDATE()");
+    $stmt_td = mysqli_prepare($koneksi, "SELECT COUNT(*) as today_completed FROM orders WHERE id_driver = ? AND status IN ('VALIDASI_BANK_SAMPAH', 'SELESAI') AND tanggal_order = CURDATE()");
     mysqli_stmt_bind_param($stmt_td, "i", $id_driver);
     mysqli_stmt_execute($stmt_td);
     $row_td = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_td));
     mysqli_stmt_close($stmt_td);
 
     // Today's total weight (completed)
-    $stmt_tb = mysqli_prepare($koneksi, "SELECT COALESCE(SUM(estimasi_berat),0) as today_berat FROM orders WHERE id_driver = ? AND status = 'SELESAI' AND tanggal_order = CURDATE()");
+    $stmt_tb = mysqli_prepare($koneksi, "SELECT COALESCE(SUM(estimasi_berat),0) as today_berat FROM orders WHERE id_driver = ? AND status IN ('VALIDASI_BANK_SAMPAH', 'SELESAI') AND tanggal_order = CURDATE()");
     mysqli_stmt_bind_param($stmt_tb, "i", $id_driver);
     mysqli_stmt_execute($stmt_tb);
     $row_tb = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_tb));
@@ -145,7 +174,8 @@ elseif ($action === 'get_orders') {
     $status_filter = isset($_GET['status']) ? trim($_GET['status']) : '';
     $sql = "SELECT o.id_order, o.alamat_jemput, o.latitude, o.longitude, o.tanggal_order,
                    o.waktu_jemput_dari, o.waktu_jemput_sampai, o.estimasi_berat, o.status,
-                   w.nama_lengkap as nama_warga, w.no_telepon as telp_warga
+                   w.id_pengguna as id_warga, w.username as username_warga, w.nama_lengkap as nama_warga, 
+                   w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga
             FROM orders o
             JOIN pengguna w ON o.id_warga = w.id_pengguna
             WHERE o.id_driver = ?";
@@ -171,6 +201,33 @@ elseif ($action === 'get_orders') {
         while ($rj = mysqli_fetch_assoc($res_j)) { $jl[] = $rj['nama_sampah']; }
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
+
+        $base_url = "http://192.168.31.220/tugasakhirsampah/bank_sampah/";
+        $base_upload_url = $base_url . "assets/uploads/";
+        $foto_warga = $row['foto_warga'];
+        if ($foto_warga) {
+            if (str_starts_with($foto_warga, 'http://') || str_starts_with($foto_warga, 'https://')) {
+                $foto_warga_full = $foto_warga;
+            } elseif (str_starts_with($foto_warga, 'assets/')) {
+                $foto_warga_full = $base_url . $foto_warga;
+            } else {
+                $foto_warga_full = $base_upload_url . $foto_warga;
+            }
+        } else {
+            $foto_warga_full = null;
+        }
+        $row['foto_warga'] = $foto_warga_full;
+        $row['profile_photo'] = $foto_warga_full;
+        $row['photo_url'] = $foto_warga_full;
+        $row['avatar'] = $foto_warga_full;
+        $row['id_warga'] = (int)($row['id_warga'] ?? 0);
+        $row['warga_id'] = $row['id_warga'];
+        $row['username_warga'] = $row['username_warga'] ?? null;
+        $row['warga_username'] = $row['username_warga'] ?? null;
+        $row['warga_full_name'] = $row['nama_warga'] ?? null;
+        $row['warga_phone'] = $row['telp_warga'] ?? null;
+        $row['alamat'] = $row['alamat_warga'] ?? '';
+
         $orders[] = $row;
     }
     mysqli_stmt_close($stmt);
@@ -183,10 +240,11 @@ elseif ($action === 'get_orders') {
 elseif ($action === 'get_schedules') {
     $sql = "SELECT o.id_order, o.alamat_jemput, o.tanggal_order,
                    o.waktu_jemput_dari, o.waktu_jemput_sampai, o.estimasi_berat, o.status,
-                   w.nama_lengkap as nama_warga, w.no_telepon as telp_warga
+                   w.id_pengguna as id_warga, w.username as username_warga, w.nama_lengkap as nama_warga, 
+                   w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga
             FROM orders o
             JOIN pengguna w ON o.id_warga = w.id_pengguna
-            WHERE o.id_driver = ? AND o.status NOT IN ('SELESAI','DIBATALKAN')
+            WHERE o.id_driver = ? AND o.status NOT IN ('VALIDASI_BANK_SAMPAH','SELESAI','DIBATALKAN')
             ORDER BY o.tanggal_order ASC, o.waktu_jemput_dari ASC";
     $stmt = mysqli_prepare($koneksi, $sql);
     mysqli_stmt_bind_param($stmt, "i", $id_driver);
@@ -202,6 +260,33 @@ elseif ($action === 'get_schedules') {
         while ($rj = mysqli_fetch_assoc($res_j)) { $jl[] = $rj['nama_sampah']; }
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
+
+        $base_url = "http://192.168.31.220/tugasakhirsampah/bank_sampah/";
+        $base_upload_url = $base_url . "assets/uploads/";
+        $foto_warga = $row['foto_warga'];
+        if ($foto_warga) {
+            if (str_starts_with($foto_warga, 'http://') || str_starts_with($foto_warga, 'https://')) {
+                $foto_warga_full = $foto_warga;
+            } elseif (str_starts_with($foto_warga, 'assets/')) {
+                $foto_warga_full = $base_url . $foto_warga;
+            } else {
+                $foto_warga_full = $base_upload_url . $foto_warga;
+            }
+        } else {
+            $foto_warga_full = null;
+        }
+        $row['foto_warga'] = $foto_warga_full;
+        $row['profile_photo'] = $foto_warga_full;
+        $row['photo_url'] = $foto_warga_full;
+        $row['avatar'] = $foto_warga_full;
+        $row['id_warga'] = (int)($row['id_warga'] ?? 0);
+        $row['warga_id'] = $row['id_warga'];
+        $row['username_warga'] = $row['username_warga'] ?? null;
+        $row['warga_username'] = $row['username_warga'] ?? null;
+        $row['warga_full_name'] = $row['nama_warga'] ?? null;
+        $row['warga_phone'] = $row['telp_warga'] ?? null;
+        $row['alamat'] = $row['alamat_warga'] ?? '';
+
         $schedules[] = $row;
     }
     mysqli_stmt_close($stmt);
@@ -214,10 +299,11 @@ elseif ($action === 'get_schedules') {
 elseif ($action === 'get_history') {
     $sql = "SELECT o.id_order, o.alamat_jemput, o.tanggal_order, o.created_at,
                    o.waktu_jemput_dari, o.waktu_jemput_sampai, o.estimasi_berat, o.berat_aktual, o.status,
-                   w.nama_lengkap as nama_warga, w.no_telepon as telp_warga
+                   w.id_pengguna as id_warga, w.username as username_warga, w.nama_lengkap as nama_warga, 
+                   w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga
             FROM orders o
             JOIN pengguna w ON o.id_warga = w.id_pengguna
-            WHERE o.id_driver = ? AND o.status IN ('SELESAI','DIBATALKAN')
+            WHERE o.id_driver = ? AND o.status IN ('VALIDASI_BANK_SAMPAH','SELESAI','DIBATALKAN')
             ORDER BY o.tanggal_order DESC, o.id_order DESC LIMIT 50";
     $stmt = mysqli_prepare($koneksi, $sql);
     mysqli_stmt_bind_param($stmt, "i", $id_driver);
@@ -233,6 +319,33 @@ elseif ($action === 'get_history') {
         while ($rj = mysqli_fetch_assoc($res_j)) { $jl[] = $rj['nama_sampah']; }
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
+
+        $base_url = "http://192.168.31.220/tugasakhirsampah/bank_sampah/";
+        $base_upload_url = $base_url . "assets/uploads/";
+        $foto_warga = $row['foto_warga'];
+        if ($foto_warga) {
+            if (str_starts_with($foto_warga, 'http://') || str_starts_with($foto_warga, 'https://')) {
+                $foto_warga_full = $foto_warga;
+            } elseif (str_starts_with($foto_warga, 'assets/')) {
+                $foto_warga_full = $base_url . $foto_warga;
+            } else {
+                $foto_warga_full = $base_upload_url . $foto_warga;
+            }
+        } else {
+            $foto_warga_full = null;
+        }
+        $row['foto_warga'] = $foto_warga_full;
+        $row['profile_photo'] = $foto_warga_full;
+        $row['photo_url'] = $foto_warga_full;
+        $row['avatar'] = $foto_warga_full;
+        $row['id_warga'] = (int)($row['id_warga'] ?? 0);
+        $row['warga_id'] = $row['id_warga'];
+        $row['username_warga'] = $row['username_warga'] ?? null;
+        $row['warga_username'] = $row['username_warga'] ?? null;
+        $row['warga_full_name'] = $row['nama_warga'] ?? null;
+        $row['warga_phone'] = $row['telp_warga'] ?? null;
+        $row['alamat'] = $row['alamat_warga'] ?? '';
+
         $history[] = $row;
     }
     mysqli_stmt_close($stmt);
@@ -255,7 +368,7 @@ elseif ($action === 'get_profile') {
     $profile = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
     mysqli_stmt_close($stmt);
 
-    $stmt_c = mysqli_prepare($koneksi, "SELECT COUNT(*) as total_completed FROM orders WHERE id_driver = ? AND status = 'SELESAI'");
+    $stmt_c = mysqli_prepare($koneksi, "SELECT COUNT(*) as total_completed FROM orders WHERE id_driver = ? AND status IN ('VALIDASI_BANK_SAMPAH','SELESAI')");
     mysqli_stmt_bind_param($stmt_c, "i", $id_driver);
     mysqli_stmt_execute($stmt_c);
     $row_c = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_c));
@@ -264,7 +377,7 @@ elseif ($action === 'get_profile') {
 
     // Kendaraan hari ini dari driver_daily_vehicle
     $vehicle_row = null;
-    $stmt_v = mysqli_prepare($koneksi, "SELECT vehicle_type, license_plate, capacity, notes FROM driver_daily_vehicle WHERE driver_id = ? AND date = CURDATE() LIMIT 1");
+    $stmt_v = mysqli_prepare($koneksi, "SELECT vehicle_name, vehicle_type, license_plate, capacity, notes FROM driver_daily_vehicle WHERE driver_id = ? AND date = CURDATE() LIMIT 1");
     if ($stmt_v) {
         mysqli_stmt_bind_param($stmt_v, "i", $id_driver);
         mysqli_stmt_execute($stmt_v);
@@ -310,7 +423,7 @@ elseif ($action === 'update_profile') {
 // ACTION: get_notifications
 // ============================================================
 elseif ($action === 'get_notifications') {
-    $sql = "SELECT id_notifikasi, judul, pesan, tipe, is_read, created_at
+    $sql = "SELECT id_notifikasi, judul, pesan, tipe, is_read, related_id, created_at
             FROM notifikasi
             WHERE id_pengguna = ?
             ORDER BY created_at DESC LIMIT 20";
@@ -327,7 +440,7 @@ elseif ($action === 'get_notifications') {
 // ACTION: get_daily_vehicle
 // ============================================================
 elseif ($action === 'get_daily_vehicle') {
-    $stmt = mysqli_prepare($koneksi, "SELECT id, vehicle_type, license_plate, capacity, notes, date FROM driver_daily_vehicle WHERE driver_id = ? AND date = CURDATE() LIMIT 1");
+    $stmt = mysqli_prepare($koneksi, "SELECT id, vehicle_name, vehicle_type, license_plate, capacity, notes, date FROM driver_daily_vehicle WHERE driver_id = ? AND date = CURDATE() LIMIT 1");
     if (!$stmt) {
         api_respond(true, 'Kendaraan belum didaftarkan', null);
     }
@@ -342,40 +455,53 @@ elseif ($action === 'get_daily_vehicle') {
 // ACTION: save_daily_vehicle
 // ============================================================
 elseif ($action === 'save_daily_vehicle') {
+    error_log("[save_daily_vehicle] Action started.");
     $input = json_decode(file_get_contents('php://input'), true);
     if (!$input) $input = $_POST;
 
+    $vehicle_name  = isset($input['vehicle_name'])  ? trim($input['vehicle_name'])  : '';
     $vehicle_type  = isset($input['vehicle_type'])  ? trim($input['vehicle_type'])  : '';
     $license_plate = isset($input['license_plate']) ? trim($input['license_plate']) : '';
     $capacity      = isset($input['capacity'])      ? trim($input['capacity'])      : '';
     $notes         = isset($input['notes'])         ? trim($input['notes'])         : '';
 
-    if (empty($vehicle_type) || empty($license_plate)) {
-        api_respond(false, 'Jenis kendaraan dan plat nomor wajib diisi', null, 400);
+    error_log("[save_daily_vehicle] Received inputs - Name: $vehicle_name, Type: $vehicle_type, Plate: $license_plate, Capacity: $capacity, Notes: $notes");
+
+    if (empty($vehicle_name) || empty($vehicle_type) || empty($license_plate)) {
+        error_log("[save_daily_vehicle] Validation failed: Required fields missing.");
+        api_respond(false, 'Nama kendaraan, jenis kendaraan, dan plat nomor wajib diisi', null, 400);
     }
 
-    $sql = "INSERT INTO driver_daily_vehicle (driver_id, vehicle_type, license_plate, capacity, notes, date)
-            VALUES (?, ?, ?, ?, ?, CURDATE())
+    $sql = "INSERT INTO driver_daily_vehicle (driver_id, vehicle_name, vehicle_type, license_plate, capacity, notes, date)
+            VALUES (?, ?, ?, ?, ?, ?, CURDATE())
             ON DUPLICATE KEY UPDATE
+              vehicle_name = VALUES(vehicle_name),
               vehicle_type = VALUES(vehicle_type),
               license_plate = VALUES(license_plate),
               capacity = VALUES(capacity),
-              notes = VALUES(notes)";
+              notes = VALUES(notes),
+              updated_at = NOW()";
     $stmt = mysqli_prepare($koneksi, $sql);
     if (!$stmt) {
-        api_respond(false, 'Tabel kendaraan belum tersedia. Jalankan migrasi database terlebih dahulu.', null, 500);
+        $db_err = mysqli_error($koneksi);
+        error_log("[save_daily_vehicle] Database prepare error: $db_err");
+        api_respond(false, 'Gagal menyiapkan query database: ' . $db_err, null, 500);
     }
-    mysqli_stmt_bind_param($stmt, "issss", $id_driver, $vehicle_type, $license_plate, $capacity, $notes);
+    mysqli_stmt_bind_param($stmt, "isssss", $id_driver, $vehicle_name, $vehicle_type, $license_plate, $capacity, $notes);
     if (mysqli_stmt_execute($stmt)) {
         mysqli_stmt_close($stmt);
+        error_log("[save_daily_vehicle] Database insert/update succeeded for driver: $id_driver");
         api_respond(true, 'Kendaraan hari ini berhasil disimpan', [
+            'vehicle_name'  => $vehicle_name,
             'vehicle_type'  => $vehicle_type,
             'license_plate' => $license_plate,
             'capacity'      => $capacity,
             'notes'         => $notes,
         ]);
     } else {
-        api_respond(false, 'Gagal menyimpan: ' . mysqli_error($koneksi), null, 500);
+        $db_err = mysqli_error($koneksi);
+        error_log("[save_daily_vehicle] Database execution failed: $db_err");
+        api_respond(false, 'Gagal menyimpan ke database: ' . $db_err, null, 500);
     }
 }
 
@@ -420,6 +546,68 @@ elseif ($action === 'update_driver_status') {
     } else {
         api_respond(false, 'Gagal memperbarui status: ' . mysqli_error($koneksi), null, 500);
     }
+}
+
+// ============================================================
+// ACTION: get_order_detail
+// ============================================================
+elseif ($action === 'get_order_detail') {
+    $id_order_param = isset($_GET['id_order']) ? (int)$_GET['id_order'] : 0;
+    if ($id_order_param <= 0) {
+        api_respond(false, 'ID Order tidak valid', null, 400);
+    }
+    $sql = "SELECT o.id_order, o.alamat_jemput, o.latitude, o.longitude, o.tanggal_order,
+                   o.waktu_jemput_dari, o.waktu_jemput_sampai, o.estimasi_berat, o.status,
+                   w.id_pengguna as id_warga, w.username as username_warga, w.nama_lengkap as nama_warga, 
+                   w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga
+            FROM orders o
+            JOIN pengguna w ON o.id_warga = w.id_pengguna
+            WHERE o.id_order = ? AND o.id_driver = ? LIMIT 1";
+    $stmt = mysqli_prepare($koneksi, $sql);
+    mysqli_stmt_bind_param($stmt, "ii", $id_order_param, $id_driver);
+    mysqli_stmt_execute($stmt);
+    $res = mysqli_stmt_get_result($stmt);
+    if ($row = mysqli_fetch_assoc($res)) {
+        $stmt_j = mysqli_prepare($koneksi, "SELECT js.nama_sampah FROM order_items oi JOIN jenis_sampah js ON oi.id_jenis_sampah = js.id_jenis_sampah WHERE oi.id_order = ?");
+        mysqli_stmt_bind_param($stmt_j, "i", $row['id_order']);
+        mysqli_stmt_execute($stmt_j);
+        $res_j = mysqli_stmt_get_result($stmt_j);
+        $jl = [];
+        while ($rj = mysqli_fetch_assoc($res_j)) { $jl[] = $rj['nama_sampah']; }
+        $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
+        mysqli_stmt_close($stmt_j);
+
+        $base_url = "http://192.168.31.220/tugasakhirsampah/bank_sampah/";
+        $base_upload_url = $base_url . "assets/uploads/";
+        $foto_warga = $row['foto_warga'];
+        if ($foto_warga) {
+            if (str_starts_with($foto_warga, 'http://') || str_starts_with($foto_warga, 'https://')) {
+                $foto_warga_full = $foto_warga;
+            } elseif (str_starts_with($foto_warga, 'assets/')) {
+                $foto_warga_full = $base_url . $foto_warga;
+            } else {
+                $foto_warga_full = $base_upload_url . $foto_warga;
+            }
+        } else {
+            $foto_warga_full = null;
+        }
+        $row['foto_warga'] = $foto_warga_full;
+        $row['profile_photo'] = $foto_warga_full;
+        $row['photo_url'] = $foto_warga_full;
+        $row['avatar'] = $foto_warga_full;
+        $row['id_warga'] = (int)($row['id_warga'] ?? 0);
+        $row['warga_id'] = $row['id_warga'];
+        $row['username_warga'] = $row['username_warga'] ?? null;
+        $row['warga_username'] = $row['username_warga'] ?? null;
+        $row['warga_full_name'] = $row['nama_warga'] ?? null;
+        $row['warga_phone'] = $row['telp_warga'] ?? null;
+        $row['alamat'] = $row['alamat_warga'] ?? '';
+
+        api_respond(true, 'Detail order berhasil ditemukan', $row);
+    } else {
+        api_respond(false, 'Order tidak ditemukan', null, 404);
+    }
+    mysqli_stmt_close($stmt);
 }
 
 else {

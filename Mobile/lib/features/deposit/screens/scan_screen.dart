@@ -6,6 +6,7 @@ import '../../../core/navigation/app_dialog_transitions.dart';
 import '../../../core/navigation/app_page_transitions.dart';
 import '../../../core/repositories/detect_repository.dart';
 import '../../../core/models/waste_item.dart';
+import '../../../core/constants/waste_labels.dart';
 import '../widgets/permission_modal_widget.dart';
 import '../../../core/constants/app_colors.dart';
 import '../widgets/scan_frame_widget.dart';
@@ -186,29 +187,61 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             
             final uploadedUrl = data['uploaded_file'] as String? ?? xFile.path;
             final detections = (data['detections'] as List<dynamic>?) ?? [];
-            String name = 'Sampah Terdeteksi';
-            String category = 'Plastik';
-            String confidence = '95%';
+            String name = '-';
+            String category = '-';
+            String confidence = '-';
             double price = 250.0;
 
             if (detections.isNotEmpty) {
               final first = detections.first as Map<String, dynamic>;
-              name = first['nama_sampah']?.toString() ?? first['label']?.toString() ?? name;
-              category = first['kategori']?.toString() ?? category;
-              if (first['confidence'] != null) {
-                final confVal = double.tryParse(first['confidence'].toString()) ?? 0.95;
-                confidence = '${(confVal * 100).toInt()}%';
+              final rawLabel = first['label']?.toString();
+              final rawKategori = first['kategori']?.toString();
+              final namaSampah = first['nama_sampah']?.toString();
+
+              // Use DB name if available, otherwise friendly display label
+              if (namaSampah != null && namaSampah.isNotEmpty) {
+                name = namaSampah;
+              } else if (rawLabel != null) {
+                name = WasteLabels.display(rawLabel);
+              } else {
+                name = WasteLabels.display(rawKategori) ;
               }
-              if (first['harga'] != null) {
-                price = double.tryParse(first['harga'].toString()) ?? price;
-              } else if (category.toLowerCase().contains('kertas') || category.toLowerCase().contains('kardus')) {
-                price = 150.0;
-              } else if (category.toLowerCase().contains('logam') || category.toLowerCase().contains('kaleng')) {
-                price = 300.0;
+
+              // Friendly category display
+              category = WasteLabels.display(rawLabel ?? rawKategori);
+
+              // Confidence
+              if (first['confidence'] != null) {
+                final confVal = double.tryParse(first['confidence'].toString()) ?? 0.0;
+                // API may return 0-1 or 0-100
+                confidence = confVal > 1
+                    ? '${confVal.toInt()}%'
+                    : '${(confVal * 100).toInt()}%';
+              }
+
+              // Price — detect.php returns 'harga_per_kg'
+              final rawPrice = first['harga_per_kg'] ?? first['harga'];
+              if (rawPrice != null) {
+                price = double.tryParse(rawPrice.toString()) ?? price;
+              } else {
+                // Category-based fallback
+                final c = (rawKategori ?? '').toLowerCase();
+                if (c.contains('logam') || c.contains('kaleng')) {
+                  price = 300.0;
+                } else if (c.contains('elektronik')) {
+                  price = 400.0;
+                } else if (c.contains('kaca')) {
+                  price = 100.0;
+                } else if (c.contains('kertas') || c.contains('kardus')) {
+                  price = 150.0;
+                } else if (c.contains('organik')) {
+                  price = 50.0;
+                }
               }
             } else if (data['label'] != null) {
-              name = data['label'].toString();
-              category = data['kategori']?.toString() ?? category;
+              final rawLabel = data['label']?.toString();
+              name = WasteLabels.display(rawLabel);
+              category = WasteLabels.display(rawLabel ?? data['kategori']?.toString());
             }
 
             final newItem = WasteItem(

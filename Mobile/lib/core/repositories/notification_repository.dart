@@ -160,8 +160,8 @@ class NotificationRepository extends ChangeNotifier {
       case 'arrived':
       case 'driver_tiba':
       case 'picker_nearby':
-        title = 'Picker Hampir Tiba';
-        message = 'Picker sudah dekat.';
+        title = '📍 Picker Sudah Dekat';
+        message = 'Picker Anda telah tiba di sekitar lokasi penjemputan. Silakan siapkan sampah yang akan diserahkan.';
         break;
       case 'penimbangan':
       case 'weight_validation':
@@ -182,8 +182,8 @@ class NotificationRepository extends ChangeNotifier {
       case 'validating':
       case 'validasi_bank_sampah':
       case 'admin_validation':
-        title = 'Validasi Bank Sampah';
-        message = 'Sampah sedang diverifikasi oleh petugas Bank Sampah.';
+        title = 'Waiting Validation';
+        message = 'Sedang divalidasi oleh Admin.';
         break;
       case 'poin_diproses':
       case 'point_calculation':
@@ -192,8 +192,8 @@ class NotificationRepository extends ChangeNotifier {
         break;
       case 'completed':
       case 'selesai':
-        title = 'Penjemputan Selesai';
-        message = "Penjemputan selesai.\nPoin telah ditambahkan ke akun Anda.";
+        title = 'Completed';
+        message = "Penjemputan selesai. Poin telah ditambahkan ke akun Anda.";
         break;
       case 'cancelled':
       case 'dibatalkan':

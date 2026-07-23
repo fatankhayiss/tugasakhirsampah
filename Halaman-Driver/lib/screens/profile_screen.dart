@@ -7,7 +7,7 @@ import '../services/api_service.dart';
 import '../constants/api_config.dart';
 import '../widgets/floating_nav_bar.dart';
 import '../widgets/driver_status_chip.dart';
-import '../widgets/daily_vehicle_sheet.dart';
+import '../widgets/vehicle_form_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -396,7 +396,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
             TextButton.icon(
               onPressed: () async {
-                final ok = await DailyVehicleSheet.show(context, existingVehicle: _todayVehicle);
+                final ok = await VehicleFormSheet.showVehicleSheet(context, initialVehicle: _todayVehicle);
                 if (ok == true) _loadUser();
               },
               icon: Icon(_todayVehicle != null ? Icons.edit_outlined : Icons.add_circle_outline_rounded, size: 16),
@@ -427,6 +427,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _InfoRow(label: 'NAMA KENDARAAN', value: _todayVehicle!['vehicle_name'] ?? '-'),
+                    const Divider(height: 24, color: AppColors.border),
                     _InfoRow(label: 'JENIS KENDARAAN', value: _todayVehicle!['vehicle_type'] ?? '-'),
                     const Divider(height: 24, color: AppColors.border),
                     Row(
@@ -448,7 +450,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         else
           GestureDetector(
             onTap: () async {
-              final ok = await DailyVehicleSheet.show(context);
+              final ok = await VehicleFormSheet.showVehicleSheet(context);
               if (ok == true) _loadUser();
             },
             child: Container(

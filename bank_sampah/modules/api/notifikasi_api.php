@@ -96,14 +96,14 @@ function sanitize_notif_payload($row) {
         $title = 'Menuju Bank Sampah';
         $message = 'Sampah sedang dibawa ke Bank Sampah.';
     } elseif ($msg_upper === 'ADMIN VALIDATION' || $msg_upper === 'VALIDASI_BANK_SAMPAH' || $title_upper === 'ADMIN VALIDATION') {
-        $title = 'Validasi Bank Sampah';
-        $message = 'Sampah sedang diverifikasi oleh petugas Bank Sampah.';
+        $title = 'Waiting Validation';
+        $message = 'Sedang divalidasi oleh Admin.';
     } elseif ($msg_upper === 'POINT CALCULATION' || $msg_upper === 'POIN_DIPROSES' || $title_upper === 'POINT CALCULATION') {
         $title = 'Poin Diproses';
         $message = 'Poin sedang dihitung.';
     } elseif ($msg_upper === 'COMPLETED' || $msg_upper === 'SELESAI' || $title_upper === 'COMPLETED') {
-        $title = 'Penjemputan Selesai';
-        $message = "Penjemputan selesai.\nPoin telah ditambahkan ke akun Anda.";
+        $title = 'Completed';
+        $message = "Penjemputan selesai. Poin telah ditambahkan ke akun Anda.";
     } elseif ($msg_upper === 'CANCELLED' || $msg_upper === 'DIBATALKAN' || $title_upper === 'CANCELLED') {
         $title = 'Penjemputan Dibatalkan';
         $message = 'Permintaan penjemputan berhasil dibatalkan.';

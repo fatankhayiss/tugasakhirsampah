@@ -22,6 +22,9 @@ class DetectResult {
   /// Human-readable error message when success == false.
   final String? errorMessage;
 
+  /// ID of the detection record in the database.
+  final int? detectionId;
+
   const DetectResult({
     required this.success,
     required this.labels,
@@ -30,6 +33,7 @@ class DetectResult {
     this.localImagePath,
     this.workerUnavailable = false,
     this.errorMessage,
+    this.detectionId,
   });
 
   /// Returns a copy of this result with [localImagePath] set.
@@ -41,6 +45,7 @@ class DetectResult {
         localImagePath: path,
         workerUnavailable: workerUnavailable,
         errorMessage: errorMessage,
+        detectionId: detectionId,
       );
 
   /// Parses a decoded API JSON map into a [DetectResult].
@@ -58,9 +63,10 @@ class DetectResult {
       success: json['success'] == true,
       labels: labelsList,
       detections: detectionsList,
-      uploadedFileUrl: data['uploaded_file'] as String?,
+      uploadedFileUrl: data['uploaded_file']?.toString() ?? data['image_url']?.toString(),
       workerUnavailable: data['worker_unavailable'] == true,
-      errorMessage: json['success'] != true ? json['message'] as String? : null,
+      errorMessage: json['message']?.toString(),
+      detectionId: data['detection_id'] != null ? int.tryParse(data['detection_id'].toString()) : null,
     );
   }
 

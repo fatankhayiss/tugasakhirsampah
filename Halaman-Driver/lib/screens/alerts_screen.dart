@@ -179,11 +179,61 @@ class _AlertsScreenState extends State<AlertsScreen> {
         borderRadius: DriverStyles.cardRadius,
         child: InkWell(
           borderRadius: DriverStyles.cardRadius,
-          onTap: () {
-            Navigator.of(context).pushNamed(
-              '/alert-detail',
-              arguments: notif,
-            );
+          onTap: () async {
+            final notifId = notif['id_notifikasi'];
+            if (notif['is_read'] == 0 || notif['is_read'] == '0') {
+              await ApiService.instance.put(
+                ApiConfig.notifikasiUpdate,
+                body: {'id_notifikasi': notifId},
+              );
+              _fetchNotifications();
+            }
+
+            final relatedId = notif['related_id'];
+            if (relatedId != null && int.tryParse(relatedId.toString()) != null && int.parse(relatedId.toString()) > 0) {
+              final orderId = int.parse(relatedId.toString());
+              
+              if (!mounted) return;
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              );
+
+              final res = await ApiService.instance.get(
+                '${ApiConfig.baseUrl}modules/api/driver_api.php?action=get_order_detail&id_order=$orderId',
+              );
+
+              if (mounted) Navigator.of(context).pop();
+
+              if (res.success && res.data != null) {
+                final orderData = res.data as Map<String, dynamic>;
+                if (mounted) {
+                  Navigator.of(context).pushNamed(
+                    '/pickup-detail',
+                    arguments: orderData,
+                  );
+                }
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(res.message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            } else {
+              if (mounted) {
+                Navigator.of(context).pushNamed(
+                  '/alert-detail',
+                  arguments: notif,
+                );
+              }
+            }
           },
           child: Padding(
             padding: const EdgeInsets.all(18),
@@ -208,15 +258,38 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            judul,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12,
-                              letterSpacing: 0.5,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                judul,
+                                style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              if (notif['is_read'] == 0 || notif['is_read'] == '0') ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    'BARU',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 8,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 18),
                         ],

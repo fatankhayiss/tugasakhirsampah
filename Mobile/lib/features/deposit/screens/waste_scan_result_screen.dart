@@ -1,25 +1,23 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../../core/models/detect_result.dart';
+import '../../../core/models/scan_record.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/waste_labels.dart';
 import '../../../core/navigation/app_page_transitions.dart';
+import '../../../core/repositories/detect_repository.dart';
+import '../../../core/repositories/waste_repository.dart';
 import 'manual_deposit_screen.dart';
 
-/// Screen displayed after YOLO detection completes.
-///
-/// Flow:
-///   1. Show captured image preview at top (Image.file from local path)
-///   2. Show detected labels as selectable chips
-///   3. User can Edit category / weight via bottom sheet
-///   4. User confirms → navigates to ManualDepositScreen with pre-selected item
 class WasteScanResultScreen extends StatefulWidget {
-  final DetectResult result;
+  final int? detectionId;
+  final String? localImagePath;
   final List<WasteItem>? existingCartItems;
 
   const WasteScanResultScreen({
     super.key,
-    required this.result,
+    required this.detectionId,
+    this.localImagePath,
     this.existingCartItems,
   });
 
@@ -33,42 +31,54 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
-  // ── Detection selection ──────────────────────────────────────
-  String? _selectedLabel;
+  ScanRecord? _record;
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  // ── Editable state (populated from detection, overridden by Edit sheet) ──
-  String? _editedCategory;
-  double _editedWeight = 1.0;
-  double _editedPricePerKg = 250.0;
-
-  // ── Available categories ─────────────────────────────────────
-  static const List<String> _allCategories = [
-    'Plastik',
-    'Kertas',
-    'Kardus',
-    'Kaca',
-    'Logam',
-    'Organik',
-    'Elektronik',
-    'Lainnya',
-  ];
+  List<WasteItem> _availableCategories = [];
 
   @override
   void initState() {
     super.initState();
     _animController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 450));
-    _fadeAnim =
-        CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _slideAnim =
-        Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(
-            CurvedAnimation(parent: _animController, curve: Curves.easeOut));
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
 
-    // Pre-select first label if available
-    if (widget.result.labels.isNotEmpty) {
-      _selectedLabel = widget.result.labels.first;
-      _syncFromDetection(_selectedLabel!);
+    _fetchRecord();
+  }
+
+  Future<void> _fetchRecord() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    if (widget.detectionId == null) {
+      setState(() {
+        _errorMessage = 'ID Deteksi tidak valid.';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    final repo = DetectRepository();
+    final record = await repo.getScanRecord(widget.detectionId!);
+    final wasteRepo = WasteRepository();
+    final categories = await wasteRepo.getAvailableWaste();
+
+    if (mounted) {
+      setState(() {
+        _availableCategories = categories;
+        if (record != null) {
+          _record = record;
+        } else {
+          _errorMessage = 'Gagal memuat data deteksi dari server.';
+        }
+        _isLoading = false;
+      });
     }
   }
 
@@ -78,66 +88,34 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Helpers
-  // ─────────────────────────────────────────────────────────────
-
-  /// Sync editable state from the detection data for a given label.
-  void _syncFromDetection(String label) {
-    _editedCategory = _getCategoryFromDetection(label);
-    _editedPricePerKg = _getPriceFromDetection(label);
-  }
-
-  double _getPriceFromDetection(String label) {
-    final det = widget.result.detections
-        .cast<Map<String, dynamic>>()
-        .firstWhere(
-          (d) =>
-              d['label']?.toString() == label ||
-              d['nama_sampah']?.toString() == label,
-          orElse: () => {},
-        );
-    if (det.containsKey('harga_per_kg')) {
-      return double.tryParse(det['harga_per_kg'].toString()) ?? 250.0;
-    }
-    return 250.0;
-  }
-
-  String _getCategoryFromDetection(String label) {
-    final det = widget.result.detections
-        .cast<Map<String, dynamic>>()
-        .firstWhere(
-          (d) =>
-              d['label']?.toString() == label ||
-              d['nama_sampah']?.toString() == label,
-          orElse: () => {},
-        );
-    return det['kategori']?.toString() ?? 'Plastik';
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Navigation
-  // ─────────────────────────────────────────────────────────────
-
   void _confirmAndProceed() {
+    if (_record == null) return;
+
+    final imageUrl = widget.localImagePath?.isNotEmpty == true
+        ? widget.localImagePath
+        : _record!.imageUrl;
+
+    double pricePerKg = 0;
+    if (_record!.berat > 0) {
+      pricePerKg = _record!.estimasiPoin / _record!.berat;
+    }
+
     Navigator.pushReplacement(
       context,
       CustomPageRoute(
         page: ManualDepositScreen(
           initialCartItems: widget.existingCartItems,
-          activeScannedItem: _selectedLabel != null
-              ? WasteItem(
-                  id: 'scan_${DateTime.now().millisecondsSinceEpoch}',
-                  name: _editedCategory ?? _selectedLabel!,
-                  imageAsset: 'water_bottle',
-                  pricePerKg: _editedPricePerKg,
-                  weight: _editedWeight,
-                  imageUrl: widget.result.uploadedFileUrl,
-                  category: _editedCategory,
-                  confidence: '95%',
-                  isScanned: true,
-                )
-              : null,
+          activeScannedItem: WasteItem(
+            id: 'scan_${DateTime.now().millisecondsSinceEpoch}',
+            name: _record!.kategoriSampah,
+            imageAsset: 'water_bottle', // generic icon fallback
+            pricePerKg: pricePerKg,
+            weight: _record!.berat,
+            imageUrl: imageUrl,
+            category: _record!.kategoriSampah,
+            confidence: '${(_record!.confidence * 100).toStringAsFixed(0)}%',
+            isScanned: true,
+          ),
         ),
       ),
     );
@@ -154,16 +132,22 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Edit Bottom Sheet
-  // ─────────────────────────────────────────────────────────────
-
   void _openEditSheet() {
-    // Local state inside the sheet
-    String sheetCategory = _editedCategory ?? _allCategories.first;
-    double sheetWeight = _editedWeight;
-    final weightController =
-        TextEditingController(text: _editedWeight.toString());
+    if (_record == null) return;
+
+    WasteItem? selectedCategory;
+    try {
+      selectedCategory = _availableCategories.firstWhere(
+        (cat) => cat.name.toLowerCase() == _record!.kategoriSampah.toLowerCase()
+      );
+    } catch (_) {
+      selectedCategory = _availableCategories.isNotEmpty 
+          ? _availableCategories.first 
+          : WasteItem(id: '0', name: _record!.kategoriSampah, imageAsset: '', pricePerKg: 0);
+    }
+
+    double sheetWeight = _record!.berat;
+    final weightController = TextEditingController(text: sheetWeight.toString());
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -190,7 +174,6 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // ── Handle bar ──────────────────────────────────────
                       Center(
                         child: Container(
                           width: 40,
@@ -202,8 +185,6 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                           ),
                         ),
                       ),
-
-                      // ── Title ───────────────────────────────────────────
                       Row(
                         children: [
                           Container(
@@ -228,8 +209,6 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                         ],
                       ),
                       const SizedBox(height: 24),
-
-                      // ── Category ────────────────────────────────────────
                       const Text(
                         'Kategori Sampah',
                         style: TextStyle(
@@ -243,31 +222,25 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _allCategories.map((cat) {
-                          final isSel = sheetCategory == cat;
+                        children: _availableCategories.map((cat) {
+                          final isSel = selectedCategory?.id == cat.id;
                           return GestureDetector(
-                            onTap: () =>
-                                setSheetState(() => sheetCategory = cat),
+                            onTap: () => setSheetState(() => selectedCategory = cat),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 10),
                               decoration: BoxDecoration(
-                                color: isSel
-                                    ? AppColors.primary
-                                    : const Color(0xFFF9FAFB),
+                                color: isSel ? AppColors.primary : const Color(0xFFF9FAFB),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
-                                  color: isSel
-                                      ? AppColors.primary
-                                      : const Color(0xFFE5E7EB),
+                                  color: isSel ? AppColors.primary : const Color(0xFFE5E7EB),
                                   width: isSel ? 2 : 1,
                                 ),
                                 boxShadow: isSel
                                     ? [
                                         BoxShadow(
-                                          color: AppColors.primary
-                                              .withValues(alpha: 0.2),
+                                          color: AppColors.primary.withValues(alpha: 0.2),
                                           blurRadius: 6,
                                           offset: const Offset(0, 2),
                                         )
@@ -283,14 +256,12 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                                     const SizedBox(width: 4),
                                   ],
                                   Text(
-                                    cat,
+                                    cat.name,
                                     style: TextStyle(
                                       fontFamily: 'Plus Jakarta Sans',
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
-                                      color: isSel
-                                          ? Colors.white
-                                          : const Color(0xFF374151),
+                                      color: isSel ? Colors.white : const Color(0xFF374151),
                                     ),
                                   ),
                                 ],
@@ -300,8 +271,6 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                         }).toList(),
                       ),
                       const SizedBox(height: 24),
-
-                      // ── Weight ──────────────────────────────────────────
                       const Text(
                         'Estimasi Berat',
                         style: TextStyle(
@@ -314,8 +283,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: weightController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 15,
@@ -324,107 +292,116 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                         decoration: InputDecoration(
                           hintText: 'Contoh: 1.50',
                           suffixText: 'Kg',
-                          suffixStyle: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF6B7280),
-                          ),
                           filled: true,
                           fillColor: const Color(0xFFF9FAFB),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFE5E7EB)),
+                            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFE5E7EB)),
+                            borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                                color: AppColors.primary, width: 2),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: Color(0xFFEF4444), width: 1.5),
+                            borderSide: BorderSide(color: AppColors.primary, width: 2),
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Berat tidak boleh kosong';
-                          }
+                          if (v == null || v.trim().isEmpty) return 'Berat tidak boleh kosong';
                           final parsed = double.tryParse(v.trim());
-                          if (parsed == null) {
-                            return 'Masukkan angka yang valid (contoh: 1.50)';
-                          }
-                          if (parsed <= 0) {
-                            return 'Berat harus lebih dari 0';
-                          }
-                          if (parsed > 100) {
-                            return 'Berat maksimal 100 Kg';
-                          }
+                          if (parsed == null) return 'Masukkan angka yang valid';
+                          if (parsed <= 0) return 'Berat harus > 0';
                           return null;
                         },
                         onChanged: (v) {
                           final parsed = double.tryParse(v.trim());
-                          if (parsed != null) sheetWeight = parsed;
+                          if (parsed != null) {
+                            setSheetState(() => sheetWeight = parsed);
+                          }
                         },
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Maks. 100 Kg • Desimal diperbolehkan (contoh: 0.25)',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          color: Color(0xFF9CA3AF),
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Estimasi Poin',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF374151),
+                              ),
+                            ),
+                            Text(
+                              '${(sheetWeight * (selectedCategory?.pricePerKg ?? 0)).toStringAsFixed(0)} Poin',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 28),
-
-                      // ── Actions ─────────────────────────────────────────
                       Row(
                         children: [
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(ctx),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF6B7280),
-                                side: const BorderSide(
-                                    color: Color(0xFFD1D5DB)),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
-                              child: const Text(
-                                'Batal',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                ),
-                              ),
+                              child: const Text('Batal'),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             flex: 2,
                             child: ElevatedButton.icon(
-                              onPressed: () {
+                              onPressed: () async {
                                 if (formKey.currentState!.validate()) {
-                                  final w = double.tryParse(
-                                          weightController.text.trim()) ??
-                                      sheetWeight;
-                                  Navigator.pop(ctx);
-                                  setState(() {
-                                    _editedCategory = sheetCategory;
-                                    _editedWeight = w;
-                                  });
+                                  final w = double.tryParse(weightController.text.trim()) ?? sheetWeight;
+                                  
+                                  // Show loading overlay
+                                  showDialog(
+                                    context: ctx,
+                                    barrierDismissible: false,
+                                    builder: (c) => const Center(child: CircularProgressIndicator()),
+                                  );
+
+                                  final success = await DetectRepository().updateScanRecord(widget.detectionId!, selectedCategory?.name ?? 'Lainnya', w);
+                                  
+                                  // ignore: use_build_context_synchronously
+                                  Navigator.pop(ctx); // Close loading overlay
+                                  
+                                  if (success) {
+                                    // ignore: use_build_context_synchronously
+                                    Navigator.pop(ctx); // Close bottom sheet
+                                    // ignore: use_build_context_synchronously
+                                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                                      content: Text('Hasil scan berhasil diperbarui.'),
+                                      backgroundColor: Colors.green,
+                                    ));
+                                    _fetchRecord(); // Refresh data from DB
+                                  } else {
+                                    // ignore: use_build_context_synchronously
+                                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                                      content: Text('Gagal menyimpan perubahan.'),
+                                      backgroundColor: Colors.red,
+                                    ));
+                                  }
                                 }
                               },
                               icon: const Icon(Icons.save_rounded, size: 18),
@@ -432,15 +409,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                textStyle: const TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),
                           ),
@@ -457,10 +426,6 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Build
-  // ─────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -470,8 +435,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_rounded, color: Color(0xFF1F2937)),
+          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1F2937)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -485,8 +449,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
         ),
         centerTitle: true,
         actions: [
-          // Edit button in AppBar — always visible when there is a result
-          if (widget.result.hasDetections)
+          if (!_isLoading && _record != null)
             IconButton(
               tooltip: 'Edit Kategori & Berat',
               icon: const Icon(Icons.edit_rounded, color: Color(0xFF6B7280)),
@@ -498,81 +461,56 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
           child: Container(color: const Color(0xFFE5E7EB), height: 1),
         ),
       ),
-      body: FadeTransition(
-        opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: _buildBody(),
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: _buildBody(),
+              ),
+            ),
     );
   }
 
   Widget _buildBody() {
-    // Worker unavailable
-    if (widget.result.workerUnavailable) {
-      return _buildFallbackView(
-        icon: Icons.cloud_off_rounded,
-        iconColor: const Color(0xFF6B7280),
-        title: 'Fitur deteksi sampah sedang tidak tersedia',
-        subtitle: 'Silakan pilih kategori sampah secara manual.',
-        showManualButton: true,
-      );
-    }
-
-    // HTTP / network error
-    if (!widget.result.success && !widget.result.workerUnavailable) {
+    if (_errorMessage != null) {
       return _buildFallbackView(
         icon: Icons.wifi_off_rounded,
         iconColor: const Color(0xFFEF4444),
-        title: 'Gagal menghubungi server',
-        subtitle:
-            widget.result.errorMessage ?? 'Periksa koneksi internet Anda.',
+        title: 'Gagal memuat data',
+        subtitle: _errorMessage!,
         showManualButton: true,
       );
     }
 
-    // Low confidence / nothing detected
-    if (!widget.result.hasDetections) {
+    if (_record == null) {
       return _buildFallbackView(
         icon: Icons.search_off_rounded,
         iconColor: const Color(0xFFD97706),
         title: 'Sampah tidak dapat dikenali',
-        subtitle:
-            'Pastikan sampah terlihat jelas dalam foto.\nSilakan coba lagi atau pilih manual.',
+        subtitle: 'Pastikan sampah terlihat jelas dalam foto.',
         showManualButton: true,
       );
     }
 
-    // Success — show detected labels
-    return _buildSuccessView();
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // Success view
-  // ─────────────────────────────────────────────────────────────
-
-  Widget _buildSuccessView() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── 1. Captured image preview ─────────────────────────────
           _buildImagePreview(),
-          const SizedBox(height: 16),
-
-          // ── 2. AI Detection result header ─────────────────────────
+          const SizedBox(height: 20),
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: AppColors.softGreen,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.check_circle_rounded,
-                    color: Color(0xFF16A34A), size: 20),
+                    color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 10),
               const Expanded(
@@ -582,136 +520,44 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2937),
+                    color: AppColors.textDark,
                   ),
                 ),
               ),
-              // Edit button inline
               OutlinedButton.icon(
                 onPressed: _openEditSheet,
                 icon: const Icon(Icons.tune_rounded, size: 16),
                 label: const Text('Edit'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
-                  textStyle: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
+                  side: const BorderSide(color: AppColors.primary),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Pilih kategori yang sesuai dengan sampah Anda:',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 13,
-              color: Color(0xFF6B7280),
-            ),
-          ),
           const SizedBox(height: 16),
-
-          // ── 3. Label chips ────────────────────────────────────────
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: widget.result.labels.map((label) {
-              final isSelected = _selectedLabel == label;
-              return GestureDetector(
-                onTap: () => setState(() {
-                  _selectedLabel = label;
-                  _syncFromDetection(label);
-                }),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.primary
-                          : const Color(0xFFE5E7EB),
-                      width: isSelected ? 2 : 1,
-                    ),
-                    boxShadow: [
-                      if (isSelected)
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (isSelected) ...[
-                        const Icon(Icons.check_rounded,
-                            size: 16, color: Colors.white),
-                        const SizedBox(width: 6),
-                      ],
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF374151),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-
-          // ── 4. Detection detail card ──────────────────────────────
-          if (_selectedLabel != null) _buildDetailCard(_selectedLabel!),
-          const SizedBox(height: 28),
-
-          // ── 5. Edited weight summary pill ─────────────────────────
-          _buildWeightSummary(),
+          _buildDetailCard(),
           const SizedBox(height: 24),
-
-          // ── 6. Confirm button ─────────────────────────────────────
+          _buildWeightSummary(),
+          const SizedBox(height: 28),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed:
-                  _selectedLabel != null ? _confirmAndProceed : null,
+              onPressed: _confirmAndProceed,
               icon: const Icon(Icons.check_circle_outline_rounded),
               label: const Text('Konfirmasi & Lanjutkan'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: const Color(0xFFD1D5DB),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                minimumSize: const Size.fromHeight(56),
+                textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
               ),
             ),
           ),
           const SizedBox(height: 12),
-
-          // ── 7. Manual fallback ────────────────────────────────────
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -719,16 +565,10 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: const Text('Pilih Kategori Manual'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF6B7280),
-                side: const BorderSide(color: Color(0xFFD1D5DB)),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                textStyle: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                minimumSize: const Size.fromHeight(56),
               ),
             ),
           ),
@@ -738,76 +578,59 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Image preview card
-  // ─────────────────────────────────────────────────────────────
-
   Widget _buildImagePreview() {
-    final localPath = widget.result.localImagePath;
+    final localPath = widget.localImagePath;
+    final networkUrl = _record?.imageUrl;
+
+    Widget imageWidget;
+    if (localPath != null && localPath.isNotEmpty) {
+      imageWidget = Image.file(
+        File(localPath),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => networkUrl != null && networkUrl.isNotEmpty
+            ? _buildNetworkImage(networkUrl)
+            : _imageFallback(),
+      );
+    } else if (networkUrl != null && networkUrl.isNotEmpty) {
+      imageWidget = _buildNetworkImage(networkUrl);
+    } else {
+      imageWidget = _imageFallback();
+    }
 
     return Card(
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.border),
+      ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          // Image
-          SizedBox(
-            height: 200,
-            width: double.infinity,
-            child: localPath != null && File(localPath).existsSync()
-                ? Image.file(
-                    File(localPath),
-                    fit: BoxFit.cover,
-                    frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
-                      if (wasSynchronouslyLoaded || frame != null) {
-                        return child;
-                      }
-                      return Container(
-                        color: const Color(0xFFF3F4F6),
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    },
-                    errorBuilder: (_, e, s) => _imageFallback(),
-                  )
-                : _imageFallback(),
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: SizedBox(width: double.infinity, child: imageWidget),
           ),
-
-          // "Hasil Scan AI" chip overlay — top right
-          Positioned(
-            top: 10,
-            right: 10,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.auto_awesome_rounded,
-                      size: 12, color: Colors.white),
-                  SizedBox(width: 4),
-                  Text(
-                    'Hasil Scan AI',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          const Positioned(
+            top: 10, right: 10,
+            child: _ScanBadge(),
+          ),
+          if (_record != null && _record!.confidence > 0)
+            Positioned(
+              bottom: 10, left: 10,
+              child: _ConfidenceBadge(
+                confidence: '${(_record!.confidence * 100).toStringAsFixed(0)}%',
               ),
             ),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNetworkImage(String url) {
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _imageFallback(),
     );
   }
 
@@ -817,74 +640,53 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.broken_image_rounded,
-              size: 48, color: Color(0xFF9CA3AF)),
+          Icon(Icons.broken_image_rounded, size: 48, color: Color(0xFF9CA3AF)),
           SizedBox(height: 8),
-          Text(
-            'Gambar tidak tersedia',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              color: Color(0xFF9CA3AF),
-            ),
-          ),
+          Text('Gambar tidak tersedia', style: TextStyle(color: Color(0xFF9CA3AF))),
         ],
       ),
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Weight summary pill
-  // ─────────────────────────────────────────────────────────────
-
   Widget _buildWeightSummary() {
-    final estimatedPoints =
-        (_editedWeight * _editedPricePerKg).toStringAsFixed(0);
+    if (_record == null) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
           Expanded(
             child: _summaryTile(
               icon: Icons.scale_rounded,
-              iconColor: const Color(0xFF3B82F6),
-              bgColor: const Color(0xFFEFF6FF),
+              iconColor: AppColors.primary,
+              bgColor: AppColors.softGreen,
               label: 'Estimasi Berat',
-              value: '${_editedWeight.toStringAsFixed(2)} Kg',
+              value: '${_record!.berat.toStringAsFixed(2)} Kg',
             ),
           ),
-          Container(
-              width: 1,
-              height: 36,
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              color: const Color(0xFFE5E7EB)),
+          Container(width: 1, height: 36, margin: const EdgeInsets.symmetric(horizontal: 12), color: AppColors.border),
           Expanded(
             child: _summaryTile(
               icon: Icons.stars_rounded,
-              iconColor: const Color(0xFFD97706),
-              bgColor: const Color(0xFFFFFBEB),
+              iconColor: AppColors.primary,
+              bgColor: AppColors.softGreen,
               label: 'Est. Poin',
-              value: estimatedPoints,
+              value: _record!.estimasiPoin.toStringAsFixed(0),
             ),
           ),
-          Container(
-              width: 1,
-              height: 36,
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              color: const Color(0xFFE5E7EB)),
+          Container(width: 1, height: 36, margin: const EdgeInsets.symmetric(horizontal: 12), color: AppColors.border),
           Expanded(
             child: _summaryTile(
               icon: Icons.category_rounded,
-              iconColor: const Color(0xFF16A34A),
-              bgColor: const Color(0xFFDCFCE7),
+              iconColor: AppColors.primary,
+              bgColor: AppColors.softGreen,
               label: 'Kategori',
-              value: _editedCategory ?? '-',
+              value: WasteLabels.display(_record!.kategoriSampah),
             ),
           ),
         ],
@@ -903,55 +705,21 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
       children: [
         Container(
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, size: 16, color: iconColor),
         ),
         const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1F2937),
-          ),
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 10,
-            color: Color(0xFF9CA3AF),
-          ),
-          textAlign: TextAlign.center,
-        ),
+        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textDark), textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSoft), textAlign: TextAlign.center),
       ],
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Detection detail card
-  // ─────────────────────────────────────────────────────────────
-
-  Widget _buildDetailCard(String label) {
-    final det = widget.result.detections
-        .cast<Map<String, dynamic>>()
-        .firstWhere(
-          (d) =>
-              d['label']?.toString() == label ||
-              d['nama_sampah']?.toString() == label,
-          orElse: () => {},
-        );
-    if (det.isEmpty || det['found'] == false) return const SizedBox.shrink();
-
-    final nama = det['nama_sampah'] ?? label;
-    final harga = det['harga_per_kg'];
-    final desk = det['deskripsi'];
+  Widget _buildDetailCard() {
+    if (_record == null) return const SizedBox.shrink();
+    
+    double harga = 0;
+    if (_record!.berat > 0) harga = _record!.estimasiPoin / _record!.berat;
 
     return Container(
       width: double.infinity,
@@ -959,7 +727,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -968,80 +736,30 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.recycling_rounded,
-                    color: Color(0xFF16A34A), size: 20),
+                decoration: BoxDecoration(color: AppColors.softGreen, borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.recycling_rounded, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      nama.toString(),
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1F2937),
-                      ),
-                    ),
-                    Text(
-                      'Kategori: ${_editedCategory ?? det['kategori'] ?? '-'}',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
+                    Text(WasteLabels.display(_record!.kategoriSampah), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+                    const Text('Hasil deteksi dan prediksi sistem', style: TextStyle(fontSize: 12, color: AppColors.textSoft)),
                   ],
                 ),
               ),
-              if (harga != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Rp$harga/kg',
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF16A34A),
-                    ),
-                  ),
-                ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: AppColors.softGreen, borderRadius: BorderRadius.circular(20)),
+                child: Text('Rp${harga.toStringAsFixed(0)}/kg', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+              ),
             ],
           ),
-          if (desk != null && desk.toString().isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              desk.toString(),
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 12,
-                color: Color(0xFF6B7280),
-                height: 1.5,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ],
       ),
     );
   }
-
-  // ─────────────────────────────────────────────────────────────
-  // Fallback view (error / no detection)
-  // ─────────────────────────────────────────────────────────────
 
   Widget _buildFallbackView({
     required IconData icon,
@@ -1058,34 +776,13 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.1), shape: BoxShape.circle),
               child: Icon(icon, size: 56, color: iconColor),
             ),
             const SizedBox(height: 24),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1F2937),
-              ),
-            ),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark)),
             const SizedBox(height: 10),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-                height: 1.5,
-              ),
-            ),
+            Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: AppColors.textSoft, height: 1.5)),
             if (showManualButton) ...[
               const SizedBox(height: 32),
               SizedBox(
@@ -1097,32 +794,55 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    textStyle: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    minimumSize: const Size.fromHeight(56),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'Scan Ulang',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    color: Color(0xFF6B7280),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Scan Ulang', style: TextStyle(color: AppColors.textSoft, fontWeight: FontWeight.w600))),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ScanBadge extends StatelessWidget {
+  const _ScanBadge();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.55), borderRadius: BorderRadius.circular(20)),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.auto_awesome_rounded, size: 12, color: Colors.white),
+          SizedBox(width: 4),
+          Text('Hasil Scan AI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConfidenceBadge extends StatelessWidget {
+  final String confidence;
+  const _ConfidenceBadge({required this.confidence});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.psychology_rounded, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text('AI $confidence', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+        ],
       ),
     );
   }

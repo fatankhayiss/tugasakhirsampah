@@ -54,7 +54,7 @@ try {
         }
 
         // Cari user berdasarkan username, email, nama_lengkap, ATAU no_telepon (baik mentah maupun angka saja)
-        $query = "SELECT id_pengguna, nama_lengkap, username, password, level, alamat, no_telepon, email, saldo, foto_profil, tanggal_daftar, latitude, longitude
+        $query = "SELECT id_pengguna, nama_lengkap, username, password, level, alamat, no_telepon, email, status, saldo, foto_profil, tanggal_daftar, latitude, longitude
                   FROM pengguna
                   WHERE username = ? OR email = ? OR no_telepon = ? OR nama_lengkap = ? OR username = ? OR no_telepon = ?
                   LIMIT 1";

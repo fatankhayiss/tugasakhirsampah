@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id_warga']) && isset($
 
     // Validasi dasar
     if (empty($id_warga) || $jumlah_penarikan === false || $jumlah_penarikan <= 0 || empty($tanggal_transaksi)) {
-        $_SESSION['error_message'] = "Data warga, jumlah penarikan (harus angka positif > 0), dan tanggal harus diisi dengan benar.";
+        $_SESSION['error_message'] = "Data penyetor, jumlah penarikan (harus angka positif > 0), dan tanggal harus diisi dengan benar.";
         redirect(BASE_URL . 'index.php?page=transaksi/riwayat');
     }
 
@@ -30,13 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['id_warga']) && isset($
     mysqli_stmt_close($stmt_cek_saldo);
 
     if (!$data_warga) {
-        $_SESSION['error_message'] = "Warga tidak ditemukan.";
+        $_SESSION['error_message'] = "Penyetor tidak ditemukan.";
         redirect(BASE_URL . 'index.php?page=transaksi/riwayat');
     }
 
     $saldo_saat_ini = floatval($data_warga['saldo']);
     if ($jumlah_penarikan > $saldo_saat_ini) {
-        $_SESSION['error_message'] = "Jumlah penarikan (" . format_rupiah($jumlah_penarikan) . ") melebihi saldo warga saat ini (" . format_rupiah($saldo_saat_ini) . ").";
+        $_SESSION['error_message'] = "Jumlah penarikan (" . format_rupiah($jumlah_penarikan) . ") melebihi saldo penyetor saat ini (" . format_rupiah($saldo_saat_ini) . ").";
         redirect(BASE_URL . 'index.php?page=transaksi/riwayat');
     }
 

@@ -26,10 +26,10 @@ mysqli_data_seek($result_jenis_sampah, 0);
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
-                    <label for="id_warga" class="block text-sm font-medium text-gray-700 mb-1">Pilih Warga <span class="text-red-500">*</span></label>
+                    <label for="id_warga" class="block text-sm font-medium text-gray-700 mb-1">Pilih Penyetor <span class="text-red-500">*</span></label>
                     <select name="id_warga" id="id_warga" required x-model="formData.id_warga"
                             class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
-                        <option value="">-- Pilih Warga --</option>
+                        <option value="">-- Pilih Penyetor --</option>
                         <?php while($warga = mysqli_fetch_assoc($result_warga)): ?>
                         <option value="<?php echo $warga['id_pengguna']; ?>">
                             <?php echo htmlspecialchars($warga['nama_lengkap']) . " (" . htmlspecialchars($warga['username']) . ")"; ?>
@@ -165,7 +165,7 @@ mysqli_data_seek($result_jenis_sampah, 0);
             },
             submitForm(event) {
                 if (!this.formData.id_warga) {
-                    alert('Harap pilih warga terlebih dahulu.');
+                    alert('Harap pilih penyetor terlebih dahulu.');
                     event.preventDefault();
                     return false;
                 }

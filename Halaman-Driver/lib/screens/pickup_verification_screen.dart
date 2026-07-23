@@ -199,6 +199,7 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
     final nama = task['nama_warga'] ?? 'Warga';
     final inisial = nama.toString().isNotEmpty ? nama.toString().substring(0, nama.toString().length > 1 ? 2 : 1).toUpperCase() : 'W';
     final alamat = task['alamat_jemput'] ?? '-';
+    final fotoWarga = task['foto_warga'] ?? task['profile_photo'] ?? task['photo_url'] ?? task['avatar'];
     
     final jenisStr = task['jenis_sampah']?.toString() ?? 'Campuran';
     final categories = jenisStr.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
@@ -220,10 +221,36 @@ class _PickupVerificationScreenState extends State<PickupVerificationScreen> {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: AppColors.softBlue,
-                child: Text(
-                  inisial,
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
-                ),
+                child: (fotoWarga != null && fotoWarga.toString().isNotEmpty)
+                    ? ClipOval(
+                        child: Image.network(
+                          fotoWarga.toString(),
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Text(
+                              inisial,
+                              style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
+                            );
+                          },
+                        ),
+                      )
+                    : Text(
+                        inisial,
+                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, color: AppColors.primary, fontSize: 16),
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(

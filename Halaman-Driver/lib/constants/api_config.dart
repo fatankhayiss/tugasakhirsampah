@@ -4,7 +4,7 @@ export 'app_colors.dart';
 
 class ApiConfig {
   ApiConfig._();
-  static const String baseUrl = 'http://192.168.110.61/tugasakhirsampah/bank_sampah/';
+  static const String baseUrl = 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
 
   // Auth
   static const String authLogin           = '${baseUrl}modules/api/auth_api.php?action=login';
@@ -23,6 +23,7 @@ class ApiConfig {
   static const String driverGetDailyVehicle = '${baseUrl}modules/api/driver_api.php?action=get_daily_vehicle';
   static const String driverSaveDailyVehicle= '${baseUrl}modules/api/driver_api.php?action=save_daily_vehicle';
   static const String driverUpdateDriverStatus='${baseUrl}modules/api/driver_api.php?action=update_driver_status';
+  static const String notifikasiUpdate = '${baseUrl}modules/api/notifikasi_api.php';
 
   // Orders
   static const String ordersUpdateStatus  = '${baseUrl}modules/api/orders_api.php';
@@ -55,7 +56,7 @@ class DriverStyles {
       case 'ON_THE_WAY':
       case 'ONTHEWAY':
       case 'DRIVER_TIBA':
-        return const Color(0xFF2563EB);
+        return const Color(0xFF16A34A);
       case 'SAMPAH_DIJEMPUT':
       case 'PICKED_UP':
         return const Color(0xFF16A34A);
@@ -81,7 +82,7 @@ class DriverStyles {
       case 'DRIVER_MENUJU_LOKASI':
         return 'Picker Menuju Lokasi';
       case 'DRIVER_TIBA':
-        return 'Picker Hampir Tiba';
+        return 'Picker Sudah Dekat';
       case 'SAMPAH_DIJEMPUT':
         return 'Sampah Dijemput';
       case 'VALIDASI_BANK_SAMPAH':

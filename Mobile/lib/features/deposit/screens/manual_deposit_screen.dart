@@ -118,8 +118,8 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
           errorBuilder: (c, e, s) => Container(
             width: width,
             height: height,
-            color: const Color(0xFFEAF1FB),
-            child: const Icon(Icons.broken_image, color: AppColors.primaryBlue),
+            color: AppColors.softGreen,
+            child: const Icon(Icons.broken_image, color: AppColors.primary),
           ),
         );
       } else {
@@ -131,8 +131,8 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
           errorBuilder: (c, e, s) => Container(
             width: width,
             height: height,
-            color: const Color(0xFFEAF1FB),
-            child: const Icon(Icons.broken_image, color: AppColors.primaryBlue),
+            color: AppColors.softGreen,
+            child: const Icon(Icons.broken_image, color: AppColors.primary),
           ),
         );
       }
@@ -140,8 +140,8 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
     return Container(
       width: width,
       height: height,
-      color: const Color(0xFFEAF1FB),
-      child: const Icon(Icons.recycling, color: AppColors.primaryBlue, size: 24),
+      color: AppColors.softGreen,
+      child: const Icon(Icons.recycling, color: AppColors.primary, size: 24),
     );
   }
 
@@ -382,7 +382,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                               fontFamily: 'Plus Jakarta Sans',
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primaryBlue,
+                              color: AppColors.primary,
                             ),
                           ),
                         ],
@@ -391,7 +391,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                     const SizedBox(height: 20),
                     PrimaryButton(
                       text: isEditing ? 'Simpan Perubahan' : 'Simpan',
-                      isGreen: false,
+                      isGreen: true,
                       onPressed: () {
                         validateAndUpdate(weightController.text);
                         if (weightError != null) return;
@@ -550,7 +550,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryBlue),
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
@@ -578,7 +578,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.softBlue,
+                          color: AppColors.softGreen,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
@@ -587,7 +587,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primaryBlue,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -609,10 +609,10 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.qr_code_scanner, color: AppColors.primaryBlue, size: 36),
+                            child: const Icon(Icons.qr_code_scanner, color: AppColors.primary, size: 36),
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -642,18 +642,18 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primaryBlue),
+                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
                       label: const Text(
                         'Scan Lagi',
                         style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryBlue,
+                          color: AppColors.primary,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
+                        side: const BorderSide(color: AppColors.primary, width: 1.5),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
@@ -718,12 +718,10 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isAiFlow ? AppColors.softBlue : const Color(0xFFEAF8EF),
+                    color: AppColors.softGreen,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isAiFlow
-                          ? AppColors.primaryBlue.withValues(alpha: 0.2)
-                          : AppColors.primary.withValues(alpha: 0.2),
+                      color: AppColors.primary.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Row(
@@ -731,7 +729,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: isAiFlow ? AppColors.primaryBlue : AppColors.primary,
+                        color: AppColors.primary,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -798,7 +796,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               const SizedBox(height: 18),
               PrimaryButton(
                 text: isAiFlow ? 'Setorkan Sampah' : 'Lanjutkan Penjemputan',
-                isGreen: false,
+                isGreen: true,
                         onPressed: cartItems.isEmpty || (_activeScannedItem != null && _activeScannedItem!.weight <= 0)
                             ? null
                             : () async {
@@ -932,9 +930,9 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                        color: AppColors.softGreen,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         item.confidence!,
@@ -942,7 +940,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryBlue,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -992,7 +990,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primaryBlue,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -1008,7 +1006,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: item.weight <= 0 ? Colors.redAccent : AppColors.primaryBlue.withValues(alpha: 0.3),
+              color: item.weight <= 0 ? Colors.redAccent : AppColors.primary.withValues(alpha: 0.3),
             ),
             boxShadow: [
               BoxShadow(
@@ -1214,7 +1212,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: isScanned ? AppColors.softBlue : const Color(0xFFEAF8EF),
+              color: isScanned ? AppColors.softGreen : const Color(0xFFEAF8EF),
               borderRadius: BorderRadius.circular(12),
             ),
             child: isScanned
@@ -1258,7 +1256,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
           IconButton(
             icon: Icon(
               Icons.edit_outlined,
-              color: isScanned ? AppColors.primaryBlue : AppColors.textSoft,
+              color: isScanned ? AppColors.primary : AppColors.textSoft,
               size: 20,
             ),
             onPressed: () {
@@ -1312,7 +1310,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: isAccent ? AppColors.primaryBlue : AppColors.textDark,
+            color: isAccent ? AppColors.primary : AppColors.textDark,
           ),
         ),
       ],

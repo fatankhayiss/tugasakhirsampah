@@ -151,7 +151,7 @@ Tabel utama yang menggerakkan sistem:
 ## 13. Important Files
 - **`admin.php`**: Jantung UI Admin. (Hati-hati dalam modifikasi tag `case` dan `break;`).
 - **`config/database.php`**: Pintu masuk database. (Jangan ubah nama variabel `$conn` / `$koneksi`).
-- **`Mobile/lib/core/constants/api_config.dart`**: Menyimpan IP address server backend (`192.168.110.61`). Wajib diupdate jika pindah jaringan.
+- **`Mobile/lib/core/constants/api_config.dart`**: Menyimpan IP address server backend (`192.168.31.220`). Wajib diupdate jika pindah jaringan.
 
 ---
 

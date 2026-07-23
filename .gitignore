@@ -1,0 +1,12 @@
+bank_sampah/assets/uploads/img_*
+bank_sampah/assets/uploads/profil/profil_*
+bank_sampah/modules/api/ml/__pycache__/
+bank_sampah/modules/api/ml/worker.log
+Mobile/.dart_tool/
+Mobile/.flutter-plugins
+Mobile/.flutter-plugins-dependencies
+Mobile/build/
+Halaman-Driver/.dart_tool/
+Halaman-Driver/.flutter-plugins
+Halaman-Driver/.flutter-plugins-dependencies
+Halaman-Driver/build/

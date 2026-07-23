@@ -16,7 +16,7 @@ class AuthService {
       if (userData['level'] != 'driver') {
         return ApiResponse(
           success: false,
-          message: 'Akun ini bukan akun Driver. Silakan gunakan aplikasi Warga atau hubungi Admin.',
+          message: 'Akun ini bukan akun Picker. Silakan gunakan aplikasi Warga atau hubungi Admin.',
           statusCode: 403,
         );
       }

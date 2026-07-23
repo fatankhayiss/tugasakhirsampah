@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../home/screens/main_navigation_screen.dart';
-import '../../orders/screens/order_detail_screen.dart';
+
 
 class DepositSubmittedScreen extends StatelessWidget {
   final String orderId;
@@ -100,7 +100,7 @@ class DepositSubmittedScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'Permintaan penjemputan sampah Anda telah berhasil dikirim. Petugas Bank Sampah akan melakukan verifikasi dan menentukan driver yang akan menjemput sampah Anda.',
+                    'Permintaan penjemputan sampah Anda telah berhasil dikirim. Petugas Bank Sampah akan melakukan verifikasi dan menentukan picker yang akan menjemput sampah Anda.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',

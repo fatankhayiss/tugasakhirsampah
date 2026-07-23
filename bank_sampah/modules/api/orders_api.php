@@ -96,8 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         $sql = "SELECT o.*, 
                        w.nama_lengkap as nama_warga, w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga,
-                       d.nama_lengkap as nama_driver, d.no_telepon as telp_driver, d.foto_profil as foto_driver,
-                       COALESCE(dv.vehicle_type, dd.jenis_kendaraan, dd.tipe_kendaraan) as jenis_kendaraan,
+                       d.nama_lengkap as nama_driver, d.no_telepon as telp_driver, d.foto_profil as foto_driver, d.username as driver_username, d.driver_status as driver_online_status,
+                       COALESCE(dv.vehicle_name, dv.vehicle_type, dd.jenis_kendaraan, dd.tipe_kendaraan) as jenis_kendaraan,
                        COALESCE(dv.license_plate, dd.plat_nomor) as plat_nomor
                 FROM orders o
                 LEFT JOIN pengguna w ON o.id_warga = w.id_pengguna
@@ -137,20 +137,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         mysqli_stmt_close($stmt_i);
 
-        $base_upload_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/assets/uploads/";
+        $base_url = "http://192.168.31.220/tugasakhirsampah/bank_sampah/";
+        $base_upload_url = $base_url . "assets/uploads/";
 
         $foto_warga = $order['foto_warga'];
-        if ($foto_warga && !str_starts_with($foto_warga, 'http://') && !str_starts_with($foto_warga, 'https://')) {
-            $foto_warga_full = $base_upload_url . $foto_warga;
+        if ($foto_warga) {
+            if (str_starts_with($foto_warga, 'http://') || str_starts_with($foto_warga, 'https://')) {
+                $foto_warga_full = $foto_warga;
+            } elseif (str_starts_with($foto_warga, 'assets/')) {
+                $foto_warga_full = $base_url . $foto_warga;
+            } else {
+                $foto_warga_full = $base_upload_url . $foto_warga;
+            }
         } else {
-            $foto_warga_full = $foto_warga;
+            $foto_warga_full = null;
         }
 
         $foto_driver = $order['foto_driver'];
-        if ($foto_driver && !str_starts_with($foto_driver, 'http://') && !str_starts_with($foto_driver, 'https://')) {
-            $foto_driver_full = $base_upload_url . $foto_driver;
+        if ($foto_driver) {
+            if (str_starts_with($foto_driver, 'http://') || str_starts_with($foto_driver, 'https://')) {
+                $foto_driver_full = $foto_driver;
+            } elseif (str_starts_with($foto_driver, 'assets/')) {
+                $foto_driver_full = $base_url . $foto_driver;
+            } else {
+                $foto_driver_full = $base_upload_url . $foto_driver;
+            }
         } else {
-            $foto_driver_full = $foto_driver;
+            $foto_driver_full = null;
         }
 
         $vehicle_display = $order['jenis_kendaraan'] ?? $order['tipe_kendaraan'] ?? 'Motor Box';
@@ -164,9 +177,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'telp_warga' => $order['telp_warga'] ?? null,
             'foto_warga' => $foto_warga_full,
             'id_driver' => !empty($order['id_driver']) ? (int)$order['id_driver'] : null,
+            'picker_id' => !empty($order['id_driver']) ? (int)$order['id_driver'] : null,
             'nama_driver' => $order['nama_driver'] ?? null,
+            'picker_full_name' => $order['nama_driver'] ?? null,
             'telp_driver' => $order['telp_driver'] ?? null,
+            'picker_phone' => $order['telp_driver'] ?? null,
             'foto_driver' => $foto_driver_full,
+            'profile_photo' => $foto_driver_full,
+            'photo_url' => $foto_driver_full,
+            'avatar' => $foto_driver_full,
+            'driver_username' => $order['driver_username'] ?? null,
+            'picker_username' => $order['driver_username'] ?? null,
+            'driver_online_status' => $order['driver_online_status'] ?? 'offline',
+            'picker_online_status' => $order['driver_online_status'] ?? 'offline',
+            'online_status' => $order['driver_online_status'] ?? 'offline',
             'jenis_kendaraan' => $vehicle_display,
             'plat_nomor' => $plat_nomor_display,
             'alamat_jemput' => $order['alamat_jemput'] ?? '',
@@ -419,6 +443,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     if (mysqli_stmt_execute($stmt)) {
         @mysqli_stmt_close($stmt);
         $stmt = null;
+
+        // Auto-update driver status based on order status transition
+        $driver_query = "SELECT id_driver FROM orders WHERE id_order = ?";
+        $stmt_dr = mysqli_prepare($koneksi, $driver_query);
+        if ($stmt_dr) {
+            mysqli_stmt_bind_param($stmt_dr, "i", $order_id);
+            mysqli_stmt_execute($stmt_dr);
+            $dr_res = mysqli_stmt_get_result($stmt_dr);
+            if ($dr_row = mysqli_fetch_assoc($dr_res)) {
+                $target_driver_id = (int)$dr_row['id_driver'];
+                if ($target_driver_id > 0) {
+                    if ($new_status === 'DRIVER_MENUJU_LOKASI') {
+                        mysqli_query($koneksi, "UPDATE pengguna SET driver_status = 'on pickup' WHERE id_pengguna = $target_driver_id AND level = 'driver'");
+                    } elseif (in_array($new_status, ['SAMPAH_DIJEMPUT', 'VALIDASI_BANK_SAMPAH', 'SELESAI'])) {
+                        mysqli_query($koneksi, "UPDATE pengguna SET driver_status = 'waiting assignment' WHERE id_pengguna = $target_driver_id AND level = 'driver'");
+                    }
+                }
+            }
+            mysqli_stmt_close($stmt_dr);
+        }
+
         // Fetch order details for notification & point calculation
         $get_order_info = "SELECT id_warga, estimasi_berat, estimasi_poin, berat_aktual FROM orders WHERE id_order = ?";
         $stmt_w = mysqli_prepare($koneksi, $get_order_info);
@@ -441,11 +486,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             if ($final_points <= 0) $final_points = $est_pts;
 
             // Credit points and balance to citizen
-            $upd_poin = "UPDATE pengguna SET poin = COALESCE(poin, 0) + ?, saldo = COALESCE(saldo, 0) + ? WHERE id_pengguna = ?";
+            $upd_poin = "UPDATE pengguna SET saldo = COALESCE(saldo, 0) + ? WHERE id_pengguna = ?";
             $stmt_p = mysqli_prepare($koneksi, $upd_poin);
             if ($stmt_p) {
                 $total_rupiah = $final_points * 1000;
-                mysqli_stmt_bind_param($stmt_p, "idi", $final_points, $total_rupiah, $warga_id);
+                mysqli_stmt_bind_param($stmt_p, "di", $total_rupiah, $warga_id);
                 mysqli_stmt_execute($stmt_p);
                 mysqli_stmt_close($stmt_p);
             }
@@ -457,13 +502,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 'MENUNGGU_KONFIRMASI' => ['Permintaan Dikonfirmasi', 'Permintaan Anda telah dikonfirmasi.', 'pickup'],
                 'DRIVER_DITUGASKAN'    => ['Picker Ditugaskan', 'Picker telah ditugaskan.', 'pickup'],
                 'DRIVER_MENUJU_LOKASI'  => ['Picker Menuju Lokasi', 'Picker sedang menuju lokasi Anda.', 'pickup'],
-                'DRIVER_TIBA'           => ['Picker Hampir Tiba', 'Picker sudah dekat.', 'pickup'],
+                'DRIVER_TIBA'           => ['📍 Picker Sudah Dekat', 'Picker Anda telah tiba di sekitar lokasi penjemputan. Silakan siapkan sampah yang akan diserahkan.', 'pickup'],
                 'PENIMBANGAN'          => ['Penimbangan Berat', 'Picker sedang melakukan penimbangan.', 'pickup'],
                 'SAMPAH_DIJEMPUT'       => ['Sampah Dijemput', 'Sampah berhasil dijemput.', 'pickup'],
                 'MENUJU_BANK_SAMPAH'   => ['Menuju Bank Sampah', 'Sampah sedang dibawa ke Bank Sampah.', 'pickup'],
-                'VALIDASI_BANK_SAMPAH' => ['Validasi Bank Sampah', 'Petugas Admin sedang memverifikasi berat dan menghitung poin.', 'pickup'],
+                'VALIDASI_BANK_SAMPAH' => ['Waiting Validation', 'Sedang divalidasi oleh Admin.', 'pickup'],
                 'POIN_DIPROSES'        => ['Poin Diproses', 'Poin sedang dihitung.', 'reward'],
-                'SELESAI'              => ['Penjemputan Selesai', "Penjemputan selesai.\nPoin telah ditambahkan ke akun Anda.", 'reward'],
+                'SELESAI'              => ['Completed', "Penjemputan selesai. Poin telah ditambahkan ke akun Anda.", 'reward'],
                 'DIBATALKAN'           => ['Penjemputan Dibatalkan', 'Permintaan penjemputan berhasil dibatalkan.', 'info']
             ];
 

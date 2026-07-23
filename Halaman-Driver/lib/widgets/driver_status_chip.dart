@@ -74,7 +74,7 @@ class _DriverStatusChipState extends State<DriverStatusChip> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Admin hanya akan menugaskan order ke driver dengan status Online.',
+              'Admin hanya akan menugaskan order ke picker dengan status Online.',
               style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12, color: AppColors.textMuted),
             ),
             const SizedBox(height: 18),

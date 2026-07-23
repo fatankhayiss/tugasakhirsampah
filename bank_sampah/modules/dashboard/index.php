@@ -137,12 +137,12 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
-        <!-- Jumlah Warga -->
-        <a href="<?php echo BASE_URL; ?>index.php?page=warga/data"
+        <!-- Jumlah Penyetor -->
+        <a href="<?php echo BASE_URL; ?>index.php?page=penyetor/data"
            class="block bg-gradient-to-br from-sky-500 to-sky-600 p-6 rounded-xl shadow-lg text-white transform hover:scale-105 transition-transform duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium uppercase tracking-wider opacity-80">Jumlah Warga</p>
+                    <p class="text-sm font-medium uppercase tracking-wider opacity-80">Jumlah Penyetor</p>
                     <p class="text-4xl font-extrabold"><?php echo $jumlah_warga; ?></p>
                 </div>
                 <i class="fas fa-users fa-3x opacity-50"></i>
@@ -212,7 +212,7 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
         <div class="block bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-xl shadow-lg text-white">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium uppercase tracking-wider opacity-80">Jumlah Driver</p>
+                    <p class="text-sm font-medium uppercase tracking-wider opacity-80">Jumlah Picker</p>
                     <p class="text-4xl font-extrabold"><?php echo isset($jumlah_driver) ? $jumlah_driver : 0; ?></p>
                 </div>
                 <i class="fas fa-motorcycle fa-3x opacity-50"></i>
@@ -295,15 +295,15 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
                     <i class="fas fa-plus-circle fa-lg mr-3"></i> 
                     <div>
                         <span class="font-semibold">Input Setoran Sampah</span>
-                        <p class="text-xs opacity-80">Catat setoran baru dari warga.</p>
+                        <p class="text-xs opacity-80">Catat setoran baru dari penyetor.</p>
                     </div>
                 </a>
                 <!-- Input Tarik Saldo removed (handled by users) -->
-                <a href="<?php echo BASE_URL; ?>index.php?page=warga/tambah" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-sky-500 text-white hover:bg-sky-600 focus:bg-sky-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                <a href="<?php echo BASE_URL; ?>index.php?page=penyetor/tambah" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-sky-500 text-white hover:bg-sky-600 focus:bg-sky-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
                     <i class="fas fa-user-plus fa-lg mr-3"></i> 
                     <div>
-                        <span class="font-semibold">Tambah Warga Baru</span>
-                        <p class="text-xs opacity-80">Daftarkan warga baru ke sistem.</p>
+                        <span class="font-semibold">Tambah Penyetor Baru</span>
+                        <p class="text-xs opacity-80">Daftarkan penyetor baru ke sistem.</p>
                     </div>
                 </a>
                  <a href="<?php echo BASE_URL; ?>index.php?page=jenis_sampah/tambah" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">

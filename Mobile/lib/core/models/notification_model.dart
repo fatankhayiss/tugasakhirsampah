@@ -72,9 +72,9 @@ class NotificationModel {
     } else if (upperMsg == 'PICKER ON THE WAY' || upperMsg == 'DRIVER_MENUJU_LOKASI' || upperTitle == 'PICKER ON THE WAY') {
       title = 'Picker Menuju Lokasi';
       message = 'Picker sedang menuju lokasi Anda.';
-    } else if (upperMsg == 'PICKER NEARBY' || upperMsg == 'DRIVER_TIBA' || upperTitle == 'PICKER NEARBY') {
-      title = 'Picker Hampir Tiba';
-      message = 'Picker sudah dekat.';
+    } else if (upperMsg == 'PICKER NEARBY' || upperMsg == 'DRIVER_TIBA' || upperTitle == 'PICKER NEARBY' || upperMsg.contains('TIBADI SEKITAR') || upperMsg.contains('TELAH TIBA') || upperTitle.contains('DEKAT')) {
+      title = '📍 Picker Sudah Dekat';
+      message = 'Picker Anda telah tiba di sekitar lokasi penjemputan. Silakan siapkan sampah yang akan diserahkan.';
     } else if (upperMsg == 'WEIGHT VALIDATION' || upperMsg == 'PENIMBANGAN' || upperTitle == 'WEIGHT VALIDATION') {
       title = 'Penimbangan Berat';
       message = 'Picker sedang melakukan penimbangan.';
@@ -85,14 +85,14 @@ class NotificationModel {
       title = 'Menuju Bank Sampah';
       message = 'Sampah sedang dibawa ke Bank Sampah.';
     } else if (upperMsg == 'ADMIN VALIDATION' || upperMsg == 'VALIDASI_BANK_SAMPAH' || upperTitle == 'ADMIN VALIDATION') {
-      title = 'Validasi Bank Sampah';
-      message = 'Sampah sedang diverifikasi oleh petugas Bank Sampah.';
+      title = 'Waiting Validation';
+      message = 'Sedang divalidasi oleh Admin.';
     } else if (upperMsg == 'POINT CALCULATION' || upperMsg == 'POIN_DIPROSES' || upperTitle == 'POINT CALCULATION') {
       title = 'Poin Diproses';
       message = 'Poin sedang dihitung.';
     } else if (upperMsg == 'COMPLETED' || upperMsg == 'SELESAI' || upperTitle == 'COMPLETED') {
-      title = 'Penjemputan Selesai';
-      message = 'Penjemputan selesai.\nPoin telah ditambahkan ke akun Anda.';
+      title = 'Completed';
+      message = 'Penjemputan selesai. Poin telah ditambahkan ke akun Anda.';
     } else if (upperMsg == 'CANCELLED' || upperMsg == 'DIBATALKAN' || upperTitle == 'CANCELLED') {
       title = 'Penjemputan Dibatalkan';
       message = 'Permintaan penjemputan berhasil dibatalkan.';

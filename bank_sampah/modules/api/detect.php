@@ -91,6 +91,7 @@ function call_detection_worker(string $image_path): array {
     return [
         'success'           => ($decoded['success'] ?? false) === true,
         'labels'            => (array)($decoded['labels'] ?? []),
+        'detections'        => (array)($decoded['detections'] ?? []), // [{label, confidence}]
         'worker_unavailable'=> false,
     ];
 }
@@ -98,11 +99,17 @@ function call_detection_worker(string $image_path): array {
 // ─────────────────────────────────────────────
 // 1. Validate uploaded image
 // ─────────────────────────────────────────────
+error_log("\n==================================================");
+error_log("STEP 3: PHP API (detect.php)");
+error_log("==================================================");
+
 if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+    error_log("❌ Error: No valid image file detected");
     respond(false, 'Tidak ada file image yang dikirim atau terjadi error saat upload', null, 400);
 }
 
 $file = $_FILES['image'];
+error_log("✓ Image received successfully: " . $file['name']);
 
 $image_info = @getimagesize($file['tmp_name']);
 if ($image_info === false) {
@@ -129,26 +136,85 @@ $target   = $uploadDir . $filename;
 if (!move_uploaded_file($file['tmp_name'], $target)) {
     respond(false, 'Gagal menyimpan file di server.', null, 500);
 }
+error_log("✓ Image saved: " . $target);
 
 // ─────────────────────────────────────────────
 // 3. Call detection worker via socket
 // ─────────────────────────────────────────────
+error_log("• Executing Python AI worker...");
 $worker_result    = call_detection_worker(realpath($target));
+error_log("✓ Python executed. Result: " . json_encode($worker_result));
 $detected_labels  = $worker_result['labels'];
 $worker_unavailable = $worker_result['worker_unavailable'];
 
 // ─────────────────────────────────────────────
 // 4. Match labels against jenis_sampah table
 // ─────────────────────────────────────────────
+//
+// The Python worker now returns two keys:
+//   labels:     ["plastik_pet", ...]         (backward compat strings)
+//   detections: [{label, confidence}, ...]   (with confidence score)
+// Build a confidence lookup map.
+$confidence_map = [];
+if (isset($worker_result['detections']) && is_array($worker_result['detections'])) {
+    foreach ($worker_result['detections'] as $d) {
+        if (isset($d['label'])) {
+            $confidence_map[$d['label']] = $d['confidence'] ?? null;
+        }
+    }
+}
+
 $results = [];
 if (!empty($detected_labels)) {
     foreach ($detected_labels as $label) {
-        $label_safe = mysqli_real_escape_string($koneksi, $label);
+        $label_safe  = mysqli_real_escape_string($koneksi, $label);
+        $label_lower = strtolower(trim($label));
+        $label_norm  = mysqli_real_escape_string($koneksi, $label_lower); // e.g. "plastik_pet"
+
+        // Split into significant tokens (≥3 chars) e.g. ["plastik","pet"]
+        $tokens = array_values(array_filter(
+            preg_split('/[_\s]+/', $label_lower),
+            fn($t) => strlen($t) >= 3
+        ));
+
+        // ── Priority 1: exact normalised match ───────────────────────────────
+        // REPLACE(LOWER(nama_sampah),' ','_') = 'plastik_pet'  → "Plastik PET" ✓
         $sql = "SELECT id_jenis_sampah, nama_sampah, kategori, deskripsi, cara_pengolahan, gambar, harga_per_kg
                 FROM jenis_sampah
-                WHERE nama_sampah LIKE '%$label_safe%' OR kategori LIKE '%$label_safe%'
+                WHERE REPLACE(LOWER(nama_sampah),' ','_') = '$label_norm'
                 LIMIT 1";
         $res = mysqli_query($koneksi, $sql);
+
+        // ── Priority 2: all tokens AND-ed (most specific multi-word) ─────────
+        if (!$res || mysqli_num_rows($res) === 0) {
+            if (count($tokens) > 1) {
+                $and_parts = array_map(fn($t) =>
+                    "LOWER(nama_sampah) LIKE '%" . mysqli_real_escape_string($koneksi, $t) . "%'",
+                    $tokens
+                );
+                $sql = "SELECT id_jenis_sampah, nama_sampah, kategori, deskripsi, cara_pengolahan, gambar, harga_per_kg
+                        FROM jenis_sampah
+                        WHERE " . implode(' AND ', $and_parts) . "
+                        LIMIT 1";
+                $res = mysqli_query($koneksi, $sql);
+            }
+        }
+
+        // ── Priority 3: any token OR fallback ────────────────────────────────
+        if (!$res || mysqli_num_rows($res) === 0) {
+            $or_parts = ["LOWER(nama_sampah) LIKE '%$label_norm%'"];
+            foreach ($tokens as $tok) {
+                $tok_safe    = mysqli_real_escape_string($koneksi, $tok);
+                $or_parts[]  = "LOWER(nama_sampah) LIKE '%$tok_safe%'";
+                $or_parts[]  = "LOWER(kategori) LIKE '%$tok_safe%'";
+            }
+            $sql = "SELECT id_jenis_sampah, nama_sampah, kategori, deskripsi, cara_pengolahan, gambar, harga_per_kg
+                    FROM jenis_sampah
+                    WHERE " . implode(' OR ', $or_parts) . "
+                    LIMIT 1";
+            $res = mysqli_query($koneksi, $sql);
+        }
+
         if ($res && mysqli_num_rows($res) > 0) {
             $row     = mysqli_fetch_assoc($res);
             $img_url = null;
@@ -157,17 +223,25 @@ if (!empty($detected_labels)) {
             }
             $results[] = [
                 'label'           => $label,
-                'id_jenis_sampah' => $row['id_jenis_sampah'],
+                'id_jenis_sampah' => (int)$row['id_jenis_sampah'],
                 'nama_sampah'     => $row['nama_sampah'],
                 'kategori'        => $row['kategori'] ?? null,
                 'deskripsi'       => $row['deskripsi'] ?? null,
                 'cara_pengolahan' => $row['cara_pengolahan'] ?? null,
-                'harga_per_kg'    => $row['harga_per_kg'] ?? null,
+                'harga_per_kg'    => $row['harga_per_kg'] !== null ? (float)$row['harga_per_kg'] : null,
                 'gambar'          => $img_url,
+                'confidence'      => $confidence_map[$label] ?? null,
                 'found'           => true,
             ];
         } else {
-            $results[] = ['label' => $label, 'found' => false];
+            $results[] = [
+                'label'      => $label,
+                'nama_sampah'=> $label,
+                'kategori'   => null,
+                'harga_per_kg'=> null,
+                'confidence' => $confidence_map[$label] ?? null,
+                'found'      => false,
+            ];
         }
     }
 }
@@ -211,8 +285,23 @@ if ($tbl_exists) {
     $matched_esc  = mysqli_real_escape_string($koneksi, $matched_json);
     $file_esc     = mysqli_real_escape_string($koneksi, $file_db_path);
     $user_val     = ($user_id !== null) ? intval($user_id) : 'NULL';
-    $ins_sql      = "INSERT INTO deteksi (id_pengguna, uploaded_file, labels_json, matched_json, note)
-                     VALUES ($user_val, '$file_esc', '$labels_esc', '$matched_esc', '')";
+    
+    $top_kategori_sampah = 'Lainnya';
+    $top_confidence = 0.0;
+    $top_berat = 1.0;
+    $top_estimasi = 0.0;
+    
+    if (!empty($results)) {
+        $first = $results[0];
+        $top_kategori_sampah = !empty($first['nama_sampah']) ? $first['nama_sampah'] : ($first['label'] ?? 'Lainnya');
+        $top_confidence = isset($first['confidence']) ? floatval($first['confidence']) : 0.0;
+        $harga = isset($first['harga_per_kg']) ? floatval($first['harga_per_kg']) : 250.0;
+        $top_estimasi = $top_berat * $harga;
+    }
+    $cat_esc = mysqli_real_escape_string($koneksi, $top_kategori_sampah);
+
+    $ins_sql      = "INSERT INTO deteksi (id_pengguna, uploaded_file, labels_json, matched_json, note, kategori_sampah, confidence, berat, estimasi_poin)
+                     VALUES ($user_val, '$file_esc', '$labels_esc', '$matched_esc', '', '$cat_esc', $top_confidence, $top_berat, $top_estimasi)";
     if (mysqli_query($koneksi, $ins_sql)) {
         $insert_id = mysqli_insert_id($koneksi);
     }
@@ -231,4 +320,5 @@ if ($insert_id !== null) {
     $response_data['detection_id'] = $insert_id;
 }
 
+error_log("✓ JSON generated and returned: " . json_encode(['success' => true, 'message' => 'Deteksi selesai', 'data' => $response_data]));
 respond(true, 'Deteksi selesai', $response_data);

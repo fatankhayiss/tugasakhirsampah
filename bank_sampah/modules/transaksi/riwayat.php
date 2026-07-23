@@ -113,9 +113,9 @@ $result_all_warga = mysqli_query($koneksi, $query_all_warga);
         <input type="hidden" name="page" value="transaksi/riwayat">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div>
-                <label for="filter_warga" class="block text-sm font-medium text-gray-700">Warga:</label>
+                <label for="filter_warga" class="block text-sm font-medium text-gray-700">Penyetor:</label>
                 <select name="filter_warga" id="filter_warga" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
-                    <option value="">Semua Warga</option>
+                    <option value="">Semua Penyetor</option>
                     <?php while($w = mysqli_fetch_assoc($result_all_warga)): ?>
                     <option value="<?php echo $w['id_pengguna']; ?>" <?php echo ($filter_warga == $w['id_pengguna']) ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars($w['nama_lengkap'] . ' (' . $w['username'] . ')'); ?>
@@ -158,7 +158,7 @@ $result_all_warga = mysqli_query($koneksi, $query_all_warga);
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Warga</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Penyetor</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nilai (Rp)</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dikonfirmasi Oleh</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Keterangan</th>
@@ -197,7 +197,7 @@ $result_all_warga = mysqli_query($koneksi, $query_all_warga);
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Warga</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Penyetor</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nilai (Rp)</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Dikonfirmasi Oleh</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Detail Sampah / Keterangan</th>

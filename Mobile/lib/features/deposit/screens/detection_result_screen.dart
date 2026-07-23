@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/waste_labels.dart';
 
 class DetectionResultScreen extends StatelessWidget {
   final Map<String, dynamic> responseData;
@@ -171,7 +172,8 @@ class DetectionResultScreen extends StatelessWidget {
   }
 
   Widget _buildDetectionCard(Map<String, dynamic> data) {
-    final title = data['nama_sampah'] ?? (data['label'] ?? 'Unknown');
+    final rawLabel = data['label']?.toString();
+    final title = data['nama_sampah']?.toString() ?? WasteLabels.display(rawLabel);
     // Default to high match % for UI realism based on HTML prompt
     final String matchPercent = '95% Match';
 

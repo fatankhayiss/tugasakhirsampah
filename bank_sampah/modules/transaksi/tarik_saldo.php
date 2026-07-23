@@ -14,16 +14,16 @@ if ($result_warga) {
 ?>
 
 <div class="container mx-auto px-4 py-8" x-data="tarikSaldoForm()">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Input Penarikan Saldo Warga</h1>
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Input Penarikan Saldo Penyetor</h1>
 
     <form action="<?php echo BASE_URL; ?>index.php?page=transaksi/proses_tarik" method="POST" @submit.prevent="validateAndSubmit">
         <div class="bg-white p-8 rounded-xl shadow-2xl max-w-lg mx-auto">
             <div class="space-y-6">
                 <div>
-                    <label for="id_warga" class="block text-sm font-medium text-gray-700 mb-1">Pilih Warga <span class="text-red-500">*</span></label>
+                    <label for="id_warga" class="block text-sm font-medium text-gray-700 mb-1">Pilih Penyetor <span class="text-red-500">*</span></label>
                     <select name="id_warga" id="id_warga" required x-model="selectedWargaId" @change="updateSaldoWarga($event.target.options[$event.target.selectedIndex].dataset.saldo)"
                             class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
-                        <option value="">-- Pilih Warga --</option>
+                        <option value="">-- Pilih Penyetor --</option>
                         <?php foreach($warga_data_options as $warga): ?>
                         <option value="<?php echo $warga['id_pengguna']; ?>" data-saldo="<?php echo $warga['saldo']; ?>">
                             <?php echo htmlspecialchars($warga['nama_lengkap']) . " (" . htmlspecialchars($warga['username']) . ")"; ?>
@@ -85,7 +85,7 @@ if ($result_warga) {
             },
             validateAndSubmit(event) {
                 if (!this.selectedWargaId) {
-                    alert('Harap pilih warga terlebih dahulu.');
+                    alert('Harap pilih penyetor terlebih dahulu.');
                     event.preventDefault();
                     return false;
                 }
@@ -95,7 +95,7 @@ if ($result_warga) {
                     return false;
                 }
                 if (this.currentSaldoWarga === null || this.jumlahPenarikan > this.currentSaldoWarga) {
-                    alert('Jumlah penarikan tidak boleh melebihi saldo warga saat ini.');
+                    alert('Jumlah penarikan tidak boleh melebihi saldo penyetor saat ini.');
                     event.preventDefault();
                     return false;
                 }

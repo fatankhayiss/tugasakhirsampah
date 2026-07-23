@@ -20,24 +20,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_driver'])) {
             $wr = mysqli_stmt_get_result($stmt_w);
             $warga_data = mysqli_fetch_assoc($wr);
 
-            // Notifikasi ke Driver
-            $pesan = "Anda mendapat tugas penjemputan baru (Order #$id_order). Segera berangkat!";
-            $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Tugas Jemput Baru', ?, 'info', ?)";
+            // Notifikasi ke Driver (Picker)
+            $judul = "📦 Penugasan Baru";
+            $pesan = "Anda mendapatkan tugas penjemputan sampah baru. Silakan buka detail penjemputan untuk melihat informasi lengkap.";
+            $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, ?, ?, 'info', ?)";
             $stmt_notif = mysqli_prepare($koneksi, $ins_notif);
-            mysqli_stmt_bind_param($stmt_notif, "isi", $id_driver, $pesan, $id_order);
-            mysqli_stmt_execute($stmt_notif);
+            mysqli_stmt_bind_param($stmt_notif, "issi", $id_driver, $judul, $pesan, $id_order);
+            $notif_success = mysqli_stmt_execute($stmt_notif);
+            $notif_error = $notif_success ? '' : mysqli_error($koneksi);
+            mysqli_stmt_close($stmt_notif);
             
             // Notifikasi ke Warga (Citizen)
             if ($warga_data) {
                 $id_warga = $warga_data['id_warga'];
-                $pesan_warga = "Driver telah ditugaskan untuk melakukan penjemputan sampah Anda.";
+                $pesan_warga = "Picker telah ditugaskan untuk melakukan penjemputan sampah Anda.";
                 $ins_notif_w = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Konfirmasi Penjemputan', ?, 'pickup', ?)";
                 $stmt_notif_w = mysqli_prepare($koneksi, $ins_notif_w);
                 mysqli_stmt_bind_param($stmt_notif_w, "isi", $id_warga, $pesan_warga, $id_order);
                 mysqli_stmt_execute($stmt_notif_w);
+                mysqli_stmt_close($stmt_notif_w);
             }
             
-            echo "<script>alert('Berhasil menugaskan driver dan mengonfirmasi order!'); window.location.href='index.php?page=orders/data';</script>";
+            if ($notif_success) {
+                echo "<script>alert('Penugasan berhasil dikirim ke Picker.'); window.location.href='index.php?page=orders/data';</script>";
+            } else {
+                echo "<script>alert('Gagal mengirim penugasan: " . addslashes($notif_error) . "'); window.location.href='index.php?page=orders/data';</script>";
+            }
             exit;
         }
     }
@@ -59,14 +67,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_order'])) {
         }
         
         if (mysqli_stmt_execute($stmt_upd)) {
-            // Notifikasi ke Penyetor
-            $get_warga = "SELECT id_warga, estimasi_berat, berat_aktual, estimasi_poin FROM orders WHERE id_order = ?";
+            // Notifikasi ke Penyetor & Update Status Driver
+            $get_warga = "SELECT id_warga, id_driver, estimasi_berat, berat_aktual, estimasi_poin FROM orders WHERE id_order = ?";
             $stmt_w = mysqli_prepare($koneksi, $get_warga);
             mysqli_stmt_bind_param($stmt_w, "i", $id_order);
             mysqli_stmt_execute($stmt_w);
             $wr = mysqli_stmt_get_result($stmt_w);
             if ($row = mysqli_fetch_assoc($wr)) {
                 $id_warga = (int)$row['id_warga'];
+                $id_driver = (int)$row['id_driver'];
                 $actual_wt = $row['berat_aktual'] !== null ? floatval($row['berat_aktual']) : floatval($row['estimasi_berat'] ?? 1.0);
                 $est_wt = floatval($row['estimasi_berat'] ?? 1.0);
                 $est_pts = (int)($row['estimasi_poin'] ?? 10);
@@ -85,6 +94,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_order'])) {
                 $stmt_notif = mysqli_prepare($koneksi, $ins_notif);
                 mysqli_stmt_bind_param($stmt_notif, "isi", $id_warga, $pesan, $id_order);
                 mysqli_stmt_execute($stmt_notif);
+                mysqli_stmt_close($stmt_notif);
+
+                // Update status driver ke waiting assignment
+                if ($id_driver > 0) {
+                    mysqli_query($koneksi, "UPDATE pengguna SET driver_status = 'waiting assignment' WHERE id_pengguna = $id_driver AND level = 'driver'");
+                }
             }
             
             echo "<script>alert('Order berhasil diselesaikan dan poin telah ditambahkan!'); window.location.href='index.php?page=orders/data';</script>";
@@ -153,11 +168,11 @@ if ($result) {
 }
 if (isset($stmt)) mysqli_stmt_close($stmt);
 
-// Fetch active drivers for dropdown
+// Fetch active pickers for dropdown
 $drivers = [];
-$res_drivers = mysqli_query($koneksi, "SELECT p.id_pengguna, p.nama_lengkap, p.driver_status, d.tipe_kendaraan, d.plat_nomor 
+$res_drivers = mysqli_query($koneksi, "SELECT p.id_pengguna, p.nama_lengkap, p.driver_status, v.vehicle_name as nama_kendaraan, v.vehicle_type as tipe_kendaraan, v.license_plate as plat_nomor 
                                        FROM pengguna p 
-                                       LEFT JOIN detail_driver d ON p.id_pengguna = d.id_pengguna 
+                                       LEFT JOIN driver_daily_vehicle v ON p.id_pengguna = v.driver_id AND v.date = CURDATE()
                                        WHERE p.level = 'driver' ORDER BY p.driver_status DESC, p.nama_lengkap ASC");
 if ($res_drivers) {
     while($row = mysqli_fetch_assoc($res_drivers)) {
@@ -169,6 +184,7 @@ $status_labels = [
     'MENUNGGU_KONFIRMASI' => ['label' => 'Menunggu', 'class' => 'bg-yellow-100 text-yellow-800'],
     'DRIVER_DITUGASKAN' => ['label' => 'Ditugaskan', 'class' => 'bg-blue-100 text-blue-800'],
     'DRIVER_MENUJU_LOKASI' => ['label' => 'Dalam Perjalanan', 'class' => 'bg-indigo-100 text-indigo-800'],
+    'DRIVER_TIBA' => ['label' => 'Sudah Dekat', 'class' => 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-300'],
     'SAMPAH_DIJEMPUT' => ['label' => 'Dijemput', 'class' => 'bg-purple-100 text-purple-800'],
     'VALIDASI_BANK_SAMPAH' => ['label' => 'Divalidasi', 'class' => 'bg-orange-100 text-orange-800'],
     'SELESAI' => ['label' => 'Selesai', 'class' => 'bg-green-100 text-green-800'],
@@ -192,6 +208,7 @@ $status_labels = [
             'MENUNGGU_KONFIRMASI' => 'Menunggu',
             'DRIVER_DITUGASKAN' => 'Ditugaskan',
             'DRIVER_MENUJU_LOKASI' => 'Dalam Perjalanan',
+            'DRIVER_TIBA' => 'Sudah Dekat',
             'SAMPAH_DIJEMPUT' => 'Dijemput',
             'VALIDASI_BANK_SAMPAH' => 'Divalidasi',
             'SELESAI' => 'Selesai',
@@ -266,16 +283,16 @@ $status_labels = [
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 <?php if ($st === 'MENUNGGU_KONFIRMASI'): ?>
-                                    <form method="POST" action="" class="flex items-center space-x-2" onsubmit="return confirm('Konfirmasi penjemputan dan tugaskan driver ini?');">
+                                    <form method="POST" action="" class="flex items-center space-x-2" onsubmit="return confirm('Konfirmasi penjemputan dan tugaskan picker ini?');">
                                         <input type="hidden" name="id_order" value="<?php echo $order['id_order']; ?>">
                                         <select name="id_driver" required class="text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500">
-                                            <option value="">-- Pilih Driver --</option>
+                                            <option value="">-- Pilih Picker --</option>
                                             <?php foreach ($drivers as $dr): 
                                                 $isOnline = ($dr['driver_status'] ?? 'offline') === 'online';
                                                 $statusIcon = $isOnline ? '🟢 Online' : '🔴 Offline';
                                             ?>
                                                 <option value="<?php echo $dr['id_pengguna']; ?>" <?php if (!$isOnline) echo 'disabled class="text-gray-400"'; ?>>
-                                                    [<?php echo $statusIcon; ?>] <?php echo htmlspecialchars($dr['nama_lengkap'] . " (" . ($dr['tipe_kendaraan'] ?? 'Kendaraan') . ")"); ?><?php if (!$isOnline) echo ' - Tidak Tersedia'; ?>
+                                                    [<?php echo $statusIcon; ?>] <?php echo htmlspecialchars($dr['nama_lengkap'] . " (" . (!empty($dr['nama_kendaraan']) ? $dr['nama_kendaraan'] : ($dr['tipe_kendaraan'] ?? 'Kendaraan')) . ")"); ?><?php if (!$isOnline) echo ' - Tidak Tersedia'; ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -284,14 +301,15 @@ $status_labels = [
                                         </button>
                                     </form>
                                 <?php elseif ($st === 'SAMPAH_DIJEMPUT' || $st === 'VALIDASI_BANK_SAMPAH'): ?>
-                                    <form method="POST" action="" class="flex items-center space-x-2">
-                                        <input type="hidden" name="id_order" value="<?php echo $order['id_order']; ?>">
-                                        <button type="submit" name="verify_order" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded text-xs font-medium transition" onclick="return confirm('Selesaikan order ini?');">
-                                            Selesaikan
-                                        </button>
-                                    </form>
+                                    <a href="<?php echo BASE_URL; ?>index.php?page=orders/validate&id=<?php echo $order['id_order']; ?>" 
+                                       class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition duration-150 inline-block">
+                                        <i class="fas fa-clipboard-check mr-1"></i> Validasi
+                                    </a>
                                 <?php else: ?>
-                                    <span class="text-gray-400 italic">No Action</span>
+                                    <a href="<?php echo BASE_URL; ?>index.php?page=orders/detail&id=<?php echo $order['id_order']; ?>" 
+                                       class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition duration-150 inline-block">
+                                        <i class="fas fa-info-circle mr-1"></i> Detail
+                                    </a>
                                 <?php endif; ?>
                             </td>
                         </tr>

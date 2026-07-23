@@ -27,17 +27,17 @@ $current_page = isset($current_page) ? $current_page : (isset($_GET['page']) ? $
         </a>
     </li>
     <li>
-        <a href="<?php echo BASE_URL; ?>index.php?page=warga/data" 
-           class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200 <?php echo (strpos($current_page, 'warga/') === 0) ? 'active-nav-link' : ''; ?>">
+        <a href="<?php echo BASE_URL; ?>index.php?page=penyetor/data" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200 <?php echo (strpos($current_page, 'penyetor/') === 0) ? 'active-nav-link' : ''; ?>">
             <i class="fas fa-users w-5"></i>
-            <span>Data Warga</span>
+            <span>Data Penyetor</span>
         </a>
     </li>
     <li>
-        <a href="<?php echo BASE_URL; ?>index.php?page=driver/data" 
-           class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200 <?php echo (strpos($current_page, 'driver/') === 0) ? 'active-nav-link' : ''; ?>">
+        <a href="<?php echo BASE_URL; ?>index.php?page=picker/data" 
+           class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200 <?php echo (strpos($current_page, 'picker/') === 0) ? 'active-nav-link' : ''; ?>">
             <i class="fas fa-id-card w-5"></i>
-            <span>Data Driver</span>
+            <span>Data Picker</span>
         </a>
     </li>
     <li>
