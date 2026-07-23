@@ -735,7 +735,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
       imageWidget = Image.file(
         File(localPath),
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => networkUrl != null && networkUrl.isNotEmpty
+        errorBuilder: (ctx, error, stackTrace) => networkUrl != null && networkUrl.isNotEmpty
             ? _buildNetworkImage(networkUrl)
             : _imageFallback(),
       );
@@ -778,7 +778,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     return Image.network(
       url,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _imageFallback(),
+      errorBuilder: (ctx, error, stackTrace) => _imageFallback(),
     );
   }
 
