@@ -71,7 +71,7 @@ $current_page = isset($current_page) ? $current_page : (isset($_GET['page']) ? $
         </a>
     </li>
     <li x-data="{ open: <?php echo (strpos($current_page, 'transaksi/') === 0) ? 'true' : 'false'; ?> }" @dropdown-opened.window="if ($event.detail !== 'transaksi') open = false">
-            <button @click="open = !open; if (open) $dispatch('dropdown-opened', 'transaksi')" class="w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200">
+            <button type="button" @click="open = !open; if (open) $dispatch('dropdown-opened', 'transaksi')" class="w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-history w-5"></i>
                 <span>Transaksi</span>
@@ -90,7 +90,7 @@ $current_page = isset($current_page) ? $current_page : (isset($_GET['page']) ? $
         </ul>
     </li>
     <li x-data="{ open: <?php echo (strpos($current_page, 'laporan/') === 0) ? 'true' : 'false'; ?> }" @dropdown-opened.window="if ($event.detail !== 'laporan') open = false">
-        <button @click="open = !open; if (open) $dispatch('dropdown-opened', 'laporan')" class="w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200">
+        <button type="button" @click="open = !open; if (open) $dispatch('dropdown-opened', 'laporan')" class="w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-chart-line w-5"></i>
                 <span>Laporan</span>

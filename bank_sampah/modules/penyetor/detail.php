@@ -67,9 +67,21 @@ mysqli_stmt_close($stmt_stats);
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Left Card: Avatar and Quick Stats -->
             <div class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center border border-gray-100">
-                <img class="h-32 w-32 rounded-full object-cover border-4 border-sky-100 shadow-sm mb-4" 
-                     src="<?php echo BASE_URL . 'assets/uploads/' . (!empty($penyetor['foto_profil']) ? $penyetor['foto_profil'] : 'default_avatar.png'); ?>" 
-                     alt="Profile Avatar">
+                    <?php 
+                        $avatar_src = BASE_URL . 'assets/uploads/default_avatar.png';
+                        if (!empty($penyetor['foto_profil'])) {
+                            if (strpos($penyetor['foto_profil'], 'http') === 0) {
+                                $avatar_src = $penyetor['foto_profil'];
+                            } elseif (strpos($penyetor['foto_profil'], 'assets/') === 0) {
+                                $avatar_src = BASE_URL . ltrim($penyetor['foto_profil'], '/');
+                            } else {
+                                $avatar_src = BASE_URL . 'assets/uploads/' . $penyetor['foto_profil'];
+                            }
+                        }
+                    ?>
+                    <img class="h-32 w-32 rounded-full object-cover border-4 border-sky-100 shadow-sm mb-4" 
+                         src="<?php echo htmlspecialchars($avatar_src); ?>" 
+                         alt="Profile Avatar" onerror="this.src='<?php echo BASE_URL . 'assets/uploads/default_avatar.png'; ?>'">
                 
                 <h2 class="text-xl font-bold text-gray-900 text-center"><?php echo htmlspecialchars($penyetor['nama_lengkap']); ?></h2>
                 <p class="text-sm text-gray-500 mb-4">@<?php echo htmlspecialchars($penyetor['username']); ?></p>

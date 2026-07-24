@@ -294,19 +294,19 @@ $result = mysqli_query($koneksi, $sql);
                                     <?php endif; ?>
                             </td>
                             <td class="py-4 px-5 text-right whitespace-nowrap">
-                                <div class="flex items-center justify-end space-x-1.5">
+                                <div class="flex items-center justify-end">
                                     <?php if ($row['status'] === 'processing' || $row['status'] === 'pending'): ?>
-                                        <button type="button" onclick="openCompleteModal(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($trx_code); ?>')" class="inline-flex items-center px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition duration-150">
-                                            <i class="fas fa-check mr-1"></i> Selesai
+                                        <button type="button" onclick="openCompleteModal(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($trx_code); ?>')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition-colors duration-150 inline-flex items-center gap-1 mr-2">
+                                            <i class="fas fa-check"></i> <span class="hidden sm:inline">Selesai</span>
                                         </button>
                                         
-                                        <button type="button" onclick="openRejectModal(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($trx_code); ?>')" class="inline-flex items-center px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl shadow-sm transition duration-150">
-                                            <i class="fas fa-times mr-1"></i> Tolak
+                                        <button type="button" onclick="openRejectModal(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($trx_code); ?>')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition-colors duration-150 inline-flex items-center gap-1 mr-2">
+                                            <i class="fas fa-times"></i> <span class="hidden sm:inline">Tolak</span>
                                         </button>
                                     <?php endif; ?>
 
-                                    <a href="index.php?page=reward/detail&id=<?php echo $row['id']; ?>" class="inline-flex items-center px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition duration-150" title="Detail">
-                                        <i class="fas fa-external-link-alt"></i>
+                                    <a href="index.php?page=reward/detail&id=<?php echo $row['id']; ?>" class="text-sky-600 hover:text-sky-800 transition-colors duration-150" title="Detail">
+                                        <i class="fas fa-info-circle"></i> <span class="hidden sm:inline">Detail</span>
                                     </a>
                                 </div>
                             </td>

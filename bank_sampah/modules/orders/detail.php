@@ -158,12 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $query_order = "SELECT o.*, 
                 w.nama_lengkap as nama_warga, w.username as username_warga, w.no_telepon as telp_warga, w.email as email_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga,
                 d.nama_lengkap as nama_driver, d.no_telepon as telp_driver, d.foto_profil as foto_driver,
-                dd.tipe_kendaraan, dd.jenis_kendaraan, dd.plat_nomor,
-                dv.vehicle_name as daily_vehicle_name, dv.vehicle_type as daily_vehicle_type, dv.license_plate as daily_license_plate
+                dv.vehicle_type as daily_vehicle_type, dv.license_plate as daily_license_plate
                 FROM orders o
                 JOIN pengguna w ON o.id_warga = w.id_pengguna
                 LEFT JOIN pengguna d ON o.id_driver = d.id_pengguna
-                LEFT JOIN detail_driver dd ON o.id_driver = dd.id_pengguna
                 LEFT JOIN driver_daily_vehicle dv ON o.id_driver = dv.driver_id AND dv.date = DATE(o.tanggal_order)
                 WHERE o.id_order = ?";
 
@@ -493,10 +491,10 @@ $is_editable = !in_array($status, ['SELESAI', 'DIBATALKAN']);
                         <span class="text-xs text-gray-400 block">Detail Kendaraan</span>
                         <span class="font-semibold text-gray-800">
                             <?php 
-                            if (!empty($order['daily_vehicle_name'])) {
-                                echo htmlspecialchars($order['daily_vehicle_name'] . " (" . $order['daily_vehicle_type'] . ") [" . $order['daily_license_plate'] . "]");
+                            if (!empty($order['daily_vehicle_type'])) {
+                                echo htmlspecialchars($order['daily_vehicle_type'] . " [" . $order['daily_license_plate'] . "]");
                             } else {
-                                echo htmlspecialchars($order['jenis_kendaraan'] ?? 'Kendaraan') . " [" . htmlspecialchars($order['plat_nomor'] ?? '-') . "]";
+                                echo "-";
                             }
                             ?>
                         </span>

@@ -22,12 +22,29 @@ $user_nama = isset($_SESSION['user_nama']) ? $_SESSION['user_nama'] : 'Tamu';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Custom scrollbar (opsional, tapi bisa mempercantik) */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        /* Custom modern scrollbar */
+        ::-webkit-scrollbar { 
+            width: 6px; 
+            height: 6px; 
+        }
+        ::-webkit-scrollbar-track { 
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(156, 163, 175, 0.5); /* Gray-400 with opacity */
+            border-radius: 10px; 
+        }
+        ::-webkit-scrollbar-thumb:hover { 
+            background: rgba(107, 114, 128, 0.8); /* Gray-500 */
+        }
         
+        /* Scrollbar khusus untuk sidebar agar serasi dengan background biru */
+        .sidebar nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .sidebar nav::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
         body {
             font-family: 'Poppins', 'Inter', sans-serif;
             background-color: #f0f9ff; /* Light sky blue background */

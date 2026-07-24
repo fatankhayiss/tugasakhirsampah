@@ -98,9 +98,21 @@ if ($stmt) {
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $no++; ?></td>
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
+                                <?php 
+                                    $avatar_src = BASE_URL . 'assets/uploads/default_avatar.png';
+                                    if (!empty($row['foto_profil'])) {
+                                        if (strpos($row['foto_profil'], 'http') === 0) {
+                                            $avatar_src = $row['foto_profil'];
+                                        } elseif (strpos($row['foto_profil'], 'assets/') === 0) {
+                                            $avatar_src = BASE_URL . ltrim($row['foto_profil'], '/');
+                                        } else {
+                                            $avatar_src = BASE_URL . 'assets/uploads/' . $row['foto_profil'];
+                                        }
+                                    }
+                                ?>
                                     <img class="h-10 w-10 rounded-full object-cover mr-3 border" 
-                                         src="<?php echo BASE_URL . 'assets/uploads/' . (!empty($row['foto_profil']) ? $row['foto_profil'] : 'default_avatar.png'); ?>" 
-                                         alt="Avatar">
+                                         src="<?php echo htmlspecialchars($avatar_src); ?>" 
+                                         alt="Avatar" onerror="this.src='<?php echo BASE_URL . 'assets/uploads/default_avatar.png'; ?>'">
                                     <div>
                                         <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($row['nama_lengkap']); ?></div>
                                         <div class="text-xs text-gray-500">@<?php echo htmlspecialchars($row['username']); ?></div>

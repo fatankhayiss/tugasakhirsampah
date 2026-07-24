@@ -115,6 +115,19 @@
             closeSidebar();
         }
     });
+
+    // Auto-scroll sidebar to active link on page load
+    const sidebarNav = document.querySelector('.sidebar nav');
+    const activeLink = document.querySelector('.sidebar .active-nav-link');
+    if (sidebarNav && activeLink) {
+        // Only scroll if the link is likely out of view or far down
+        const navRect = sidebarNav.getBoundingClientRect();
+        const linkRect = activeLink.getBoundingClientRect();
+        if (linkRect.top < navRect.top || linkRect.bottom > navRect.bottom) {
+            const scrollAmount = (linkRect.top - navRect.top) - (navRect.height / 2) + (linkRect.height / 2);
+            sidebarNav.scrollTop += scrollAmount;
+        }
+    }
 </script>
 <?php endif; ?>
 

@@ -209,7 +209,8 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
                 <i class="fas fa-check-circle fa-3x opacity-50"></i>
             </div>
         </a>
-        <div class="block bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-xl shadow-lg text-white">
+        <a href="<?php echo BASE_URL; ?>index.php?page=picker/data"
+           class="block bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-xl shadow-lg text-white transform hover:scale-105 transition-transform duration-300">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium uppercase tracking-wider opacity-80">Jumlah Picker</p>
@@ -217,7 +218,7 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
                 </div>
                 <i class="fas fa-motorcycle fa-3x opacity-50"></i>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -255,9 +256,22 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
                                         <span class="font-semibold text-sky-600"><?php echo htmlspecialchars($aktivitas['nama_warga']); ?></span>
                                         sebesar <span class="font-semibold"><?php echo format_rupiah($aktivitas['amount']); ?></span>.
                                     <?php elseif ($aktivitas['activity_type'] == 'order'): ?>
+                                        <?php
+                                        $status_label = $aktivitas['action_type'];
+                                        switch ($status_label) {
+                                            case 'MENUNGGU_KONFIRMASI': $status_label = 'Menunggu Konfirmasi'; break;
+                                            case 'DRIVER_DITUGASKAN': $status_label = 'Driver Ditugaskan'; break;
+                                            case 'DRIVER_MENUJU_LOKASI': $status_label = 'Driver Menuju Lokasi'; break;
+                                            case 'DRIVER_TIBA': $status_label = 'Driver Tiba'; break;
+                                            case 'SAMPAH_DIJEMPUT': $status_label = 'Sampah Dijemput'; break;
+                                            case 'VALIDASI_BANK_SAMPAH': $status_label = 'Tunggu Validasi Admin'; break;
+                                            case 'SELESAI': $status_label = 'Selesai'; break;
+                                            case 'DIBATALKAN': $status_label = 'Dibatalkan'; break;
+                                        }
+                                        ?>
                                         Pengajuan penjemputan dari
                                         <span class="font-semibold text-sky-600"><?php echo htmlspecialchars($aktivitas['nama_warga']); ?></span>
-                                        (Status: <span class="italic text-gray-500"><?php echo htmlspecialchars($aktivitas['action_type']); ?></span>).
+                                        (Status: <span class="italic text-gray-500"><?php echo htmlspecialchars($status_label); ?></span>).
                                     <?php elseif ($aktivitas['activity_type'] == 'register'): ?>
                                         Pendaftaran warga baru:
                                         <span class="font-semibold text-sky-600"><?php echo htmlspecialchars($aktivitas['nama_warga']); ?></span>.
@@ -291,14 +305,6 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
                 <i class="fas fa-bolt mr-3 text-sky-500"></i>Pintasan Cepat
             </h2>
             <div class="space-y-3">
-                <a href="<?php echo BASE_URL; ?>index.php?page=transaksi/setor" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
-                    <i class="fas fa-plus-circle fa-lg mr-3"></i> 
-                    <div>
-                        <span class="font-semibold">Input Setoran Sampah</span>
-                        <p class="text-xs opacity-80">Catat setoran baru dari penyetor.</p>
-                    </div>
-                </a>
-                <!-- Input Tarik Saldo removed (handled by users) -->
                 <a href="<?php echo BASE_URL; ?>index.php?page=penyetor/tambah" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-sky-500 text-white hover:bg-sky-600 focus:bg-sky-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
                     <i class="fas fa-user-plus fa-lg mr-3"></i> 
                     <div>
@@ -306,11 +312,39 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
                         <p class="text-xs opacity-80">Daftarkan penyetor baru ke sistem.</p>
                     </div>
                 </a>
-                 <a href="<?php echo BASE_URL; ?>index.php?page=jenis_sampah/tambah" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                <a href="<?php echo BASE_URL; ?>index.php?page=picker/tambah" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 focus:bg-indigo-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                    <i class="fas fa-motorcycle fa-lg mr-3"></i> 
+                    <div>
+                        <span class="font-semibold">Tambah Picker Baru</span>
+                        <p class="text-xs opacity-80">Daftarkan driver/picker baru ke sistem.</p>
+                    </div>
+                </a>
+                <a href="<?php echo BASE_URL; ?>index.php?page=monitor_ai/index" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 focus:bg-emerald-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                    <i class="fas fa-camera-retro fa-lg mr-3"></i> 
+                    <div>
+                        <span class="font-semibold">Monitor AI Scan</span>
+                        <p class="text-xs opacity-80">Pantau proses scan sampah secara live.</p>
+                    </div>
+                </a>
+                <a href="<?php echo BASE_URL; ?>index.php?page=reward/index" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                    <i class="fas fa-gift fa-lg mr-3"></i> 
+                    <div>
+                        <span class="font-semibold">Validasi Tukar Poin</span>
+                        <p class="text-xs opacity-80">Proses penukaran poin dari penyetor.</p>
+                    </div>
+                </a>
+                <a href="<?php echo BASE_URL; ?>index.php?page=jenis_sampah/tambah" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-teal-500 text-white hover:bg-teal-600 focus:bg-teal-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
                     <i class="fas fa-tag fa-lg mr-3"></i> 
                     <div>
                         <span class="font-semibold">Tambah Jenis Sampah</span>
                         <p class="text-xs opacity-80">Kelola daftar jenis sampah.</p>
+                    </div>
+                </a>
+                <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/artikel_tambah" class="flex items-center w-full text-left px-4 py-3 rounded-lg bg-purple-500 text-white hover:bg-purple-600 focus:bg-purple-600 transition duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                    <i class="fas fa-book-open fa-lg mr-3"></i> 
+                    <div>
+                        <span class="font-semibold">Tambah Edukasi Baru</span>
+                        <p class="text-xs opacity-80">Bagikan info atau artikel terbaru.</p>
                     </div>
                 </a>
             </div>

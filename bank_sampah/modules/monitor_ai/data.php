@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 
 if (!defined('BASE_URL')) {
     require_once '../../config/database.php'; 
-    require_once '../../functions.php'; 
+    require_once '../../includes/functions.php'; 
 }
 
 // Pastikan hanya admin yang bisa akses
@@ -47,13 +47,13 @@ function time_elapsed_string($datetime, $full = false) {
 
 // Query untuk mengambil data deteksi terbaru, join ke tabel pengguna untuk ambil nama lengkap
 // Tampilkan 12 data terakhir
-$sql = "SELECT d.id_deteksi, d.uploaded_file, d.labels_json, d.created_at, p.nama_lengkap 
+$sql = "SELECT d.id_deteksi, d.uploaded_file, d.labels_json, d.created_at, p.nama_lengkap, p.foto_profil 
         FROM deteksi d 
         LEFT JOIN pengguna p ON d.id_pengguna = p.id_pengguna 
         ORDER BY d.id_deteksi DESC 
         LIMIT 12";
 
-$result = mysqli_query($conn, $sql);
+$result = mysqli_query($koneksi, $sql);
 
 $data = [];
 if ($result) {
@@ -77,6 +77,7 @@ if ($result) {
             'id' => $row['id_deteksi'],
             'uploaded_file' => $row['uploaded_file'], // relative path, e.g. assets/uploads/img_xxx.jpg
             'nama_lengkap' => $row['nama_lengkap'],
+            'foto_profil' => $row['foto_profil'],
             'labels' => $labels,
             'time_ago' => time_elapsed_string($row['created_at']),
             'is_new' => $is_new

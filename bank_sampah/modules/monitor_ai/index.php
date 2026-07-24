@@ -81,6 +81,20 @@ document.addEventListener('DOMContentLoaded', function() {
             // Fallback image url if broken
             const imageUrl = item.uploaded_file ? `<?php echo BASE_URL; ?>${item.uploaded_file}` : 'https://via.placeholder.com/400x300?text=No+Image';
 
+            // User Avatar
+            let avatarHtml = `<div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 font-bold"><i class="fas fa-user text-sm"></i></div>`;
+            if (item.foto_profil) {
+                let avatarSrc = '';
+                if (item.foto_profil.startsWith('http')) {
+                    avatarSrc = item.foto_profil;
+                } else if (item.foto_profil.startsWith('assets/')) {
+                    avatarSrc = `<?php echo BASE_URL; ?>${item.foto_profil}`;
+                } else {
+                    avatarSrc = `<?php echo BASE_URL; ?>assets/uploads/${item.foto_profil}`;
+                }
+                avatarHtml = `<img src="${avatarSrc}" alt="Avatar" class="w-8 h-8 rounded-full object-cover border border-gray-200" onerror="this.src='<?php echo BASE_URL; ?>assets/uploads/default_avatar.png'">`;
+            }
+
             html += `
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 relative border border-gray-100">
                 ${item.is_new ? '<div class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-bounce shadow-md">NEW</div>' : ''}
@@ -89,9 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="p-4">
                     <div class="flex items-center space-x-2 mb-3">
-                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 font-bold">
-                            <i class="fas fa-user text-sm"></i>
-                        </div>
+                        ${avatarHtml}
                         <div class="text-sm">
                             <p class="text-gray-900 font-semibold truncate" title="${namaLengkap}">${namaLengkap}</p>
                             <p class="text-gray-500 text-xs"><i class="far fa-clock mr-1"></i>${timeAgo}</p>

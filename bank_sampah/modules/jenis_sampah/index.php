@@ -109,10 +109,10 @@ $result = mysqli_query($koneksi, $query);
 
                                     </div>
                                     <div class="flex items-center text-sm space-x-3 whitespace-nowrap">
-                                        <a href="<?php echo BASE_URL; ?>index.php?page=jenis_sampah/edit&id=<?php echo $row['id_jenis_sampah']; ?>" class="text-indigo-600 hover:text-indigo-900"><i class="fas fa-edit"></i> Edit</a>
+                                        <a href="<?php echo BASE_URL; ?>index.php?page=jenis_sampah/edit&id=<?php echo $row['id_jenis_sampah']; ?>" class="text-sky-600 hover:text-sky-800 mr-3 transition-colors duration-150" title="Edit Jenis Sampah"><i class="fas fa-edit"></i> <span class="hidden sm:inline">Edit</span></a>
                                         <a href="<?php echo BASE_URL; ?>index.php?page=jenis_sampah/hapus&id=<?php echo $row['id_jenis_sampah']; ?>" 
-                                           class="text-red-600 hover:text-red-900 btn-hapus" 
-                                           data-pesan="Apakah Anda yakin ingin menghapus jenis sampah ini? Ini mungkin mempengaruhi data transaksi yang ada."><i class="fas fa-trash"></i> Hapus</a>
+                                           class="text-red-600 hover:text-red-800 transition-colors duration-150 btn-hapus" 
+                                           data-pesan="Apakah Anda yakin ingin menghapus jenis sampah ini? Ini mungkin mempengaruhi data transaksi yang ada." title="Hapus Jenis Sampah"><i class="fas fa-trash"></i> <span class="hidden sm:inline">Hapus</span></a>
                                     </div>
                                 </div>
                             </td>

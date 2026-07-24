@@ -321,19 +321,19 @@ $status_labels = [
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <button type="submit" name="assign_driver" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1.5 rounded text-xs font-medium transition">
-                                            Tugaskan
+                                        <button type="submit" name="assign_driver" class="text-teal-600 hover:text-teal-800 transition-colors duration-150" title="Tugaskan Picker">
+                                            <i class="fas fa-check-circle"></i> <span class="hidden lg:inline">Tugaskan</span>
                                         </button>
                                     </form>
                                 <?php elseif ($st === 'SAMPAH_DIJEMPUT' || $st === 'VALIDASI_BANK_SAMPAH'): ?>
                                     <a href="<?php echo BASE_URL; ?>index.php?page=orders/validate&id=<?php echo $order['id_order']; ?>" 
-                                       class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition duration-150 inline-block">
-                                        <i class="fas fa-clipboard-check mr-1"></i> Validasi
+                                       class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition-colors duration-150 inline-flex items-center gap-1" title="Validasi Order">
+                                        <i class="fas fa-clipboard-check"></i> <span class="hidden sm:inline">Validasi</span>
                                     </a>
                                 <?php else: ?>
                                     <a href="<?php echo BASE_URL; ?>index.php?page=orders/detail&id=<?php echo $order['id_order']; ?>" 
-                                       class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition duration-150 inline-block">
-                                        <i class="fas fa-info-circle mr-1"></i> Detail
+                                       class="text-sky-600 hover:text-sky-800 mr-3 transition-colors duration-150" title="Detail Order">
+                                        <i class="fas fa-info-circle"></i> <span class="hidden sm:inline">Detail</span>
                                     </a>
                                 <?php endif; ?>
                             </td>

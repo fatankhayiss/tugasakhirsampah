@@ -95,9 +95,9 @@ $res = mysqli_query($koneksi, $sql);
                             <?php if ($can_manage): ?>
                             <div class="space-x-3 text-sm">
                                 <?php $edit_route = ($video_url || $video_path) ? 'video_edit' : 'artikel_edit'; ?>
-                                <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/<?php echo $edit_route; ?>&id=<?php echo (int)$row['id_edukasi']; ?>" class="text-indigo-600 hover:text-indigo-900"><i class="fas fa-edit"></i> Edit</a>
+                                <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/<?php echo $edit_route; ?>&id=<?php echo (int)$row['id_edukasi']; ?>" class="text-sky-600 hover:text-sky-800 transition-colors duration-150"><i class="fas fa-edit"></i> Edit</a>
                                 <a href="<?php echo BASE_URL; ?>index.php?page=edukasi/hapus&id=<?php echo (int)$row['id_edukasi']; ?>" 
-                                   class="text-red-600 hover:text-red-900 btn-hapus" 
+                                   class="text-red-600 hover:text-red-800 transition-colors duration-150 btn-hapus" 
                                    data-pesan="Apakah Anda yakin ingin menghapus konten ini?"><i class="fas fa-trash"></i> Hapus</a>
                             </div>
                             <?php endif; ?>

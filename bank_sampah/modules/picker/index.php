@@ -21,7 +21,7 @@ if (!empty($search)) {
 }
 
 $query_string = "SELECT p.id_pengguna, p.nama_lengkap, p.username, p.alamat, p.no_telepon, p.email, p.tanggal_daftar, p.driver_status, p.status, p.foto_profil,
-                        dv.vehicle_name, dv.vehicle_type, dv.license_plate, dv.capacity, dv.created_at as vehicle_reg_date
+                        dv.vehicle_type, dv.license_plate, dv.created_at as vehicle_reg_date
                  FROM pengguna p
                  LEFT JOIN driver_daily_vehicle dv ON p.id_pengguna = dv.driver_id AND dv.date = CURDATE()
                  WHERE $base_condition $query_condition 
@@ -72,7 +72,6 @@ if ($stmt) {
                         <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Nama Kendaraan</th>
                         <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Tipe Kendaraan</th>
                         <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Plat Nomor</th>
-                        <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kapasitas</th>
                         <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Tgl Reg. Kendaraan</th>
                         <th scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status Akun</th>
                         <th scope="col" class="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">Aksi</th>
@@ -86,9 +85,21 @@ if ($stmt) {
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $no++; ?></td>
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
+                                <?php 
+                                    $avatar_src = BASE_URL . 'assets/uploads/default_avatar.png';
+                                    if (!empty($row['foto_profil'])) {
+                                        if (strpos($row['foto_profil'], 'http') === 0) {
+                                            $avatar_src = $row['foto_profil'];
+                                        } elseif (strpos($row['foto_profil'], 'assets/') === 0) {
+                                            $avatar_src = BASE_URL . ltrim($row['foto_profil'], '/');
+                                        } else {
+                                            $avatar_src = BASE_URL . 'assets/uploads/' . $row['foto_profil'];
+                                        }
+                                    }
+                                ?>
                                     <img class="h-10 w-10 rounded-full object-cover mr-3 border" 
-                                         src="<?php echo BASE_URL . 'assets/uploads/' . (!empty($row['foto_profil']) ? $row['foto_profil'] : 'default_avatar.png'); ?>" 
-                                         alt="Avatar">
+                                         src="<?php echo htmlspecialchars($avatar_src); ?>" 
+                                         alt="Avatar" onerror="this.src='<?php echo BASE_URL . 'assets/uploads/default_avatar.png'; ?>'">
                                     <div>
                                         <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($row['nama_lengkap']); ?></div>
                                         <div class="text-xs text-gray-500">@<?php echo htmlspecialchars($row['username']); ?></div>
@@ -123,8 +134,7 @@ if ($stmt) {
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($row['vehicle_name'] ?? '-'); ?></td>
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($row['vehicle_type'] ?? '-'); ?></td>
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($row['license_plate'] ?? '-'); ?></td>
-                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($row['capacity'] ?: '-'); ?></td>
-                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo $row['vehicle_reg_date'] ? date('d M Y H:i', strtotime($row['vehicle_reg_date'])) : '-'; ?></td>
+                            <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo $row['vehicle_reg_date'] ?? null ? date('d M Y H:i', strtotime($row['vehicle_reg_date'])) : '-'; ?></td>
                             <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
                                 <?php if (($row['status'] ?? 'aktif') === 'aktif'): ?>
                                     <a href="<?php echo BASE_URL; ?>index.php?page=picker/proses_simpan&action=toggle_status&id=<?php echo $row['id_pengguna']; ?>" 
