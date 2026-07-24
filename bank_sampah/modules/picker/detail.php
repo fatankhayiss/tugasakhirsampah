@@ -11,10 +11,8 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $id_pengguna = (int)$_GET['id'];
 
 // 1. Fetch user & detail_driver info
-$query_picker = "SELECT p.id_pengguna, p.nama_lengkap, p.username, p.email, p.no_telepon, p.alamat, p.foto_profil, p.driver_status, p.status, p.tanggal_daftar,
-                        d.kecamatan, d.kab_kota, d.wilayah, d.kode_pos, d.notes as picker_notes, d.kapasitas_berat
+$query_picker = "SELECT p.id_pengguna, p.nama_lengkap, p.username, p.email, p.no_telepon, p.alamat, p.foto_profil, p.driver_status, p.status, p.tanggal_daftar
                  FROM pengguna p
-                 LEFT JOIN detail_driver d ON p.id_pengguna = d.id_pengguna
                  WHERE p.id_pengguna = ? AND p.level = 'driver'";
 
 $stmt = mysqli_prepare($koneksi, $query_picker);
@@ -155,18 +153,7 @@ mysqli_stmt_close($stmt_l);
                             <span class="text-gray-500 block mb-0.5">Alamat</span>
                             <span class="font-semibold text-gray-800"><?php echo htmlspecialchars($picker['alamat'] ?? '-'); ?></span>
                         </div>
-                        <?php if (!empty($picker['wilayah'])): ?>
-                        <div>
-                            <span class="text-gray-500 block mb-0.5">Area Wilayah</span>
-                            <span class="font-semibold text-gray-800"><?php echo htmlspecialchars($picker['wilayah']); ?></span>
-                        </div>
-                        <?php endif; ?>
-                        <?php if (!empty($picker['picker_notes'])): ?>
-                        <div class="sm:col-span-2">
-                            <span class="text-gray-500 block mb-0.5">Catatan Picker</span>
-                            <span class="font-semibold text-gray-800"><?php echo htmlspecialchars($picker['picker_notes']); ?></span>
-                        </div>
-                        <?php endif; ?>
+
                     </div>
                 </div>
 

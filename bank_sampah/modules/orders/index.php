@@ -114,7 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_order'])) {
                 mysqli_stmt_execute($stmt_p);
                 mysqli_stmt_close($stmt_p);
 
-                $pesan = "Penjemputan sampah Anda telah selesai. Total poin ($final_points pts) telah ditambahkan ke saldo Anda.";
+                $formatted_points = number_format($final_points, 0, ',', '.');
+                $pesan = "Penjemputan sampah Anda telah selesai. Total poin ($formatted_points Poin) telah ditambahkan ke saldo Anda.";
                 $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Penjemputan selesai', ?, 'reward', ?)";
                 $stmt_notif = mysqli_prepare($koneksi, $ins_notif);
                 mysqli_stmt_bind_param($stmt_notif, "isi", $id_warga, $pesan, $id_order);

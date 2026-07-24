@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 void main() async {
-  final url = Uri.parse('http://192.168.1.187/tugasakhirsampah/bank_sampah/modules/api/driver_api.php?action=get_active_task');
+  final url = Uri.parse('https://itrashy.triki.cloud/modules/api/driver_api.php?action=get_active_task');
   final response = await http.post(
     url,
     headers: {

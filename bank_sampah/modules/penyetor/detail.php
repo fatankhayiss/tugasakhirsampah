@@ -104,7 +104,7 @@ mysqli_stmt_close($stmt_stats);
                     <div class="flex justify-between items-center text-sm">
                         <span class="text-gray-500 font-medium">Poin Terkumpul:</span>
                         <span class="font-bold text-amber-600 text-base">
-                            <?php echo number_format($penyetor['total_points'] ?? 0); ?> pts
+                            <?php echo number_format($penyetor['total_points'] ?? 0, 0, ',', '.'); ?> Poin
                         </span>
                     </div>
                     <div class="flex justify-between items-center text-sm">

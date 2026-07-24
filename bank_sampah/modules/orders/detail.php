@@ -131,7 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Send notification
-        $pesan = "Penjemputan selesai. Total poin ($poin_final pts) telah ditambahkan ke saldo Anda.";
+        $formatted_points = number_format($poin_final, 0, ',', '.');
+        $pesan = "Penjemputan selesai. Total poin ($formatted_points Poin) telah ditambahkan ke saldo Anda.";
         $stmt_notif = mysqli_prepare($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Penjemputan Selesai', ?, 'reward', ?)");
         mysqli_stmt_bind_param($stmt_notif, "isi", $id_warga, $pesan, $id_order);
         mysqli_stmt_execute($stmt_notif);
@@ -388,7 +389,7 @@ $is_editable = !in_array($status, ['SELESAI', 'DIBATALKAN']);
                     <div>
                         <div class="mb-4">
                             <span class="text-xs text-gray-500 block">Estimasi Poin Asal</span>
-                            <span class="text-base font-bold text-gray-700"><?php echo number_format($order['estimasi_poin']); ?> pts</span>
+                            <span class="text-base font-bold text-gray-700"><?php echo number_format($order['estimasi_poin'], 0, ',', '.'); ?> Poin</span>
                         </div>
                         <div>
                             <span class="text-xs text-gray-500 block mb-1">Detail Kalkulasi Poin (Berat × Poin/Kg)</span>
@@ -408,7 +409,7 @@ $is_editable = !in_array($status, ['SELESAI', 'DIBATALKAN']);
                                    class="w-32 text-center border-sky-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500 text-2xl font-black text-sky-800 bg-white">
                             <span id="rp-conversion" class="text-xs text-sky-600 font-semibold mt-2">Setara: Rp 0</span>
                         <?php else: ?>
-                            <span class="text-3xl font-black text-sky-800"><?php echo number_format($order['estimasi_poin']); ?> pts</span>
+                            <span class="text-3xl font-black text-sky-800"><?php echo number_format($order['estimasi_poin'], 0, ',', '.'); ?> Poin</span>
                             <span class="text-sm text-sky-600 font-semibold mt-1">Setara: Rp <?php echo number_format($order['estimasi_poin'] * 1000, 0, ',', '.'); ?></span>
                         <?php endif; ?>
                     </div>
@@ -576,17 +577,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const rowPoints = weight * pointsPerKg;
             totalPoints += rowPoints;
             
-            breakdownHTML += `<div>• ${catName}: ${weight} kg × ${pointsPerKg.toFixed(2)} pts/kg = ${rowPoints.toFixed(2)} pts</div>`;
+            const formattedPtsPerKg = pointsPerKg.toLocaleString('id-ID', {maximumFractionDigits: 2});
+            const formattedRowPoints = rowPoints.toLocaleString('id-ID', {maximumFractionDigits: 2});
+            breakdownHTML += `<div>• ${catName}: ${weight} kg × ${formattedPtsPerKg} Poin/kg = ${formattedRowPoints} Poin</div>`;
         });
         
         const finalSuggested = Math.round(totalPoints);
         
         if (calcDiv) {
-            calcDiv.innerHTML = breakdownHTML + `<div class="mt-1 font-bold border-t pt-1 border-gray-200">Total: ${totalPoints.toFixed(2)} pts (dibulatkan: ${finalSuggested} pts)</div>`;
+            const formattedTotal = totalPoints.toLocaleString('id-ID', {maximumFractionDigits: 2});
+            const formattedFinal = finalSuggested.toLocaleString('id-ID');
+            calcDiv.innerHTML = breakdownHTML + `<div class="mt-1 font-bold border-t pt-1 border-gray-200">Total: ${formattedTotal} Poin (dibulatkan: ${formattedFinal} Poin)</div>`;
         }
         
         if (suggestedPoints) {
-            suggestedPoints.textContent = finalSuggested + " pts";
+            suggestedPoints.textContent = finalSuggested.toLocaleString('id-ID') + " Poin";
         }
         
         if (poinInput && !poinInput.classList.contains('user-modified')) {

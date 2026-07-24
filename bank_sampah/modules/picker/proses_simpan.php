@@ -77,13 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $id_pengguna_baru = mysqli_insert_id($koneksi);
             mysqli_stmt_close($stmt_insert);
 
-            // Insert ke detail_driver (hanya menyimpan data kosong/default untuk relasi)
-            $query_insert_detail = "INSERT INTO detail_driver (id_pengguna, tipe_kendaraan, jenis_kendaraan, plat_nomor, kapasitas_berat, kecamatan, kab_kota, wilayah, kode_pos) 
-                                    VALUES (?, NULL, NULL, NULL, 0.00, NULL, NULL, NULL, NULL)";
-            $stmt_detail = mysqli_prepare($koneksi, $query_insert_detail);
-            mysqli_stmt_bind_param($stmt_detail, "i", $id_pengguna_baru);
-            mysqli_stmt_execute($stmt_detail);
-            mysqli_stmt_close($stmt_detail);
+
 
             mysqli_commit($koneksi);
             $_SESSION['success_message'] = "Data Picker baru berhasil ditambahkan. Username login: {$username}.";

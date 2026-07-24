@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/repositories/order_repository.dart';
@@ -294,7 +295,7 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
                               const Divider(height: 24, color: AppColors.border),
                               _DetailRow(title: 'Kurs Penukaran', content: convRate),
                               const Divider(height: 24, color: AppColors.border),
-                              _DetailRow(title: 'Poin Ditukar', content: '$pts Poin'),
+                              _DetailRow(title: 'Poin Ditukar', content: '${NumberFormat.decimalPattern('id').format(pts)} Poin'),
                               const Divider(height: 24, color: AppColors.border),
                               _DetailRow(
                                 title: 'Estimasi Pencairan',

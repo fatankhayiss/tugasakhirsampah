@@ -4,7 +4,7 @@ export 'app_colors.dart';
 
 class ApiConfig {
   ApiConfig._();
-  static const String baseUrl = 'http://192.168.110.61/tugasakhirsampah/bank_sampah/';
+  static const String baseUrl = 'https://itrashy.triki.cloud/';
 
   // Auth
   static const String authLogin           = '${baseUrl}modules/api/auth_api.php?action=login';

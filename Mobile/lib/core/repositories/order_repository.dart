@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import '../../features/orders/models/history_item_model.dart';
 import '../../features/orders/models/ongoing_order_model.dart';
 import '../constants/api_config.dart';
@@ -192,7 +193,7 @@ class OrderRepository extends ChangeNotifier {
             date: _formatDate(item['created_at'] ?? ''),
             subtitle: '${item['destination_type'] ?? 'E-Wallet'} · Rp ${amt.toStringAsFixed(0)}',
             status: mappedStatus,
-            estimatedPoints: '-$pts poin',
+            estimatedPoints: '-${NumberFormat.decimalPattern('id').format(pts)} Poin',
             isRedemption: true,
             destination: item['destination_type']?.toString(),
             provider: item['provider']?.toString(),
@@ -313,7 +314,7 @@ class OrderRepository extends ChangeNotifier {
                 id: item['id'].toString(),
                 title: 'Jemput Sampah',
                 date: scheduleStr,
-                points: isCancelled ? '0 POIN' : '+$pts POIN',
+                points: isCancelled ? '0 Poin' : '+${NumberFormat.decimalPattern('id').format(pts)} Poin',
                 type: HistoryType.setor,
                 weight: '$beratStr · $itemsCnt Jenis',
                 statusLabel: isCancelled ? 'Dibatalkan' : 'Selesai',
@@ -339,7 +340,7 @@ class OrderRepository extends ChangeNotifier {
               id: item['id'].toString(),
               title: isSetor ? 'Penjemputan' : 'Tukar Poin',
               date: formatPickupSchedule(item['tanggal'] ?? '', null),
-              points: isSetor ? '+${nilai.toInt()} POIN' : '-${nilai.toInt()} Poin',
+              points: isSetor ? '+${NumberFormat.decimalPattern('id').format(nilai.toInt())} Poin' : '-${NumberFormat.decimalPattern('id').format(nilai.toInt())} Poin',
               type: isSetor ? HistoryType.setor : HistoryType.pencairan,
               weight: berat != null ? '${berat.toStringAsFixed(1)} Kg terkumpul' : null,
               statusLabel: 'Selesai',
@@ -369,7 +370,7 @@ class OrderRepository extends ChangeNotifier {
               id: item['id'].toString(),
               title: 'Tukar Poin (${item['provider'] ?? '-'})',
               date: _formatDate(item['created_at'] ?? ''),
-              points: '-$pts POIN',
+              points: '-${NumberFormat.decimalPattern('id').format(pts)} Poin',
               type: HistoryType.pencairan,
               weight: 'Rp ${amt.toStringAsFixed(0)}',
               statusLabel: statusLabel,

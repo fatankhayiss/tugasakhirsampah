@@ -9,12 +9,20 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
     mysqli_begin_transaction($koneksi);
 
     try {
-        // Hapus dari detail_driver terlebih dahulu
-        $query_delete_detail = "DELETE FROM detail_driver WHERE id_pengguna = ?";
+        // Hapus history order di detail_driver
+        $query_delete_detail = "DELETE FROM detail_driver WHERE id_picker = ?";
         $stmt_detail = mysqli_prepare($koneksi, $query_delete_detail);
         mysqli_stmt_bind_param($stmt_detail, "i", $id_pengguna);
         mysqli_stmt_execute($stmt_detail);
         mysqli_stmt_close($stmt_detail);
+
+        // Hapus data kendaraan harian
+        $query_delete_vehicle = "DELETE FROM driver_daily_vehicle WHERE driver_id = ?";
+        $stmt_vehicle = mysqli_prepare($koneksi, $query_delete_vehicle);
+        mysqli_stmt_bind_param($stmt_vehicle, "i", $id_pengguna);
+        mysqli_stmt_execute($stmt_vehicle);
+        mysqli_stmt_close($stmt_vehicle);
+
 
         // Hapus dari pengguna
         $query_delete_pengguna = "DELETE FROM pengguna WHERE id_pengguna = ? AND level = 'driver'";
