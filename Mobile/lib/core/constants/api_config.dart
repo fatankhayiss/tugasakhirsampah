@@ -3,12 +3,12 @@
 /// Ubah [baseUrl] sesuai environment:
 /// - Android Emulator: `http://10.0.2.2/tugasakhirsampah/bank_sampah/`
 /// - iOS Simulator: `http://localhost/tugasakhirsampah/bank_sampah/`
-/// - Device Fisik: `http://192.168.31.220/tugasakhirsampah/bank_sampah/`
+/// - Production Cloud: `https://itrashy.triki.cloud/`
 class ApiConfig {
   ApiConfig._();
 
   /// Base URL backend. Trailing slash wajib.
-  static const String baseUrl = 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
+  static const String baseUrl = 'https://itrashy.triki.cloud/';
 
   // API Endpoints
   static const String authLogin = '${baseUrl}modules/api/auth_api.php?action=login';

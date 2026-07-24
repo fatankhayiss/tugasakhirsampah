@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         mysqli_stmt_close($stmt_i);
 
-        $base_url = "http://192.168.31.220/tugasakhirsampah/bank_sampah/";
+        $base_url = "https://itrashy.triki.cloud/";
         $base_upload_url = $base_url . "assets/uploads/";
 
         $foto_warga = $order['foto_warga'];

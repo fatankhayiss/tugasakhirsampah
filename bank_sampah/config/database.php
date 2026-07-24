@@ -42,8 +42,7 @@ if (!defined('BASE_URL')) {
         $basePath = '';
         if ($docRoot && strpos($appRoot, $docRoot) === 0) {
             $basePath = substr($appRoot, strlen($docRoot));
-        }
-        if (empty($basePath)) {
+        } elseif (empty($docRoot)) {
             $basePath = '/tugasakhirsampah/bank_sampah';
         }
         
@@ -52,7 +51,7 @@ if (!defined('BASE_URL')) {
         define('BASE_URL', $baseUrl);
     } else {
         // Fallback for CLI or when server vars are unavailable
-        define('BASE_URL', 'http://192.168.31.220/tugasakhirsampah/bank_sampah/');
+        define('BASE_URL', 'https://itrashy.triki.cloud/');
     }
 }
 
