@@ -293,6 +293,8 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
             _buildCategoryChips(_task),
             const SizedBox(height: 24),
             _buildActionButtons(context, _task, statusStr),
+            const SizedBox(height: 16),
+            _buildActivityLog(_task),
             const SizedBox(height: 32),
           ],
         ),
@@ -705,7 +707,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
       );
     }
 
-    if (st == 'DRIVER_TIBA' || st == 'PICKER_HAMPIR_TIBA') {
+    if (st == 'PENIMBANGAN') {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -809,6 +811,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
 
     final isPendingOrAccepted = st == 'PENDING' || st == 'ACCEPTED' || st == 'MENUNGGU_KONFIRMASI' || st == 'DRIVER_DITUGASKAN';
     final isOnTheWay = st == 'ON_THE_WAY' || st == 'DALAM_PERJALANAN' || st == 'DRIVER_MENUJU_LOKASI';
+    final isArrived = st == 'DRIVER_TIBA' || st == 'PICKER_HAMPIR_TIBA';
 
     return Column(
       children: [
@@ -822,10 +825,8 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
               bool hasVehicle = vRes['success'] == true && vRes['data'] != null;
               if (!hasVehicle) {
                 if (!mounted) return;
-                // ignore: use_build_context_synchronously
                 final fill = await VehicleFormSheet.showValidationDialog(ctx);
                 if (fill == true && mounted) {
-                  // ignore: use_build_context_synchronously
                   final saved = await VehicleFormSheet.showVehicleSheet(ctx);
                   if (saved == true) {
                     hasVehicle = true;
@@ -839,9 +840,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
 
               if (isPendingOrAccepted) {
                 if (!mounted) return;
-                // ignore: use_build_context_synchronously
                 showDialog(
-                  // ignore: use_build_context_synchronously
                   context: ctx,
                   barrierDismissible: false,
                   builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -849,19 +848,16 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                 final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
                 final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_MENUJU_LOKASI');
                 if (!mounted) return;
-                // ignore: use_build_context_synchronously
                 Navigator.of(ctx).pop();
                 if (res['success'] == true) {
                   setState(() {
                     _task['status'] = 'DRIVER_MENUJU_LOKASI';
                   });
-                  // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
                     content: Text('Status diperbarui: Picker Menuju Lokasi!'),
                     backgroundColor: AppColors.primary,
                   ));
                 } else {
-                  // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
                     content: Text(res['message']?.toString() ?? 'Gagal memperbarui status'),
                     backgroundColor: AppColors.badgeCancelled,
@@ -869,9 +865,7 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                 }
               } else if (isOnTheWay) {
                 if (!mounted) return;
-                // ignore: use_build_context_synchronously
                 final confirm = await showDialog<bool>(
-                  // ignore: use_build_context_synchronously
                   context: ctx,
                   builder: (dialogCtx) => AlertDialog(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -900,34 +894,54 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                     ],
                   ),
                 );
-                if (confirm != true) return;
-
+                if (confirm == true) {
+                  if (!mounted) return;
+                  showDialog(
+                    context: ctx,
+                    barrierDismissible: false,
+                    builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  );
+                  final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
+                  final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_TIBA');
+                  if (!mounted) return;
+                  Navigator.of(ctx).pop();
+                  if (res['success'] == true) {
+                    setState(() {
+                      _task['status'] = 'DRIVER_TIBA';
+                    });
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                      content: Text('Status diperbarui: Picker telah tiba di lokasi!'),
+                      backgroundColor: AppColors.primary,
+                    ));
+                  } else {
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                      content: Text(res['message']?.toString() ?? 'Gagal memperbarui status'),
+                      backgroundColor: AppColors.badgeCancelled,
+                    ));
+                  }
+                }
+              } else if (isArrived) {
                 if (!mounted) return;
-                // ignore: use_build_context_synchronously
                 showDialog(
-                  // ignore: use_build_context_synchronously
                   context: ctx,
                   barrierDismissible: false,
                   builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
                 );
                 final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
-                final res = await ApiService().updateOrderStatus(orderId, 'DRIVER_TIBA');
+                final res = await ApiService().updateOrderStatus(orderId, 'PENIMBANGAN');
                 if (!mounted) return;
-                // ignore: use_build_context_synchronously
                 Navigator.of(ctx).pop();
                 if (res['success'] == true) {
                   setState(() {
-                    _task['status'] = 'DRIVER_TIBA';
+                    _task['status'] = 'PENIMBANGAN';
                   });
-                  // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                    content: Text('Status diperbarui: Picker Hampir Tiba!'),
+                    content: Text('Memulai Penimbangan!'),
                     backgroundColor: AppColors.primary,
                   ));
                 } else {
-                  // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                    content: Text(res['message']?.toString() ?? 'Gagal memperbarui status'),
+                    content: Text(res['message']?.toString() ?? 'Gagal memulai penimbangan'),
                     backgroundColor: AppColors.badgeCancelled,
                   ));
                 }
@@ -936,16 +950,21 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               elevation: 4,
               shadowColor: AppColors.primary.withValues(alpha: 0.3),
             ),
-            child: Text(
-              isPendingOrAccepted
-                  ? 'Konfirmasi & Mulai Jalan'
-                  : 'Saya Sudah Dekat',
-              style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w800, fontSize: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(isPendingOrAccepted ? Icons.play_arrow_rounded : (isOnTheWay ? Icons.location_on_rounded : Icons.scale_rounded), size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  isPendingOrAccepted ? 'Mulai Perjalanan' : (isOnTheWay ? 'Saya Sudah Tiba' : 'Mulai Timbang'),
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                ),
+              ],
             ),
           ),
         ),
@@ -958,6 +977,99 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
           style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 12),
         ),
       ],
+    );
+  }
+  // ... (Other functions end here)
+
+  Widget _buildActivityLog(Map<String, dynamic> task) {
+    if (task['activity_log'] == null) return const SizedBox();
+    
+    final Map<String, dynamic> log = task['activity_log'];
+    
+    // Ordered steps
+    final steps = [
+      {'title': 'Ditugaskan', 'time': log['assigned_at'], 'icon': Icons.assignment_turned_in_rounded},
+      {'title': 'Menuju Lokasi', 'time': log['departed_at'], 'icon': Icons.directions_car_rounded},
+      {'title': 'Tiba di Lokasi', 'time': log['arrived_at'], 'icon': Icons.location_on_rounded},
+      {'title': 'Selesai Jemput', 'time': log['pickup_finished_at'], 'icon': Icons.check_circle_outline_rounded},
+      {'title': 'Tiba di Bank', 'time': log['arrived_bank_at'], 'icon': Icons.store_rounded},
+      {'title': 'Selesai/Dibongkar', 'time': log['unloaded_at'], 'icon': Icons.inventory_2_rounded},
+    ];
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: DriverStyles.cardRadius,
+        border: Border.all(color: AppColors.border),
+        boxShadow: DriverStyles.cardShadow,
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Timeline Operasional',
+            style: TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark, fontWeight: FontWeight.w800, fontSize: 15),
+          ),
+          const SizedBox(height: 16),
+          ...steps.map((step) {
+            final timeStr = step['time']?.toString() ?? '';
+            final isDone = timeStr.isNotEmpty;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isDone ? AppColors.softBlue : Colors.grey[100],
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      step['icon'] as IconData,
+                      color: isDone ? AppColors.primary : Colors.grey[400],
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          step['title'] as String,
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: isDone ? FontWeight.w700 : FontWeight.w500,
+                            color: isDone ? AppColors.textDark : Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (isDone) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            timeStr,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ]
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }

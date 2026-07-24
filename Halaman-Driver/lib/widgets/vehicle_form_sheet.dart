@@ -146,7 +146,6 @@ class _VehicleFormSheetState extends State<VehicleFormSheet> {
   late String _selectedType;
   late TextEditingController _nameController;
   late TextEditingController _plateController;
-  late TextEditingController _capacityController;
   late TextEditingController _notesController;
   bool _isLoading = false;
 
@@ -159,7 +158,6 @@ class _VehicleFormSheetState extends State<VehicleFormSheet> {
         : 'Motor';
     _nameController = TextEditingController(text: init?['vehicle_name']?.toString() ?? '');
     _plateController = TextEditingController(text: init?['license_plate']?.toString() ?? '');
-    _capacityController = TextEditingController(text: init?['capacity']?.toString() ?? '');
     _notesController = TextEditingController(text: init?['notes']?.toString() ?? '');
   }
 
@@ -167,7 +165,6 @@ class _VehicleFormSheetState extends State<VehicleFormSheet> {
   void dispose() {
     _nameController.dispose();
     _plateController.dispose();
-    _capacityController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -349,13 +346,12 @@ class _VehicleFormSheetState extends State<VehicleFormSheet> {
     debugPrint("[VehicleFormSheet] Validation passed in UI fields");
 
     setState(() => _isLoading = true);
-    debugPrint("[VehicleFormSheet] API request started with values - Name: ${_nameController.text.trim()}, Type: $_selectedType, Plate: ${_plateController.text.trim()}, Capacity: ${_capacityController.text.trim()}, Notes: ${_notesController.text.trim()}");
+    debugPrint("[VehicleFormSheet] API request started with values - Name: ${_nameController.text.trim()}, Type: $_selectedType, Plate: ${_plateController.text.trim()}, Notes: ${_notesController.text.trim()}");
 
     final res = await ApiService().saveDailyVehicle(
       vehicleName: _nameController.text.trim(),
       vehicleType: _selectedType,
       licensePlate: _plateController.text.trim().toUpperCase(),
-      capacity: _capacityController.text.trim(),
       notes: _notesController.text.trim(),
     );
     setState(() => _isLoading = false);
@@ -520,14 +516,6 @@ class _VehicleFormSheetState extends State<VehicleFormSheet> {
               ),
               const SizedBox(height: 16),
 
-              // Kapasitas (Opsional)
-              _label('KAPASITAS (OPSIONAL)'),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: _capacityController,
-                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
-                decoration: _inputDecoration(Icons.scale_rounded, 'Contoh: 150 kg'),
-              ),
               const SizedBox(height: 16),
 
               // Catatan (Optional)

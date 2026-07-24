@@ -89,59 +89,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (resTask.success && resTask.data != null) {
       newActiveTask = resTask.data as Map<String, dynamic>;
     }
-
-    if (newActiveTask != null && (prevTaskId == null || prevTaskId != newActiveTask['id_order'])) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.inventory_2_rounded, color: Colors.white),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'Penugasan Baru',
-                        style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      Text(
-                        'Anda mendapatkan penugasan baru.',
-                        style: TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 6),
-            action: SnackBarAction(
-              label: 'BUKA',
-              textColor: Colors.white,
-              onPressed: () {
-                Navigator.of(context).pushNamed(
-                  '/pickup-detail',
-                  arguments: newActiveTask,
-                );
-              },
-            ),
-          ),
-        );
-      }
-    }
     _activeTask = newActiveTask;
 
     // Fetch Notifications for Unread Badge Count
     int unreadCount = 0;
     final resNotifs = await ApiService.instance.get(ApiConfig.driverNotifications);
-    if (resNotifs.success && resNotifs.data is List) {
-      final list = resNotifs.data as List;
-      unreadCount = list.where((n) => n['is_read'] == 0 || n['is_read'] == '0').length;
+    if (resNotifs.success && resNotifs.data != null) {
+      if (resNotifs.data is Map<String, dynamic>) {
+        unreadCount = resNotifs.data['unread_count'] as int? ?? 0;
+      } else if (resNotifs.data is List) {
+        // Fallback for older API format if any
+        final list = resNotifs.data as List;
+        for (var n in list) {
+          final isRead = n['is_read'] == true || n['is_read'] == 'true' || n['is_read'] == 1 || n['is_read'] == '1';
+          if (!isRead) {
+            unreadCount++;
+          }
+        }
+      }
     }
     _unreadNotifCount = unreadCount;
 
@@ -171,7 +136,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Fetch Upcoming Schedules
     final resSched = await ApiService.instance.get(ApiConfig.driverSchedules);
     if (resSched.success && resSched.data is List) {
-      _schedules = (resSched.data as List).take(3).toList();
+      final activeOrderId = _activeTask?['id_order'];
+      _schedules = (resSched.data as List)
+          .where((item) => item['id_order'] != activeOrderId)
+          .take(3)
+          .toList();
     } else {
       _schedules = [];
     }
@@ -1036,49 +1005,64 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: _schedules.map((item) {
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: DriverStyles.cardRadius,
                   border: Border.all(color: AppColors.border),
                   boxShadow: DriverStyles.cardShadow,
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.softBlue,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 22),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: DriverStyles.cardRadius,
+                  child: InkWell(
+                    borderRadius: DriverStyles.cardRadius,
+                    onTap: () {
+                      Navigator.of(context).pushNamed(
+                        '/pickup-detail',
+                        arguments: item,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
                         children: [
-                          Text(
-                            item['nama_warga'] ?? 'Warga',
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textDark),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.softBlue,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 22),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['alamat_jemput'] ?? '-',
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item['nama_warga'] ?? 'Warga',
+                                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textDark),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  item['alamat_jemput'] ?? '-',
+                                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 13),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DriverStyles.formatPickupSchedule(item['tanggal_order'], item['waktu_jemput_dari']),
+                                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            DriverStyles.formatPickupSchedule(item['tanggal_order'], item['waktu_jemput_dari']),
-                            style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
-                          ),
+                          const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-                  ],
+                  ),
                 ),
               );
             }).toList(),

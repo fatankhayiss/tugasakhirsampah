@@ -209,7 +209,6 @@ class ApiService {
     required String vehicleName,
     required String vehicleType,
     required String licensePlate,
-    String? capacity,
     String? notes,
   }) async {
     final token = await getToken();
@@ -226,9 +225,29 @@ class ApiService {
           'vehicle_name': vehicleName,
           'vehicle_type': vehicleType,
           'license_plate': licensePlate,
-          'capacity': capacity ?? '',
           'notes': notes ?? '',
         }),
+      );
+      if (response.body.trim().isEmpty) {
+        return {'success': false, 'message': 'Respons kosong'};
+      }
+      return json.decode(response.body);
+    } catch (e) {
+      return {'success': false, 'message': 'Koneksi gagal: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getOrderDetail(int orderId) async {
+    final token = await getToken();
+    if (token == null) return {'success': false, 'message': 'Not authenticated'};
+
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.driverOrderDetail}&id_order=$orderId'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
       );
       if (response.body.trim().isEmpty) {
         return {'success': false, 'message': 'Respons kosong'};

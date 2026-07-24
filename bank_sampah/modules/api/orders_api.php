@@ -97,12 +97,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $sql = "SELECT o.*, 
                        w.nama_lengkap as nama_warga, w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga,
                        d.nama_lengkap as nama_driver, d.no_telepon as telp_driver, d.foto_profil as foto_driver, d.username as driver_username, d.driver_status as driver_online_status,
-                       COALESCE(dv.vehicle_name, dv.vehicle_type, dd.jenis_kendaraan, dd.tipe_kendaraan) as jenis_kendaraan,
-                       COALESCE(dv.license_plate, dd.plat_nomor) as plat_nomor
+                       COALESCE(dv.vehicle_name, dv.vehicle_type) as jenis_kendaraan,
+                       dv.license_plate as plat_nomor
                 FROM orders o
                 LEFT JOIN pengguna w ON o.id_warga = w.id_pengguna
                 LEFT JOIN pengguna d ON o.id_driver = d.id_pengguna
-                LEFT JOIN detail_driver dd ON d.id_pengguna = dd.id_pengguna
                 LEFT JOIN driver_daily_vehicle dv ON d.id_pengguna = dv.driver_id AND dv.date = CURDATE()
                 WHERE o.id_order = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
@@ -137,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         mysqli_stmt_close($stmt_i);
 
-        $base_url = "https://itrashy.triki.cloud/";
+        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
         $base_upload_url = $base_url . "assets/uploads/";
 
         $foto_warga = $order['foto_warga'];
@@ -208,6 +207,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'updated_at' => $order['updated_at'] ?? '',
             'items' => $items,
         ];
+
+        // Get Activity Log
+        $activity_sql = "SELECT status, assigned_at, departed_at, arrived_at, pickup_started_at, pickup_finished_at, arrived_bank_at, unloaded_at, note FROM detail_driver WHERE id_order = ? LIMIT 1";
+        $stmt_act = mysqli_prepare($koneksi, $activity_sql);
+        mysqli_stmt_bind_param($stmt_act, "i", $order_id);
+        mysqli_stmt_execute($stmt_act);
+        $act_res = mysqli_stmt_get_result($stmt_act);
+        $activity_log = mysqli_fetch_assoc($act_res);
+        mysqli_stmt_close($stmt_act);
+
+        if (!$activity_log) {
+            $activity_log = [
+                'status' => $data['status'],
+                'assigned_at' => null,
+                'departed_at' => null,
+                'arrived_at' => null,
+                'pickup_started_at' => null,
+                'pickup_finished_at' => null,
+                'arrived_bank_at' => null,
+                'unloaded_at' => null,
+                'note' => null
+            ];
+        }
+
+        $data['activity_log'] = $activity_log;
 
         api_respond(true, 'Detail order', $data);
     }
@@ -413,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         api_respond(false, 'id_order dan status wajib diisi', null, 400);
     }
 
-    $valid_statuses = ['MENUNGGU_KONFIRMASI', 'DRIVER_DITUGASKAN', 'DRIVER_MENUJU_LOKASI', 'DRIVER_TIBA', 'SAMPAH_DIJEMPUT', 'VALIDASI_BANK_SAMPAH', 'SELESAI', 'DIBATALKAN'];
+    $valid_statuses = ['MENUNGGU_KONFIRMASI', 'DRIVER_DITUGASKAN', 'DRIVER_MENUJU_LOKASI', 'DRIVER_TIBA', 'PENIMBANGAN', 'SAMPAH_DIJEMPUT', 'VALIDASI_BANK_SAMPAH', 'SELESAI', 'DIBATALKAN'];
     if (!in_array($new_status, $valid_statuses)) {
         api_respond(false, 'Status tidak valid', null, 400);
     }
@@ -443,6 +467,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     if (mysqli_stmt_execute($stmt)) {
         @mysqli_stmt_close($stmt);
         $stmt = null;
+
+        // --- ACTIVITY LOG INJECTION ---
+        $timestamp_col = '';
+        if ($new_status === 'DRIVER_DITUGASKAN') $timestamp_col = 'assigned_at';
+        elseif ($new_status === 'DRIVER_MENUJU_LOKASI') $timestamp_col = 'departed_at';
+        elseif ($new_status === 'DRIVER_TIBA') $timestamp_col = 'arrived_at';
+        elseif ($new_status === 'SAMPAH_DIJEMPUT') $timestamp_col = 'pickup_finished_at'; 
+        elseif ($new_status === 'VALIDASI_BANK_SAMPAH') $timestamp_col = 'arrived_bank_at';
+        elseif ($new_status === 'SELESAI') $timestamp_col = 'unloaded_at';
+        
+        $pid = $driver_id;
+        
+        $act_chk = mysqli_query($koneksi, "SELECT id_detail_driver FROM detail_driver WHERE id_order = $order_id");
+        if (mysqli_num_rows($act_chk) > 0) {
+            $q_upd = "UPDATE detail_driver SET status = '$new_status'";
+            if (!empty($timestamp_col)) $q_upd .= ", $timestamp_col = NOW()";
+            $q_upd .= " WHERE id_order = $order_id";
+            mysqli_query($koneksi, $q_upd);
+        } else {
+            $q_ins = "INSERT INTO detail_driver (id_order, id_picker, status";
+            $v_ins = "VALUES ($order_id, $pid, '$new_status'";
+            if (!empty($timestamp_col)) {
+                $q_ins .= ", $timestamp_col";
+                $v_ins .= ", NOW()";
+            }
+            $q_ins .= ") " . $v_ins . ")";
+            mysqli_query($koneksi, $q_ins);
+        }
+        // --- END ACTIVITY LOG INJECTION ---
 
         // Auto-update driver status based on order status transition
         $driver_query = "SELECT id_driver FROM orders WHERE id_order = ?";

@@ -20,25 +20,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_driver'])) {
             $wr = mysqli_stmt_get_result($stmt_w);
             $warga_data = mysqli_fetch_assoc($wr);
 
-            // Notifikasi ke Driver (Picker)
+            // Notifikasi ke Driver (Picker) - check duplicate first
             $judul = "📦 Penugasan Baru";
             $pesan = "Anda mendapatkan tugas penjemputan sampah baru. Silakan buka detail penjemputan untuk melihat informasi lengkap.";
-            $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, ?, ?, 'info', ?)";
-            $stmt_notif = mysqli_prepare($koneksi, $ins_notif);
-            mysqli_stmt_bind_param($stmt_notif, "issi", $id_driver, $judul, $pesan, $id_order);
-            $notif_success = mysqli_stmt_execute($stmt_notif);
-            $notif_error = $notif_success ? '' : mysqli_error($koneksi);
-            mysqli_stmt_close($stmt_notif);
+            
+            $check_notif = "SELECT id_notifikasi FROM notifikasi WHERE id_pengguna = ? AND related_id = ? AND tipe = 'info' LIMIT 1";
+            $stmt_chk = mysqli_prepare($koneksi, $check_notif);
+            mysqli_stmt_bind_param($stmt_chk, "ii", $id_driver, $id_order);
+            mysqli_stmt_execute($stmt_chk);
+            mysqli_stmt_store_result($stmt_chk);
+            $notif_exists = mysqli_stmt_num_rows($stmt_chk) > 0;
+            mysqli_stmt_close($stmt_chk);
+            
+            $notif_success = true;
+            $notif_error = '';
+            
+            if (!$notif_exists) {
+                $ins_notif = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, ?, ?, 'info', ?)";
+                $stmt_notif = mysqli_prepare($koneksi, $ins_notif);
+                mysqli_stmt_bind_param($stmt_notif, "issi", $id_driver, $judul, $pesan, $id_order);
+                $notif_success = mysqli_stmt_execute($stmt_notif);
+                $notif_error = $notif_success ? '' : mysqli_error($koneksi);
+                mysqli_stmt_close($stmt_notif);
+            }
             
             // Notifikasi ke Warga (Citizen)
             if ($warga_data) {
                 $id_warga = $warga_data['id_warga'];
                 $pesan_warga = "Picker telah ditugaskan untuk melakukan penjemputan sampah Anda.";
-                $ins_notif_w = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Konfirmasi Penjemputan', ?, 'pickup', ?)";
-                $stmt_notif_w = mysqli_prepare($koneksi, $ins_notif_w);
-                mysqli_stmt_bind_param($stmt_notif_w, "isi", $id_warga, $pesan_warga, $id_order);
-                mysqli_stmt_execute($stmt_notif_w);
-                mysqli_stmt_close($stmt_notif_w);
+                
+                $check_warga = "SELECT id_notifikasi FROM notifikasi WHERE id_pengguna = ? AND related_id = ? AND tipe = 'pickup' LIMIT 1";
+                $stmt_chkw = mysqli_prepare($koneksi, $check_warga);
+                mysqli_stmt_bind_param($stmt_chkw, "ii", $id_warga, $id_order);
+                mysqli_stmt_execute($stmt_chkw);
+                mysqli_stmt_store_result($stmt_chkw);
+                $notif_warga_exists = mysqli_stmt_num_rows($stmt_chkw) > 0;
+                mysqli_stmt_close($stmt_chkw);
+                
+                if (!$notif_warga_exists) {
+                    $ins_notif_w = "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe, related_id) VALUES (?, 'Konfirmasi Penjemputan', ?, 'pickup', ?)";
+                    $stmt_notif_w = mysqli_prepare($koneksi, $ins_notif_w);
+                    mysqli_stmt_bind_param($stmt_notif_w, "isi", $id_warga, $pesan_warga, $id_order);
+                    mysqli_stmt_execute($stmt_notif_w);
+                    mysqli_stmt_close($stmt_notif_w);
+                }
             }
             
             if ($notif_success) {

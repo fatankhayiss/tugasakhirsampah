@@ -123,23 +123,8 @@ try {
                     }
                     $user_data['driver_status'] = 'online';
 
-                    $driver_query = "SELECT tipe_kendaraan, jenis_kendaraan, plat_nomor, kapasitas_berat, kecamatan, kab_kota, wilayah, kode_pos
-                                     FROM detail_driver WHERE id_pengguna = ? LIMIT 1";
-                    $stmt_driver = mysqli_prepare($koneksi, $driver_query);
-                    mysqli_stmt_bind_param($stmt_driver, "i", $user['id_pengguna']);
-                    mysqli_stmt_execute($stmt_driver);
-                    $driver_result = mysqli_stmt_get_result($stmt_driver);
-                    if ($driver_row = mysqli_fetch_assoc($driver_result)) {
-                        $user_data['tipe_kendaraan'] = $driver_row['tipe_kendaraan'];
-                        $user_data['jenis_kendaraan'] = $driver_row['jenis_kendaraan'];
-                        $user_data['plat_nomor'] = $driver_row['plat_nomor'];
-                        $user_data['kapasitas_berat'] = floatval($driver_row['kapasitas_berat']);
-                        $user_data['kecamatan'] = $driver_row['kecamatan'];
-                        $user_data['kab_kota'] = $driver_row['kab_kota'];
-                        $user_data['wilayah'] = $driver_row['wilayah'];
-                        $user_data['kode_pos'] = $driver_row['kode_pos'];
-                    }
-                    mysqli_stmt_close($stmt_driver);
+                    // detail_driver has been refactored to an activity log table, so we no longer fetch profile data from it.
+                    // Driver vehicle profile is managed separately via driver_daily_vehicle.
                 }
 
                 api_respond(true, 'Login berhasil', $user_data);
@@ -169,14 +154,7 @@ try {
         $longitude = isset($_POST['longitude']) ? floatval($_POST['longitude']) : (isset($input_json['longitude']) ? floatval($input_json['longitude']) : null);
 
         // Data tambahan untuk driver
-        $kecamatan = isset($_POST['kecamatan']) ? trim($_POST['kecamatan']) : '';
-        $kab_kota = isset($_POST['kab_kota']) ? trim($_POST['kab_kota']) : '';
-        $wilayah = isset($_POST['wilayah']) ? trim($_POST['wilayah']) : '';
-        $kode_pos = isset($_POST['kode_pos']) ? trim($_POST['kode_pos']) : '';
-        $tipe_kendaraan = isset($_POST['tipe_kendaraan']) ? trim($_POST['tipe_kendaraan']) : '';
-        $jenis_kendaraan = isset($_POST['jenis_kendaraan']) ? trim($_POST['jenis_kendaraan']) : '';
-        $plat_nomor = isset($_POST['plat_nomor']) ? trim($_POST['plat_nomor']) : '';
-        $kapasitas_berat = isset($_POST['kapasitas_berat']) ? floatval($_POST['kapasitas_berat']) : 0.00;
+        // Removed detailed driver registration fields to simplify as requested.
 
         if (empty($nama) || empty($password)) {
             api_respond(false, 'Nama dan password wajib diisi', null, 400);
@@ -223,14 +201,7 @@ try {
             if ($requested_level === 'driver') {
                 $notif_pesan = "Akun Driver Anda telah berhasil terdaftar. Selamat bertugas menjemput sampah!";
                 
-                // Simpan ke detail_driver
-                $insert_detail = "INSERT INTO detail_driver (id_pengguna, kecamatan, kab_kota, wilayah, kode_pos, tipe_kendaraan, jenis_kendaraan, plat_nomor, kapasitas_berat) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                $stmt_detail = mysqli_prepare($koneksi, $insert_detail);
-                if ($stmt_detail) {
-                    mysqli_stmt_bind_param($stmt_detail, "isssssssd", $new_id, $kecamatan, $kab_kota, $wilayah, $kode_pos, $tipe_kendaraan, $jenis_kendaraan, $plat_nomor, $kapasitas_berat);
-                    mysqli_stmt_execute($stmt_detail);
-                    mysqli_stmt_close($stmt_detail);
-                }
+                // detail_driver no longer holds profile data.
             } else {
                 $notif_pesan = "Akun Anda telah berhasil terdaftar. Mulai setor sampah dan kumpulkan poin!";
             }

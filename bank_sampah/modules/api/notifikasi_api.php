@@ -118,6 +118,7 @@ function sanitize_notif_payload($row) {
         'pesan' => $message,
         'tipe' => $type,
         'is_read' => (bool)$row['is_read'],
+        'read_at' => $row['read_at'],
         'related_id' => $row['related_id'] ? (int)$row['related_id'] : null,
         'created_at' => $row['created_at'],
     ];
@@ -171,11 +172,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $mark_all = isset($data['mark_all']) ? (bool)$data['mark_all'] : false;
 
     if ($mark_all) {
-        $sql = "UPDATE notifikasi SET is_read = 1 WHERE id_pengguna = ? AND is_read = 0";
+        $sql = "UPDATE notifikasi SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id_pengguna = ? AND is_read = 0";
         $stmt = mysqli_prepare($koneksi, $sql);
         mysqli_stmt_bind_param($stmt, "i", $user_id);
     } elseif ($notif_id > 0) {
-        $sql = "UPDATE notifikasi SET is_read = 1 WHERE id_notifikasi = ? AND id_pengguna = ?";
+        $sql = "UPDATE notifikasi SET is_read = 1, read_at = CURRENT_TIMESTAMP WHERE id_notifikasi = ? AND id_pengguna = ?";
         $stmt = mysqli_prepare($koneksi, $sql);
         mysqli_stmt_bind_param($stmt, "ii", $notif_id, $user_id);
     } else {

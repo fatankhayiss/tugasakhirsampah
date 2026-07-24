@@ -84,7 +84,7 @@ if ($action === 'get_active_task') {
         $order['jenis_sampah'] = !empty($jenis_list) ? implode(', ', $jenis_list) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "https://itrashy.triki.cloud/";
+        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $order['foto_warga'];
         if ($foto_warga) {
@@ -202,7 +202,7 @@ elseif ($action === 'get_orders') {
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "https://itrashy.triki.cloud/";
+        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $row['foto_warga'];
         if ($foto_warga) {
@@ -261,7 +261,7 @@ elseif ($action === 'get_schedules') {
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "https://itrashy.triki.cloud/";
+        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $row['foto_warga'];
         if ($foto_warga) {
@@ -320,7 +320,7 @@ elseif ($action === 'get_history') {
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "https://itrashy.triki.cloud/";
+        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $row['foto_warga'];
         if ($foto_warga) {
@@ -357,10 +357,8 @@ elseif ($action === 'get_history') {
 // ============================================================
 elseif ($action === 'get_profile') {
     $sql = "SELECT p.id_pengguna, p.nama_lengkap, p.email, p.username, p.no_telepon, p.level, p.foto_profil,
-                   COALESCE(p.driver_status, 'offline') as driver_status,
-                   d.tipe_kendaraan, d.jenis_kendaraan, d.plat_nomor, d.kapasitas_berat
+                   COALESCE(p.driver_status, 'offline') as driver_status
             FROM pengguna p
-            LEFT JOIN detail_driver d ON p.id_pengguna = d.id_pengguna
             WHERE p.id_pengguna = ?";
     $stmt = mysqli_prepare($koneksi, $sql);
     mysqli_stmt_bind_param($stmt, "i", $id_driver);
@@ -377,7 +375,7 @@ elseif ($action === 'get_profile') {
 
     // Kendaraan hari ini dari driver_daily_vehicle
     $vehicle_row = null;
-    $stmt_v = mysqli_prepare($koneksi, "SELECT vehicle_name, vehicle_type, license_plate, capacity, notes FROM driver_daily_vehicle WHERE driver_id = ? AND date = CURDATE() LIMIT 1");
+    $stmt_v = mysqli_prepare($koneksi, "SELECT vehicle_name, vehicle_type, license_plate, notes FROM driver_daily_vehicle WHERE driver_id = ? AND date = CURDATE() LIMIT 1");
     if ($stmt_v) {
         mysqli_stmt_bind_param($stmt_v, "i", $id_driver);
         mysqli_stmt_execute($stmt_v);
@@ -406,16 +404,7 @@ elseif ($action === 'update_profile') {
     mysqli_stmt_execute($stmt_u);
     mysqli_stmt_close($stmt_u);
 
-    $chk = mysqli_query($koneksi, "SELECT id_pengguna FROM detail_driver WHERE id_pengguna = $id_driver");
-    if (mysqli_num_rows($chk) > 0) {
-        $stmt_d = mysqli_prepare($koneksi, "UPDATE detail_driver SET plat_nomor = ?, jenis_kendaraan = ? WHERE id_pengguna = ?");
-        mysqli_stmt_bind_param($stmt_d, "ssi", $plat_nomor, $jenis_kend, $id_driver);
-    } else {
-        $stmt_d = mysqli_prepare($koneksi, "INSERT INTO detail_driver (id_pengguna, plat_nomor, jenis_kendaraan) VALUES (?, ?, ?)");
-        mysqli_stmt_bind_param($stmt_d, "iss", $id_driver, $plat_nomor, $jenis_kend);
-    }
-    mysqli_stmt_execute($stmt_d);
-    mysqli_stmt_close($stmt_d);
+    // legacy detail_driver update removed
     api_respond(true, 'Profil berhasil diperbarui');
 }
 
@@ -423,24 +412,44 @@ elseif ($action === 'update_profile') {
 // ACTION: get_notifications
 // ============================================================
 elseif ($action === 'get_notifications') {
-    $sql = "SELECT id_notifikasi, judul, pesan, tipe, is_read, related_id, created_at
-            FROM notifikasi
-            WHERE id_pengguna = ?
-            ORDER BY created_at DESC LIMIT 20";
+    // Count unread notifications
+    $unread_sql = "SELECT COUNT(*) as cnt FROM notifikasi WHERE id_pengguna = ? AND is_read = 0";
+    $stmt_u = mysqli_prepare($koneksi, $unread_sql);
+    mysqli_stmt_bind_param($stmt_u, "i", $id_driver);
+    mysqli_stmt_execute($stmt_u);
+    $ur = mysqli_stmt_get_result($stmt_u);
+    $unread_count = (int)mysqli_fetch_assoc($ur)['cnt'];
+    mysqli_stmt_close($stmt_u);
+
+    // Get notification list
+    $sql = "SELECT n.id_notifikasi, n.judul, n.pesan, n.tipe, n.is_read, n.related_id, n.created_at,
+                   o.id_order, o.alamat_jemput,
+                   p.nama_lengkap as customer_name, p.foto_profil as customer_photo
+            FROM notifikasi n
+            LEFT JOIN orders o ON n.related_id = o.id_order 
+            LEFT JOIN pengguna p ON o.id_warga = p.id_pengguna
+            WHERE n.id_pengguna = ?
+            ORDER BY n.created_at DESC LIMIT 20";
     $stmt_notif = mysqli_prepare($koneksi, $sql);
     mysqli_stmt_bind_param($stmt_notif, "i", $id_driver);
     mysqli_stmt_execute($stmt_notif);
     $res_notif = mysqli_stmt_get_result($stmt_notif);
     $notifs = [];
-    while ($row = mysqli_fetch_assoc($res_notif)) { $notifs[] = $row; }
-    api_respond(true, 'Berhasil memuat notifikasi', $notifs);
+    while ($row = mysqli_fetch_assoc($res_notif)) { 
+        $row['is_read'] = (bool)$row['is_read'];
+        $notifs[] = $row; 
+    }
+    api_respond(true, 'Berhasil memuat notifikasi', [
+        'unread_count' => $unread_count,
+        'items' => $notifs
+    ]);
 }
 
 // ============================================================
 // ACTION: get_daily_vehicle
 // ============================================================
 elseif ($action === 'get_daily_vehicle') {
-    $stmt = mysqli_prepare($koneksi, "SELECT id, vehicle_name, vehicle_type, license_plate, capacity, notes, date FROM driver_daily_vehicle WHERE driver_id = ? AND date = CURDATE() LIMIT 1");
+    $stmt = mysqli_prepare($koneksi, "SELECT id, vehicle_name, vehicle_type, license_plate, notes, date FROM driver_daily_vehicle WHERE driver_id = ? AND date = CURDATE() LIMIT 1");
     if (!$stmt) {
         api_respond(true, 'Kendaraan belum didaftarkan', null);
     }
@@ -462,23 +471,21 @@ elseif ($action === 'save_daily_vehicle') {
     $vehicle_name  = isset($input['vehicle_name'])  ? trim($input['vehicle_name'])  : '';
     $vehicle_type  = isset($input['vehicle_type'])  ? trim($input['vehicle_type'])  : '';
     $license_plate = isset($input['license_plate']) ? trim($input['license_plate']) : '';
-    $capacity      = isset($input['capacity'])      ? trim($input['capacity'])      : '';
     $notes         = isset($input['notes'])         ? trim($input['notes'])         : '';
 
-    error_log("[save_daily_vehicle] Received inputs - Name: $vehicle_name, Type: $vehicle_type, Plate: $license_plate, Capacity: $capacity, Notes: $notes");
+    error_log("[save_daily_vehicle] Received inputs - Name: $vehicle_name, Type: $vehicle_type, Plate: $license_plate, Notes: $notes");
 
     if (empty($vehicle_name) || empty($vehicle_type) || empty($license_plate)) {
         error_log("[save_daily_vehicle] Validation failed: Required fields missing.");
         api_respond(false, 'Nama kendaraan, jenis kendaraan, dan plat nomor wajib diisi', null, 400);
     }
 
-    $sql = "INSERT INTO driver_daily_vehicle (driver_id, vehicle_name, vehicle_type, license_plate, capacity, notes, date)
-            VALUES (?, ?, ?, ?, ?, ?, CURDATE())
+    $sql = "INSERT INTO driver_daily_vehicle (driver_id, vehicle_name, vehicle_type, license_plate, notes, date)
+            VALUES (?, ?, ?, ?, ?, CURDATE())
             ON DUPLICATE KEY UPDATE
               vehicle_name = VALUES(vehicle_name),
               vehicle_type = VALUES(vehicle_type),
               license_plate = VALUES(license_plate),
-              capacity = VALUES(capacity),
               notes = VALUES(notes),
               updated_at = NOW()";
     $stmt = mysqli_prepare($koneksi, $sql);
@@ -487,7 +494,7 @@ elseif ($action === 'save_daily_vehicle') {
         error_log("[save_daily_vehicle] Database prepare error: $db_err");
         api_respond(false, 'Gagal menyiapkan query database: ' . $db_err, null, 500);
     }
-    mysqli_stmt_bind_param($stmt, "isssss", $id_driver, $vehicle_name, $vehicle_type, $license_plate, $capacity, $notes);
+    mysqli_stmt_bind_param($stmt, "issss", $id_driver, $vehicle_name, $vehicle_type, $license_plate, $notes);
     if (mysqli_stmt_execute($stmt)) {
         mysqli_stmt_close($stmt);
         error_log("[save_daily_vehicle] Database insert/update succeeded for driver: $id_driver");
@@ -495,7 +502,6 @@ elseif ($action === 'save_daily_vehicle') {
             'vehicle_name'  => $vehicle_name,
             'vehicle_type'  => $vehicle_type,
             'license_plate' => $license_plate,
-            'capacity'      => $capacity,
             'notes'         => $notes,
         ]);
     } else {
@@ -577,7 +583,7 @@ elseif ($action === 'get_order_detail') {
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "https://itrashy.triki.cloud/";
+        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $row['foto_warga'];
         if ($foto_warga) {

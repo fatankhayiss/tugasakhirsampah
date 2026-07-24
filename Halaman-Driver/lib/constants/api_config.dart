@@ -4,7 +4,7 @@ export 'app_colors.dart';
 
 class ApiConfig {
   ApiConfig._();
-  static const String baseUrl = 'https://itrashy.triki.cloud/';
+  static const String baseUrl = 'http://192.168.110.61/tugasakhirsampah/bank_sampah/';
 
   // Auth
   static const String authLogin           = '${baseUrl}modules/api/auth_api.php?action=login';
@@ -23,6 +23,7 @@ class ApiConfig {
   static const String driverGetDailyVehicle = '${baseUrl}modules/api/driver_api.php?action=get_daily_vehicle';
   static const String driverSaveDailyVehicle= '${baseUrl}modules/api/driver_api.php?action=save_daily_vehicle';
   static const String driverUpdateDriverStatus='${baseUrl}modules/api/driver_api.php?action=update_driver_status';
+  static const String driverOrderDetail     = '${baseUrl}modules/api/driver_api.php?action=get_order_detail';
   static const String notifikasiUpdate = '${baseUrl}modules/api/notifikasi_api.php';
 
   // Orders

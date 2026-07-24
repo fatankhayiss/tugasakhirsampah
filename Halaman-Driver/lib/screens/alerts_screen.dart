@@ -24,9 +24,15 @@ class _AlertsScreenState extends State<AlertsScreen> {
   Future<void> _fetchNotifications() async {
     setState(() => _isLoading = true);
     final res = await ApiService.instance.get(ApiConfig.driverNotifications);
-    if (res.success && res.data is List) {
+    if (res.success && res.data != null) {
       setState(() {
-        _notifications = res.data as List;
+        if (res.data is Map<String, dynamic>) {
+          _notifications = res.data['items'] as List? ?? [];
+        } else if (res.data is List) {
+          _notifications = res.data as List;
+        } else {
+          _notifications = [];
+        }
         _isLoading = false;
       });
     } else {
@@ -163,8 +169,20 @@ class _AlertsScreenState extends State<AlertsScreen> {
 
   Widget _buildNotifCard(dynamic notif) {
     final dateStr = notif['created_at'] ?? '';
-    final judul = notif['judul']?.toString().toUpperCase() ?? 'INFO';
+    final judul = notif['judul']?.toString() ?? 'Info Sistem';
     final pesan = notif['pesan'] ?? '';
+    final customerName = notif['customer_name']?.toString() ?? '';
+    final alamat = notif['alamat_jemput']?.toString() ?? '';
+    final isRead = notif['is_read'] == true || notif['is_read'] == 1 || notif['is_read'] == '1';
+
+    final titleColor = isRead ? AppColors.textDark : AppColors.primary;
+    final titleWeight = isRead ? FontWeight.w700 : FontWeight.w800;
+    final textColor = isRead ? AppColors.textMuted : AppColors.textDark;
+    final iconColor = isRead ? AppColors.textMuted : AppColors.primary;
+    final iconBgColor = isRead ? Colors.grey[100] : AppColors.softBlue;
+    final badgeColor = isRead ? Colors.grey[200] : const Color(0xFFEF4444);
+    final badgeTextColor = isRead ? AppColors.textMuted : Colors.white;
+    final badgeText = isRead ? 'Dibaca' : 'Baru';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -181,58 +199,24 @@ class _AlertsScreenState extends State<AlertsScreen> {
           borderRadius: DriverStyles.cardRadius,
           onTap: () async {
             final notifId = notif['id_notifikasi'];
-            if (notif['is_read'] == 0 || notif['is_read'] == '0') {
-              await ApiService.instance.put(
+            if (!isRead) {
+              setState(() {
+                notif['is_read'] = true;
+                notif['is_read'] = 1; // update raw map directly
+              });
+              ApiService.instance.put(
                 ApiConfig.notifikasiUpdate,
-                body: {'id_notifikasi': notifId},
-              );
-              _fetchNotifications();
+                body: {'id_notifikasi': notifId.toString()},
+              ).then((_) {
+                _fetchNotifications();
+              });
             }
 
-            final relatedId = notif['related_id'];
-            if (relatedId != null && int.tryParse(relatedId.toString()) != null && int.parse(relatedId.toString()) > 0) {
-              final orderId = int.parse(relatedId.toString());
-              
-              if (!mounted) return;
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
+            if (mounted) {
+              Navigator.of(context).pushNamed(
+                '/alert-detail',
+                arguments: notif,
               );
-
-              final res = await ApiService.instance.get(
-                '${ApiConfig.baseUrl}modules/api/driver_api.php?action=get_order_detail&id_order=$orderId',
-              );
-
-              if (mounted) Navigator.of(context).pop();
-
-              if (res.success && res.data != null) {
-                final orderData = res.data as Map<String, dynamic>;
-                if (mounted) {
-                  Navigator.of(context).pushNamed(
-                    '/pickup-detail',
-                    arguments: orderData,
-                  );
-                }
-              } else {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(res.message),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            } else {
-              if (mounted) {
-                Navigator.of(context).pushNamed(
-                  '/alert-detail',
-                  arguments: notif,
-                );
-              }
             }
           },
           child: Padding(
@@ -244,11 +228,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.softBlue,
+                    color: iconBgColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.notifications_active_rounded, color: AppColors.primary, size: 24),
+                  child: Icon(Icons.notifications_active_rounded, color: iconColor, size: 24),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -258,60 +242,110 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                judul,
-                                style: const TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 12,
-                                  letterSpacing: 0.5,
-                                ),
+                          Expanded(
+                            child: Text(
+                              judul,
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                color: titleColor,
+                                fontWeight: titleWeight,
+                                fontSize: 14,
+                                letterSpacing: 0.2,
                               ),
-                              if (notif['is_read'] == 0 || notif['is_read'] == '0') ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    'BARU',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 8,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 18),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: badgeColor,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              badgeText,
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                color: badgeTextColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Text(
                         pesan,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: textColor,
                           height: 1.4,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      if (customerName.isNotEmpty || alamat.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (customerName.isNotEmpty)
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person_outline, size: 14, color: AppColors.textMuted),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      customerName,
+                                      style: const TextStyle(
+                                        fontFamily: 'Plus Jakarta Sans',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textDark,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              if (customerName.isNotEmpty && alamat.isNotEmpty) const SizedBox(height: 6),
+                              if (alamat.isNotEmpty)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textMuted),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        alamat,
+                                        style: const TextStyle(
+                                          fontFamily: 'Plus Jakarta Sans',
+                                          fontSize: 12,
+                                          color: AppColors.textMuted,
+                                          height: 1.3,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
                       Text(
                         dateStr,
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           color: AppColors.textMuted,
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

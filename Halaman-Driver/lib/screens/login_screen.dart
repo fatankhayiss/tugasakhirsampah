@@ -175,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   ),
                   const SizedBox(height: 24),
                   const Text(
-                    'Masuk sebagai Driver',
+                    'Masuk sebagai Picker',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 26,
