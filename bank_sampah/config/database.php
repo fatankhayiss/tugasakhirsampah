@@ -33,7 +33,7 @@ if (!$koneksi) {
 // Environment Configuration
 // Ubah ke 'production' saat deploy ke server (misal: serv00)
 // Ubah ke 'development' untuk mode lokal
-define('APP_ENV', 'development'); 
+define('APP_ENV', 'production'); 
 
 if (APP_ENV === 'development') {
     define('BASE_URL', 'http://192.168.110.62/tugasakhirsampah/bank_sampah/');
