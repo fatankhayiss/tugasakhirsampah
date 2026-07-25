@@ -15,7 +15,7 @@ import '../../../core/constants/app_images.dart';
 import '../../../shared/widgets/app_asset_image.dart';
 import '../../../core/navigation/app_page_transitions.dart';
 import '../../../core/services/api_service.dart';
-import '../../../core/constants/api_config.dart';
+import '../../../core/repositories/profile_repository.dart';
 import '../../../shared/widgets/staggered_animation.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -74,26 +74,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final userData = await ApiService.instance.getUserData();
+    final profile = await ProfileRepository().getProfile();
     if (mounted) {
       setState(() {
-        if (userData == null) {
-          _userName = "Guest";
-          _userAddress = null;
-          _avatarUrl = null;
-        } else {
-          final uname = userData['username']?.toString().trim() ?? '';
-          _userName = uname.isNotEmpty ? uname : 'User';
-          final foto = userData['foto_profil']?.toString() ?? '';
-          _avatarUrl = foto.isNotEmpty
-              ? (foto.startsWith('http') ? foto : '${ApiConfig.baseUrl}$foto')
-              : null;
-          final alamat = userData['alamat']?.toString() ?? '';
-          _userAddress = alamat.isNotEmpty ? alamat : 'Alamat belum diatur';
-          
-          final saldoRaw = userData['saldo'] ?? 0;
-          _currentBalance = (saldoRaw is num) ? saldoRaw.toInt() : int.tryParse(saldoRaw.toString()) ?? 0;
-        }
+        _userName = profile.name;
+        _userAddress = profile.address?.isNotEmpty == true ? profile.address : 'Alamat belum diatur';
+        _avatarUrl = profile.avatarUrl;
+        _currentBalance = profile.totalPoints;
       });
     }
   }

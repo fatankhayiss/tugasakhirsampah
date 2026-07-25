@@ -314,6 +314,7 @@ $status_labels = [
                                 <?php if ($st === 'MENUNGGU_KONFIRMASI'): ?>
                                     <form method="POST" action="" class="flex items-center space-x-2 form-confirm" data-title="Konfirmasi Penugasan" data-text="Konfirmasi penjemputan dan tugaskan picker ini?">
                                         <input type="hidden" name="id_order" value="<?php echo $order['id_order']; ?>">
+                                        <input type="hidden" name="assign_driver" value="1">
                                         <select name="id_driver" required class="text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500">
                                             <option value="">-- Pilih Picker --</option>
                                             <?php foreach ($drivers as $dr): 

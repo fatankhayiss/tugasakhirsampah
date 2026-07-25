@@ -40,7 +40,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse(url),
         headers: await _getHeaders(),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 30));
       return _processResponse(response);
     } catch (e) {
       return ApiResponse(
@@ -57,7 +57,7 @@ class ApiService {
         Uri.parse(url),
         headers: await _getHeaders(),
         body: body,
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 30));
       return _processResponse(response);
     } catch (e) {
       return ApiResponse(

@@ -168,6 +168,10 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
       }
 
       if (!mounted) return;
+      // Wait briefly to ensure the loading dialog has finished its push animation
+      // before we attempt to pop it. This prevents race conditions if the API 
+      // fails instantly (e.g. 500 error).
+      await Future.delayed(const Duration(milliseconds: 300));
       // ignore: use_build_context_synchronously
       Navigator.of(context, rootNavigator: true).pop();
 

@@ -184,7 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Builder(
                     builder: (context) {
                       ImageProvider? avatarImg;
-                      final fotoProfil = _userData?['foto_profil']?.toString();
+                      final fotoProfil = _userData?['foto_profil']?.toString().trim();
                       if (fotoProfil != null && fotoProfil.isNotEmpty) {
                         final String fullUrl;
                         if (fotoProfil.startsWith('http')) {
