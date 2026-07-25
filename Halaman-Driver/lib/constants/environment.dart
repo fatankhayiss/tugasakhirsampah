@@ -7,7 +7,7 @@ class Environment {
   static String get baseUrl {
     switch (current) {
       case AppEnvironment.dev:
-        return 'http://192.168.110.61/tugasakhirsampah/bank_sampah/';
+        return 'http://192.168.110.62/tugasakhirsampah/bank_sampah/';
       case AppEnvironment.production:
         return 'https://itrashy.triki.cloud/';
     }
