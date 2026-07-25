@@ -2,7 +2,7 @@ enum AppEnvironment { dev, production }
 
 class Environment {
   // Switch this to change environment across the app
-  static const AppEnvironment current = AppEnvironment.dev;
+  static const AppEnvironment current = AppEnvironment.production;
 
   static String get baseUrl {
     switch (current) {
