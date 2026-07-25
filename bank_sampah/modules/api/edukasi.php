@@ -18,19 +18,11 @@ function abs_url($path) {
     if (!$path) return null;
     if (preg_match('#^https?://#', $path)) return $path;
     
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    
-    $script = $_SERVER['SCRIPT_NAME'] ?? '';
-    $pos = strpos($script, 'bank_sampah');
-    if ($pos !== false) {
-        $base = substr($script, 0, $pos + 12); // 'bank_sampah/'
-    } else {
-        $base = '/';
-    }
+    // Gunakan BASE_URL dari database.php yang sudah dipastikan production URL
+    $base = defined('BASE_URL') ? BASE_URL : 'https://itrashy.triki.cloud/';
     
     $normalized = rtrim($base, '/') . '/' . ltrim($path, '/');
-    return $scheme . '://' . $host . $normalized;
+    return $normalized;
 }
 
 $action = $_POST['action'] ?? $_GET['action'] ?? 'read';

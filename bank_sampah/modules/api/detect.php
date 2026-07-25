@@ -31,7 +31,9 @@ require_once __DIR__ . '/../../config/database.php';
 // ─────────────────────────────────────────────
 // Worker configuration
 // ─────────────────────────────────────────────
-define('WORKER_HOST', '127.0.0.1');
+// WORKER_HOST and WORKER_PORT config based on environment
+$worker_host = (defined('APP_ENV') && APP_ENV === 'production') ? '127.0.0.1' : '127.0.0.1';
+define('WORKER_HOST', $worker_host);
 define('WORKER_PORT', 5001);
 define('WORKER_TIMEOUT', 15); // seconds
 

@@ -40,8 +40,10 @@ from pathlib import Path
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────
-WORKER_HOST  = "127.0.0.1"
-WORKER_PORT  = 5001
+import config
+
+WORKER_HOST  = config.SERVER_HOST
+WORKER_PORT  = config.SERVER_PORT
 BACKLOG      = 10
 LOG_FILE     = Path(__file__).parent / "worker.log"
 MODEL_PATH   = Path(__file__).parent / "best.onnx"

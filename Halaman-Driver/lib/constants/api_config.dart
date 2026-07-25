@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'environment.dart';
 export 'app_colors.dart';
 
 class ApiConfig {
   ApiConfig._();
-  static const String baseUrl = 'https://itrashy.triki.cloud/';
+  static String get baseUrl => Environment.baseUrl;
 
   // Auth
   static const String authLogin           = '${baseUrl}modules/api/auth_api.php?action=login';

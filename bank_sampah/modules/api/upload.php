@@ -10,6 +10,8 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Accept');
 
+require_once __DIR__ . '/../../config/database.php';
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     // Preflight
     http_response_code(200);
@@ -82,18 +84,8 @@ if (!move_uploaded_file($file['tmp_name'], $target)) {
     respond(false, 'Gagal menyimpan file di server', null, 500);
 }
 
-// Jika aplikasi membutuhkan path yang dapat diakses via web, coba bangun URL relatif
-$baseUrl = '';
-if (defined('BASE_URL')) {
-    $baseUrl = rtrim(BASE_URL, '/') . '/';
-} else {
-    // Karena BASE_URL mungkin belum didefinisikan, coba bangun dari request
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
-    // assets/uploads di-root-kan relatif ke direktori project
-    $baseUrl = $protocol . '://' . $host . rtrim(str_replace('\\', '/', dirname(dirname(dirname($_SERVER['SCRIPT_NAME'])))), '/') . '/';
-}
+// Gunakan BASE_URL yang sudah didefinisikan di database.php
+$baseUrl = rtrim(BASE_URL, '/') . '/';
 
 $publicPath = 'assets/uploads/' . $filename;
 $publicUrl = $baseUrl . $publicPath;

@@ -1,14 +1,14 @@
 /// Konfigurasi API terpusat untuk koneksi ke backend bank_sampah.
 ///
 /// Ubah [baseUrl] sesuai environment:
-/// - Android Emulator: `http://10.0.2.2/tugasakhirsampah/bank_sampah/`
-/// - iOS Simulator: `http://localhost/tugasakhirsampah/bank_sampah/`
 /// - Production Cloud: `https://itrashy.triki.cloud/`
+import 'environment.dart';
+
 class ApiConfig {
   ApiConfig._();
 
   /// Base URL backend. Trailing slash wajib.
-  static const String baseUrl = 'https://itrashy.triki.cloud/';
+  static String get baseUrl => Environment.baseUrl;
 
   // API Endpoints
   static const String authLogin = '${baseUrl}modules/api/auth_api.php?action=login';

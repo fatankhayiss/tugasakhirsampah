@@ -29,30 +29,15 @@ $koneksi = mysqli_connect(
 
 if (!$koneksi) {
     die("Koneksi database gagal: " . mysqli_connect_error());
-}
+// Environment Configuration
+// Ubah ke 'production' saat deploy ke server (misal: serv00)
+// Ubah ke 'development' untuk mode lokal
+define('APP_ENV', 'development'); 
 
-// Dynamic BASE_URL: honor current host:port and app base path when running via web server/built-in server
-if (!defined('BASE_URL')) {
-    if (php_sapi_name() !== 'cli' && isset($_SERVER['HTTP_HOST'])) {
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'];
-        
-        $docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? '');
-        $appRoot = str_replace('\\', '/', dirname(__DIR__));
-        $basePath = '';
-        if ($docRoot && strpos($appRoot, $docRoot) === 0) {
-            $basePath = substr($appRoot, strlen($docRoot));
-        } elseif (empty($docRoot)) {
-            $basePath = '/tugasakhirsampah/bank_sampah';
-        }
-        
-        // Ensure single trailing slash
-        $baseUrl = rtrim($scheme . '://' . $host . $basePath, '/') . '/';
-        define('BASE_URL', $baseUrl);
-    } else {
-        // Fallback for CLI or when server vars are unavailable
-        define('BASE_URL', 'http://192.168.110.61/tugasakhirsampah/bank_sampah/');
-    }
+if (APP_ENV === 'development') {
+    define('BASE_URL', 'http://192.168.110.61/tugasakhirsampah/bank_sampah/');
+} else {
+    define('BASE_URL', 'https://itrashy.triki.cloud/');
 }
 
 if (session_status() == PHP_SESSION_NONE) {

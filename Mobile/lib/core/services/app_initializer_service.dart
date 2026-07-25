@@ -128,7 +128,7 @@ class AppInitializerService {
       // Attempt lightweight DNS lookup of backend host or external anchor
       final uri = Uri.tryParse(ApiConfig.baseUrl);
       final host = uri?.host ?? 'google.com';
-      if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
+      if (host.isNotEmpty) {
         final result = await InternetAddress.lookup(host).timeout(const Duration(seconds: 4));
         if (result.isEmpty || result.first.rawAddress.isEmpty) {
           throw const SocketException('No address associated with hostname');
