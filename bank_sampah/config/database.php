@@ -29,6 +29,7 @@ $koneksi = mysqli_connect(
 
 if (!$koneksi) {
     die("Koneksi database gagal: " . mysqli_connect_error());
+}
 // Environment Configuration
 // Ubah ke 'production' saat deploy ke server (misal: serv00)
 // Ubah ke 'development' untuk mode lokal
