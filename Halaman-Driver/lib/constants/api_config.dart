@@ -8,32 +8,32 @@ class ApiConfig {
   static String get baseUrl => Environment.baseUrl;
 
   // Auth
-  static const String authLogin           = '${baseUrl}modules/api/auth_api.php?action=login';
-  static const String authRegister        = '${baseUrl}modules/api/auth_api.php?action=register';
-  static const String authForgotPassword  = '${baseUrl}modules/api/auth_api.php?action=forgot_password';
+  static String get authLogin => '${baseUrl}modules/api/auth_api.php?action=login';
+  static String get authRegister => '${baseUrl}modules/api/auth_api.php?action=register';
+  static String get authForgotPassword => '${baseUrl}modules/api/auth_api.php?action=forgot_password';
 
   // Driver API
-  static const String driverActiveTask      = '${baseUrl}modules/api/driver_api.php?action=get_active_task';
-  static const String driverNotifications   = '${baseUrl}modules/api/driver_api.php?action=get_notifications';
-  static const String driverStats           = '${baseUrl}modules/api/driver_api.php?action=get_dashboard_stats';
-  static const String driverOrders          = '${baseUrl}modules/api/driver_api.php?action=get_orders';
-  static const String driverSchedules       = '${baseUrl}modules/api/driver_api.php?action=get_schedules';
-  static const String driverHistory         = '${baseUrl}modules/api/driver_api.php?action=get_history';
-  static const String driverProfile         = '${baseUrl}modules/api/driver_api.php?action=get_profile';
-  static const String driverUpdateProfile   = '${baseUrl}modules/api/driver_api.php?action=update_profile';
-  static const String driverGetDailyVehicle = '${baseUrl}modules/api/driver_api.php?action=get_daily_vehicle';
-  static const String driverSaveDailyVehicle= '${baseUrl}modules/api/driver_api.php?action=save_daily_vehicle';
-  static const String driverUpdateDriverStatus='${baseUrl}modules/api/driver_api.php?action=update_driver_status';
-  static const String driverOrderDetail     = '${baseUrl}modules/api/driver_api.php?action=get_order_detail';
-  static const String notifikasiUpdate = '${baseUrl}modules/api/notifikasi_api.php';
+  static String get driverActiveTask => '${baseUrl}modules/api/driver_api.php?action=get_active_task';
+  static String get driverNotifications => '${baseUrl}modules/api/driver_api.php?action=get_notifications';
+  static String get driverStats => '${baseUrl}modules/api/driver_api.php?action=get_dashboard_stats';
+  static String get driverOrders => '${baseUrl}modules/api/driver_api.php?action=get_orders';
+  static String get driverSchedules => '${baseUrl}modules/api/driver_api.php?action=get_schedules';
+  static String get driverHistory => '${baseUrl}modules/api/driver_api.php?action=get_history';
+  static String get driverProfile => '${baseUrl}modules/api/driver_api.php?action=get_profile';
+  static String get driverUpdateProfile => '${baseUrl}modules/api/driver_api.php?action=update_profile';
+  static String get driverGetDailyVehicle => '${baseUrl}modules/api/driver_api.php?action=get_daily_vehicle';
+  static String get driverSaveDailyVehicle => '${baseUrl}modules/api/driver_api.php?action=save_daily_vehicle';
+  static String get driverUpdateDriverStatus => '${baseUrl}modules/api/driver_api.php?action=update_driver_status';
+  static String get driverOrderDetail => '${baseUrl}modules/api/driver_api.php?action=get_order_detail';
+  static String get notifikasiUpdate => '${baseUrl}modules/api/notifikasi_api.php';
 
   // Orders
-  static const String ordersUpdateStatus  = '${baseUrl}modules/api/orders_api.php';
+  static String get ordersUpdateStatus => '${baseUrl}modules/api/orders_api.php';
 
   // Profile (supports multipart photo upload)
-  static const String profileUpdate       = '${baseUrl}modules/api/profile_api.php';
+  static String get profileUpdate => '${baseUrl}modules/api/profile_api.php';
 
-  static const String ping                = '${baseUrl}modules/api/ping.php';
+  static String get ping => '${baseUrl}modules/api/ping.php';
 }
 
 class DriverStyles {
