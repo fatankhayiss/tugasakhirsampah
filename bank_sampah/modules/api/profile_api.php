@@ -201,6 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($remove_foto === '1' || $remove_foto === 'true') {
         $updates[] = "foto_profil = NULL";
+        $updates[] = "foto_profil_b64 = NULL";
     }
 
     // Handle foto upload
@@ -216,17 +217,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $validExts = ['jpg', 'jpeg', 'png', 'webp'];
         
         if (in_array($mime, $allowedMime) || in_array($ext, $validExts)) {
-            $uploadDir = __DIR__ . '/../../assets/uploads/profil/';
-            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-            $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-            $filename = 'profil_' . $user_id . '_' . time() . '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext);
-            $target = $uploadDir . $filename;
-            if (move_uploaded_file($file['tmp_name'], $target)) {
-                $foto_path = 'assets/uploads/profil/' . $filename;
-                $updates[] = "foto_profil = ?";
-                $types .= 's';
-                $values[] = $foto_path;
-            }
+            $base64 = base64_encode(file_get_contents($file['tmp_name']));
+            $actualMime = in_array($mime, $allowedMime) ? $mime : 'image/jpeg';
+            $base64_str = 'data:' . $actualMime . ';base64,' . $base64;
+            
+            $foto_path = 'image.php?type=profil&id=' . $user_id;
+            $updates[] = "foto_profil = ?";
+            $types .= 's';
+            $values[] = $foto_path;
+            
+            $updates[] = "foto_profil_b64 = ?";
+            $types .= 's';
+            $values[] = $base64_str;
         }
     }
 

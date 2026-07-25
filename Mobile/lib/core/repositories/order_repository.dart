@@ -182,8 +182,7 @@ class OrderRepository extends ChangeNotifier {
         final items = response.data['items'] as List? ?? [];
         return items.map<OngoingOrderModel>((item) {
           final rawStatus = item['status']?.toString() ?? 'processing';
-          // Force both pending and processing to 'Diproses' in the new workflow
-          final OngoingStatus mappedStatus = OngoingStatus.processing;
+          final OngoingStatus mappedStatus = OngoingStatus.redeemProcessing;
           final pts = (item['redeem_point'] as num?)?.toInt() ?? 0;
           final amt = (item['estimated_amount'] as num?)?.toDouble() ?? 0.0;
 

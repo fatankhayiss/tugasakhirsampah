@@ -193,6 +193,8 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
       debugPrint('🔴 [ScanDeposit] ERROR: $e');
       debugPrint('   Stack: $st');
       if (mounted) {
+        // Add 300ms delay to ensure showDialog push animation completes before popping
+        await Future.delayed(const Duration(milliseconds: 300));
         try { Navigator.of(context, rootNavigator: true).pop(); } catch (_) {}
       }
       if (!mounted) return;

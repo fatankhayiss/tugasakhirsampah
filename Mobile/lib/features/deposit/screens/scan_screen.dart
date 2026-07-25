@@ -277,7 +277,9 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
       _showRecognitionErrorDialog();
     } catch (e) {
       if (mounted && _isUploading) {
-        Navigator.of(context, rootNavigator: true).pop();
+        // Add 300ms delay to ensure showDialog push animation completes before popping
+        await Future.delayed(const Duration(milliseconds: 300));
+        try { Navigator.of(context, rootNavigator: true).pop(); } catch (_) {}
       }
       if (!mounted) return;
       _showRecognitionErrorDialog();

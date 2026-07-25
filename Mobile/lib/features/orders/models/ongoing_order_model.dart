@@ -5,6 +5,7 @@ enum OngoingStatus {
   processing,
   pickup,
   verifying,
+  redeemProcessing,
 }
 
 extension OngoingStatusExtension on OngoingStatus {
@@ -18,6 +19,8 @@ extension OngoingStatusExtension on OngoingStatus {
         return 'Picker Menuju Lokasi';
       case OngoingStatus.verifying:
         return 'Validasi Bank Sampah';
+      case OngoingStatus.redeemProcessing:
+        return 'Pencairan Diproses';
     }
   }
 
@@ -27,6 +30,7 @@ extension OngoingStatusExtension on OngoingStatus {
         return const Color(0xFFFEF3C7);
       case OngoingStatus.processing:
       case OngoingStatus.pickup:
+      case OngoingStatus.redeemProcessing:
         return const Color(0xFFEFF6FF);
       case OngoingStatus.verifying:
         return const Color(0xFFF3E8FF);
@@ -39,9 +43,10 @@ extension OngoingStatusExtension on OngoingStatus {
         return const Color(0xFFD97706);
       case OngoingStatus.processing:
       case OngoingStatus.pickup:
-        return const Color(0xFF2563EB);
+      case OngoingStatus.redeemProcessing:
+        return const Color(0xFF3B82F6);
       case OngoingStatus.verifying:
-        return const Color(0xFF7E22CE);
+        return const Color(0xFF9333EA);
     }
   }
 }

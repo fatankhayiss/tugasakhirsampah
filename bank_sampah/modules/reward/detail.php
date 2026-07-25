@@ -29,16 +29,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
         
         if ($action_type === 'complete' && ($old_status === 'processing' || $old_status === 'pending')) {
             $transfer_proof_path = null;
+            $transfer_proof_b64 = null;
             if (isset($_FILES['transfer_proof']) && $_FILES['transfer_proof']['error'] === UPLOAD_ERR_OK) {
-                $upload_dir = __DIR__ . '/../../uploads/transfer_proof/';
-                if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-                $ext = pathinfo($_FILES['transfer_proof']['name'], PATHINFO_EXTENSION);
-                $filename = 'proof_' . $trx_code . '_' . time() . '.' . $ext;
-                if (move_uploaded_file($_FILES['transfer_proof']['tmp_name'], $upload_dir . $filename)) {
-                    $transfer_proof_path = 'uploads/transfer_proof/' . $filename;
+                $file = $_FILES['transfer_proof'];
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+                
+                $allowedMime = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $validExts = ['jpg', 'jpeg', 'png', 'webp'];
+                
+                if (in_array($mime, $allowedMime) || in_array($ext, $validExts)) {
+                    $base64 = base64_encode(file_get_contents($file['tmp_name']));
+                    $actualMime = in_array($mime, $allowedMime) ? $mime : 'image/jpeg';
+                    $transfer_proof_b64 = 'data:' . $actualMime . ';base64,' . $base64;
+                    $transfer_proof_path = 'image.php?type=proof&id=' . $id;
                 }
             }
-            if (!$transfer_proof_path) {
+            if (!$transfer_proof_path || !$transfer_proof_b64) {
                 $_SESSION['error_message'] = 'Bukti transfer wajib diunggah!';
                 redirect(BASE_URL . 'index.php?page=reward/detail&id=' . $id);
                 exit;
@@ -50,8 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                     mysqli_query($koneksi, "UPDATE pengguna SET reserved_saldo = GREATEST(0, COALESCE(reserved_saldo, 0) - $pts) WHERE id_pengguna = $uid");
                 }
                 
-                $stmt = mysqli_prepare($koneksi, "UPDATE reward_redemptions SET status = 'completed', completed_at = NOW(), admin_id = ?, transfer_proof = ? WHERE id = ?");
-                mysqli_stmt_bind_param($stmt, "isi", $admin_id, $transfer_proof_path, $id);
+                $stmt = mysqli_prepare($koneksi, "UPDATE reward_redemptions SET status = 'completed', completed_at = NOW(), admin_id = ?, transfer_proof = ?, transfer_proof_b64 = ? WHERE id = ?");
+                mysqli_stmt_bind_param($stmt, "issi", $admin_id, $transfer_proof_path, $transfer_proof_b64, $id);
                 mysqli_stmt_execute($stmt);
                 mysqli_stmt_close($stmt);
                 
