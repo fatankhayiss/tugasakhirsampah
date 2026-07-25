@@ -1,7 +1,7 @@
 import os
 
 # Set environment variable APP_ENV externally, or default to development
-APP_ENV = os.getenv("APP_ENV", "development")
+APP_ENV = os.getenv("APP_ENV", "production")
 
 if APP_ENV == "development":
     SERVER_HOST = "127.0.0.1"

@@ -84,7 +84,7 @@ if ($action === 'get_active_task') {
         $order['jenis_sampah'] = !empty($jenis_list) ? implode(', ', $jenis_list) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
+        $base_url = BASE_URL;
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $order['foto_warga'];
         if ($foto_warga) {
@@ -202,7 +202,7 @@ elseif ($action === 'get_orders') {
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
+        $base_url = BASE_URL;
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $row['foto_warga'];
         if ($foto_warga) {
@@ -261,7 +261,7 @@ elseif ($action === 'get_schedules') {
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
+        $base_url = BASE_URL;
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $row['foto_warga'];
         if ($foto_warga) {
@@ -320,7 +320,7 @@ elseif ($action === 'get_history') {
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
+        $base_url = BASE_URL;
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $row['foto_warga'];
         if ($foto_warga) {
@@ -583,7 +583,7 @@ elseif ($action === 'get_order_detail') {
         $row['jenis_sampah'] = !empty($jl) ? implode(', ', $jl) : 'Campuran';
         mysqli_stmt_close($stmt_j);
 
-        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
+        $base_url = BASE_URL;
         $base_upload_url = $base_url . "assets/uploads/";
         $foto_warga = $row['foto_warga'];
         if ($foto_warga) {

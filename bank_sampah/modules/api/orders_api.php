@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         mysqli_stmt_close($stmt_i);
 
-        $base_url = "http://192.168.110.61/tugasakhirsampah/bank_sampah/";
+        $base_url = BASE_URL;
         $base_upload_url = $base_url . "assets/uploads/";
 
         $foto_warga = $order['foto_warga'];
