@@ -70,22 +70,22 @@ $current_page = isset($current_page) ? $current_page : (isset($_GET['page']) ? $
             ?>
         </a>
     </li>
-    <li x-data="{ open: <?php echo (strpos($current_page, 'transaksi/') === 0) ? 'true' : 'false'; ?> }" @dropdown-opened.window="if ($event.detail !== 'transaksi') open = false">
-            <button type="button" @click="open = !open; if (open) $dispatch('dropdown-opened', 'transaksi')" class="w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200">
+    <li x-data="{ open: <?php echo (strpos($current_page, 'transaksi/') === 0 || $current_page == 'riwayat') ? 'true' : 'false'; ?> }" @dropdown-opened.window="if ($event.detail !== 'transaksi') open = false">
+        <button type="button" @click="open = !open; if (open) $dispatch('dropdown-opened', 'transaksi')" class="w-full flex items-center justify-between space-x-3 px-4 py-3 rounded-lg hover:bg-sky-600 transition duration-200">
             <div class="flex items-center space-x-3">
                 <i class="fas fa-history w-5"></i>
-                <span>Transaksi</span>
+                <span>Riwayat</span>
             </div>
             <i class="fas transition-transform duration-300" :class="open ? 'fa-chevron-down rotate-180' : 'fa-chevron-down'"></i>
         </button>
         <ul class="ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out" :style="open ? 'max-height: 140px; opacity: 1;' : 'max-height: 0px; opacity: 0;'">
             <li>
                 <a href="<?php echo BASE_URL; ?>index.php?page=transaksi/riwayat&filter_tipe=setor" 
-                   class="block px-4 py-2 rounded-md hover:bg-sky-700 <?php echo ($current_page == 'transaksi/riwayat' && isset($_GET['filter_tipe']) && $_GET['filter_tipe']=='setor') ? 'active-nav-link' : ''; ?>">Riwayat Setor</a>
+                   class="block px-4 py-2 rounded-md hover:bg-sky-700 <?php echo ($current_page == 'transaksi/riwayat' && isset($_GET['filter_tipe']) && $_GET['filter_tipe']=='setor') ? 'active-nav-link' : ''; ?>">Setor Sampah</a>
             </li>
             <li>
                 <a href="<?php echo BASE_URL; ?>index.php?page=transaksi/riwayat&filter_tipe=tarik_saldo" 
-                   class="block px-4 py-2 rounded-md hover:bg-sky-700 <?php echo ($current_page == 'transaksi/riwayat' && isset($_GET['filter_tipe']) && $_GET['filter_tipe']=='tarik_saldo') ? 'active-nav-link' : ''; ?>">Riwayat Tarik/Transfer</a>
+                   class="block px-4 py-2 rounded-md hover:bg-sky-700 <?php echo ($current_page == 'transaksi/riwayat' && isset($_GET['filter_tipe']) && $_GET['filter_tipe']=='tarik_saldo') ? 'active-nav-link' : ''; ?>">Tarik Transfer Saldo</a>
             </li>
         </ul>
     </li>

@@ -274,4 +274,21 @@ body {
 .hasil-pencarian:not(:empty) + .placeholder-text {
     display: none;
 }
-/* Jika menggunakan PHP untuk manage display placeholder, baris di atas mungkin tidak terlalu dibutuhkan */
+
+/* Sembunyikan scrollbar untuk seluruh elemen halaman (kecuali navigasi sidebar) */
+html, body, main, section, article, div:not(.sidebar nav) {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar, main::-webkit-scrollbar, section::-webkit-scrollbar, article::-webkit-scrollbar, div:not(.sidebar nav)::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+}
+
+/* Pastikan teks footer tepat berada di tengah area konten utama (mengkompensasi lebar sidebar 256px / 16rem pada layar desktop) */
+@media (min-width: 768px) {
+    .footer-admin-logged-in {
+        padding-left: 256px !important;
+    }
+}

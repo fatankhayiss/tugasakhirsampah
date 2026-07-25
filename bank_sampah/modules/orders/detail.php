@@ -630,28 +630,42 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnReject) {
         btnReject.addEventListener('click', function(e) {
             e.preventDefault();
-            const reason = prompt('Masukkan alasan pembatalan/penolakan order ini:');
-            if (reason === null) return; 
-            if (reason.trim() === '') {
-                alert('Alasan pembatalan wajib diisi.');
-                return;
-            }
-            const form = this.closest('form');
-            if (form) {
-                const inputReason = document.createElement('input');
-                inputReason.type = 'hidden';
-                inputReason.name = 'rejection_reason';
-                inputReason.value = reason;
-                form.appendChild(inputReason);
-                
-                const inputAction = document.createElement('input');
-                inputAction.type = 'hidden';
-                inputAction.name = 'action_reject';
-                inputAction.value = '1';
-                form.appendChild(inputAction);
-                
-                form.submit();
-            }
+            Swal.fire({
+                title: 'Alasan Pembatalan',
+                text: 'Masukkan alasan pembatalan/penolakan order ini:',
+                input: 'textarea',
+                inputPlaceholder: 'Tuliskan alasan di sini...',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Batalkan Order',
+                cancelButtonText: 'Kembali',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) {
+                        return 'Alasan pembatalan wajib diisi!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = this.closest('form');
+                    if (form) {
+                        const inputReason = document.createElement('input');
+                        inputReason.type = 'hidden';
+                        inputReason.name = 'rejection_reason';
+                        inputReason.value = result.value;
+                        form.appendChild(inputReason);
+                        
+                        const inputAction = document.createElement('input');
+                        inputAction.type = 'hidden';
+                        inputAction.name = 'action_reject';
+                        inputAction.value = '1';
+                        form.appendChild(inputAction);
+                        
+                        form.submit();
+                    }
+                }
+            });
         });
     }
 

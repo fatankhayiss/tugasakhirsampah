@@ -32,6 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($user = mysqli_fetch_assoc($result)) {
             // Verifikasi password
             if (password_verify($password, $user['password'])) {
+                // Pastikan yang login HANYA admin (web portal murni untuk admin)
+                if ($user['level'] !== 'admin') {
+                    redirect(BASE_URL . 'index.php?page=auth/login&pesan=bukan_admin');
+                }
+
                 // Login berhasil, pastikan sesi dimulai sebelum menulis ke dalamnya
                 if (session_status() == PHP_SESSION_NONE) {
                     // Ini sebagai fallback, idealnya sesi sudah dimulai di config/database.php atau index.php

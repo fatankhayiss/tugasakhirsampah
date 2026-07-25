@@ -85,18 +85,15 @@ if ($result_warga) {
             },
             validateAndSubmit(event) {
                 if (!this.selectedWargaId) {
-                    alert('Harap pilih penyetor terlebih dahulu.');
-                    event.preventDefault();
+                    Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Harap pilih penyetor terlebih dahulu.', confirmButtonColor: '#3085d6' });
                     return false;
                 }
                 if (this.jumlahPenarikan <= 0) {
-                    alert('Jumlah penarikan harus lebih dari 0.');
-                    event.preventDefault();
+                    Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Jumlah penarikan harus lebih dari 0.', confirmButtonColor: '#3085d6' });
                     return false;
                 }
                 if (this.currentSaldoWarga === null || this.jumlahPenarikan > this.currentSaldoWarga) {
-                    alert('Jumlah penarikan tidak boleh melebihi saldo penyetor saat ini.');
-                    event.preventDefault();
+                    Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Jumlah penarikan tidak boleh melebihi saldo penyetor saat ini.', confirmButtonColor: '#3085d6' });
                     return false;
                 }
                 // Jika validasi lolos, submit form secara native

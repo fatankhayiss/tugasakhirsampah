@@ -34,6 +34,9 @@
             } else if ($_GET['pesan'] == "password_updated") {
                 $pesan = "Password berhasil diperbarui. Silakan login kembali.";
                 $icon = "success";
+            } else if ($_GET['pesan'] == "bukan_admin") {
+                $pesan = "Akses ditolak! Web Portal ini khusus untuk Administrator Bank Sampah. Nasabah dan Driver silakan mengakses via aplikasi mobile.";
+                $icon = "error";
             }
              if ($pesan) {
                 echo "<script>";

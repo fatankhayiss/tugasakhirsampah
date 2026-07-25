@@ -36,7 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                 }
                 
                 if (!$transfer_proof_path) {
-                    echo "<script>alert('Bukti transfer wajib diunggah!'); window.history.back();</script>";
+                    $_SESSION['error_message'] = 'Bukti transfer wajib diunggah!';
+                    redirect(BASE_URL . 'index.php?page=reward/index');
                     exit;
                 }
 
@@ -55,7 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                     mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Berhasil', 'Penukaran poin Anda telah selesai diproses. Silakan cek riwayat transaksi Anda. Kode: $trx_code', 'success')");
                     
                     mysqli_commit($koneksi);
-                    echo "<script>window.location.href='index.php?page=reward/index&tab=completed';</script>";
+                    $_SESSION['success_message'] = 'Penukaran berhasil diselesaikan!';
+                    redirect(BASE_URL . 'index.php?page=reward/index&tab=completed');
                     exit;
                 } catch (Exception $e) {
                     mysqli_rollback($koneksi);
@@ -66,7 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
             if ($action_type === 'reject') {
                 $note = trim($_POST['reject_reason'] ?? '');
                 if (empty($note)) {
-                    echo "<script>alert('Alasan penolakan wajib diisi!'); window.history.back();</script>";
+                    $_SESSION['error_message'] = 'Alasan penolakan wajib diisi!';
+                    redirect(BASE_URL . 'index.php?page=reward/index');
                     exit;
                 }
                 mysqli_begin_transaction($koneksi);
@@ -85,7 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                     mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Ditolak', 'Pengajuan penukaran poin ditolak. Alasan: $safe_note. Kode: $trx_code', 'warning')");
                     
                     mysqli_commit($koneksi);
-                    echo "<script>window.location.href='index.php?page=reward/index&tab=rejected';</script>";
+                    $_SESSION['success_message'] = 'Penukaran berhasil ditolak!';
+                    redirect(BASE_URL . 'index.php?page=reward/index&tab=rejected');
                     exit;
                 } catch (Exception $e) {
                     mysqli_rollback($koneksi);
@@ -340,7 +344,7 @@ $result = mysqli_query($koneksi, $sql);
             </button>
         </div>
         
-        <form method="POST" action="index.php?page=reward/index" class="mt-4 space-y-4" enctype="multipart/form-data" onsubmit="return validateCompleteForm();">
+        <form method="POST" action="index.php?page=reward/index" class="mt-4 space-y-4" enctype="multipart/form-data" onsubmit="return validateCompleteForm(event);">
             <input type="hidden" name="action_type" value="complete">
             <input type="hidden" name="redemption_id" id="complete_redemption_id" value="">
             
@@ -383,13 +387,29 @@ function closeCompleteModal() {
     modal.classList.add('hidden');
 }
 
-function validateCompleteForm() {
+function validateCompleteForm(event) {
     const file = document.getElementById('transfer_proof_input').files[0];
     if (!file) {
-        alert('Peringatan: Bukti transfer wajib diunggah!');
+        if (event) event.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Bukti transfer wajib diunggah!', confirmButtonColor: '#3085d6' });
         return false;
     }
-    return confirm('Konfirmasi penukaran SELESAI? Dana akan ditransfer dan poin dipotong permanen.');
+    if (event) event.preventDefault();
+    Swal.fire({
+        title: 'Konfirmasi SELESAI',
+        text: 'Konfirmasi penukaran SELESAI? Dana akan ditransfer dan poin dipotong permanen.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Selesaikan!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            event.target.submit();
+        }
+    });
+    return false;
 }
 </script>
 
@@ -406,7 +426,7 @@ function validateCompleteForm() {
             </button>
         </div>
         
-        <form method="POST" class="mt-4 space-y-4" onsubmit="return validateRejectForm();">
+        <form method="POST" class="mt-4 space-y-4" onsubmit="return validateRejectForm(event);">
             <input type="hidden" name="action_type" value="reject">
             <input type="hidden" name="redemption_id" id="modal_redemption_id" value="">
             
@@ -448,12 +468,28 @@ function closeRejectModal() {
     modal.classList.add('hidden');
 }
 
-function validateRejectForm() {
+function validateRejectForm(event) {
     const val = document.getElementById('reject_reason_input').value.trim();
     if (!val) {
-        alert('Peringatan: Reject Reason (Alasan Penolakan) wajib diisi demi transparansi ke warga!');
+        if (event) event.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Reject Reason (Alasan Penolakan) wajib diisi demi transparansi ke warga!', confirmButtonColor: '#3085d6' });
         return false;
     }
-    return confirm('Anda yakin menolak penukaran ini dan mengembalikan poin ke warga?');
+    if (event) event.preventDefault();
+    Swal.fire({
+        title: 'Konfirmasi Tolak',
+        text: 'Anda yakin menolak penukaran ini dan mengembalikan poin ke warga?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Tolak!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            event.target.submit();
+        }
+    });
+    return false;
 }
 </script>

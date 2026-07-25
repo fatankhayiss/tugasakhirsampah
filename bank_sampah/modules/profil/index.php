@@ -78,19 +78,6 @@ if (!$user_data) {
                 <p class="text-gray-600 mb-1"><i class="fas fa-map-marker-alt w-5 mr-2 text-sky-500"></i> <?php echo htmlspecialchars($user_data['alamat'] ? $user_data['alamat'] : 'Belum diisi'); ?></p>
                 <p class="text-gray-600"><i class="fas fa-phone w-5 mr-2 text-sky-500"></i> <?php echo htmlspecialchars($user_data['no_telepon'] ? $user_data['no_telepon'] : 'Belum diisi'); ?></p>
             </div>
-            <?php if ($user_data['level'] == 'warga'): ?>
-            <hr class="my-4">
-            <div>
-                <h3 class="text-lg font-semibold text-gray-700 mb-2">Informasi Saldo:</h3>
-                <div class="bg-green-100 p-4 rounded-lg">
-                    <p class="text-sm text-green-700">Saldo Anda saat ini:</p>
-                    <p class="text-2xl font-bold text-green-600"><?php echo format_rupiah($user_data['saldo']); ?></p>
-                </div>
-                 <a href="<?php echo BASE_URL; ?>index.php?page=laporan/riwayat_warga" class="mt-3 block text-center w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-2 px-4 rounded-lg transition duration-150">
-                    <i class="fas fa-history mr-2"></i> Lihat Riwayat Transaksi
-                </a>
-            </div>
-            <?php endif; ?>
         </div>
 
         <div class="lg:col-span-2 space-y-8">

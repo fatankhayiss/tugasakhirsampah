@@ -97,7 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _navigateToEditProfile() async {
     final profile = await _repository.getProfile();
-    if (mounted && profile != null) {
+    if (mounted) {
       final refresh = await Navigator.push(
         context,
         MaterialPageRoute(

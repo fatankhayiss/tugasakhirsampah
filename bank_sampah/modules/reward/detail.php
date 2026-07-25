@@ -5,7 +5,8 @@ check_user_level(['admin']);
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!$id) {
-    echo "<script>alert('ID tidak ditemukan!'); window.location.href='index.php?page=reward/index';</script>";
+    $_SESSION['error_message'] = 'ID tidak ditemukan!';
+    redirect(BASE_URL . 'index.php?page=reward/index');
     exit;
 }
 
@@ -38,7 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                 }
             }
             if (!$transfer_proof_path) {
-                echo "<script>alert('Bukti transfer wajib diunggah!'); window.history.back();</script>";
+                $_SESSION['error_message'] = 'Bukti transfer wajib diunggah!';
+                redirect(BASE_URL . 'index.php?page=reward/detail&id=' . $id);
                 exit;
             }
 
@@ -57,7 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                 mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Berhasil', 'Penukaran poin Anda telah selesai diproses. Silakan cek riwayat transaksi Anda. Kode: $trx_code', 'success')");
                 
                 mysqli_commit($koneksi);
-                echo "<script>alert('Penukaran berhasil selesai (Completed)!'); window.location.href='index.php?page=reward/detail&id=$id';</script>";
+                $_SESSION['success_message'] = 'Penukaran berhasil selesai (Completed)!';
+                redirect(BASE_URL . 'index.php?page=reward/detail&id=' . $id);
                 exit;
             } catch (Exception $e) {
                 mysqli_rollback($koneksi);
@@ -67,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
         if ($action_type === 'reject') {
             $note = trim($_POST['reject_reason'] ?? '');
             if (empty($note)) {
-                echo "<script>alert('Alasan penolakan wajib diisi!'); window.history.back();</script>";
+                $_SESSION['error_message'] = 'Alasan penolakan wajib diisi!';
+                redirect(BASE_URL . 'index.php?page=reward/detail&id=' . $id);
                 exit;
             }
             mysqli_begin_transaction($koneksi);
@@ -86,7 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_type'])) {
                 mysqli_query($koneksi, "INSERT INTO notifikasi (id_pengguna, judul, pesan, tipe) VALUES ($uid, 'Tukar Poin Ditolak', 'Pengajuan penukaran poin ditolak. Alasan: $safe_note. Kode: $trx_code', 'warning')");
                 
                 mysqli_commit($koneksi);
-                echo "<script>alert('Penukaran berhasil DITOLAK dan poin dikembalikan 100%!'); window.location.href='index.php?page=reward/detail&id=$id';</script>";
+                $_SESSION['success_message'] = 'Penukaran berhasil DITOLAK dan poin dikembalikan 100%!';
+                redirect(BASE_URL . 'index.php?page=reward/detail&id=' . $id);
                 exit;
             } catch (Exception $e) {
                 mysqli_rollback($koneksi);
@@ -106,7 +111,8 @@ $row = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
 mysqli_stmt_close($stmt);
 
 if (!$row) {
-    echo "<script>alert('Data penukaran tidak ditemukan.'); window.location.href='index.php?page=reward/index';</script>";
+    $_SESSION['error_message'] = 'Data penukaran tidak ditemukan.';
+    redirect(BASE_URL . 'index.php?page=reward/index');
     exit;
 }
 
@@ -316,7 +322,7 @@ mysqli_stmt_close($stmt_l);
             </button>
         </div>
         
-        <form method="POST" class="mt-4 space-y-4" onsubmit="return validateRejectDetailForm();">
+        <form method="POST" class="mt-4 space-y-4" onsubmit="return validateRejectDetailForm(event);">
             <input type="hidden" name="action_type" value="reject">
             
             <p class="text-xs text-gray-500">
@@ -353,7 +359,7 @@ mysqli_stmt_close($stmt_l);
             </button>
         </div>
         
-        <form method="POST" class="mt-4 space-y-4" enctype="multipart/form-data" onsubmit="return validateCompleteDetailForm();">
+        <form method="POST" class="mt-4 space-y-4" enctype="multipart/form-data" onsubmit="return validateCompleteDetailForm(event);">
             <input type="hidden" name="action_type" value="complete">
             
             <p class="text-xs text-gray-500">
@@ -392,13 +398,29 @@ function closeRejectDetailModal() {
     modal.classList.add('hidden');
 }
 
-function validateRejectDetailForm() {
+function validateRejectDetailForm(event) {
     const val = document.getElementById('reject_reason_detail_input').value.trim();
     if (!val) {
-        alert('Peringatan: Alasan penolakan wajib diisi demi transparansi ke warga!');
+        if (event) event.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Alasan penolakan wajib diisi demi transparansi ke warga!', confirmButtonColor: '#3085d6' });
         return false;
     }
-    return confirm('Anda yakin menolak penukaran ini dan mengembalikan poin ke warga?');
+    if (event) event.preventDefault();
+    Swal.fire({
+        title: 'Konfirmasi Tolak',
+        text: 'Anda yakin menolak penukaran ini dan mengembalikan poin ke warga?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Tolak!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            event.target.submit();
+        }
+    });
+    return false;
 }
 
 function openCompleteDetailModal() {
@@ -414,12 +436,28 @@ function closeCompleteDetailModal() {
     modal.classList.add('hidden');
 }
 
-function validateCompleteDetailForm() {
+function validateCompleteDetailForm(event) {
     const file = document.getElementById('transfer_proof_input').files[0];
     if (!file) {
-        alert('Peringatan: Bukti transfer wajib diunggah!');
+        if (event) event.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Bukti transfer wajib diunggah!', confirmButtonColor: '#3085d6' });
         return false;
     }
-    return confirm('Konfirmasi penukaran SELESAI? Dana akan ditransfer dan poin dipotong permanen.');
+    if (event) event.preventDefault();
+    Swal.fire({
+        title: 'Konfirmasi SELESAI',
+        text: 'Konfirmasi penukaran SELESAI? Dana akan ditransfer dan poin dipotong permanen.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Selesaikan!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            event.target.submit();
+        }
+    });
+    return false;
 }
 </script>

@@ -100,6 +100,7 @@ if ($state === 'FORM' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - I-Trashy</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -239,7 +240,7 @@ if ($state === 'FORM' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                            class="block w-full py-4 px-6 rounded-2xl shadow-md bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm transition duration-200">
                             Back to Login
                         </a>
-                        <button onclick="alert('Silakan buka aplikasi I-Trashy dan klik menu Lupa Password untuk meminta link baru.')" 
+                        <button onclick="Swal.fire({ icon: 'info', title: 'Informasi', text: 'Silakan buka aplikasi I-Trashy dan klik menu Lupa Password untuk meminta link baru.', confirmButtonColor: '#059669' })" 
                            class="block w-full py-4 px-6 rounded-2xl shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition duration-200">
                             Request New Link
                         </button>
@@ -305,6 +306,42 @@ if ($state === 'FORM' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 icon.classList.add('fa-eye');
             }
         }
+
+        let isShowingValidationError = false;
+        document.addEventListener('invalid', function(e) {
+            e.preventDefault();
+            const field = e.target;
+            field.classList.add('border-red-500', 'ring-2', 'ring-red-500', 'transition-all');
+            setTimeout(() => field.classList.remove('border-red-500', 'ring-2', 'ring-red-500'), 3000);
+            if (!isShowingValidationError) {
+                isShowingValidationError = true;
+                let fieldName = field.getAttribute('placeholder') || field.getAttribute('name') || 'Kolom ini';
+                const label = document.querySelector(`label[for="${field.id}"]`) || field.closest('div')?.querySelector('label');
+                if (label && label.innerText) fieldName = label.innerText.replace(/\*/g, '').trim();
+                let pesanError = 'Kolom ini wajib diisi dengan benar.';
+                if (field.validity.valueMissing) pesanError = `${fieldName} wajib diisi dan tidak boleh kosong!`;
+                else if (field.validity.typeMismatch) pesanError = `Format pada ${fieldName} tidak valid!`;
+                else if (field.validity.tooShort || field.validity.tooLong) pesanError = `Panjang teks ${fieldName} tidak memenuhi syarat!`;
+                else if (field.validationMessage) pesanError = field.validationMessage;
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'warning',
+                    title: 'Kolom Belum Lengkap',
+                    text: pesanError,
+                    showConfirmButton: false,
+                    timer: 3500,
+                    timerProgressBar: true
+                });
+                field.focus();
+                setTimeout(() => isShowingValidationError = false, 600);
+            }
+        }, true);
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.classList && e.target.classList.contains('border-red-500')) {
+                e.target.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+            }
+        }, true);
     </script>
 </body>
 </html>

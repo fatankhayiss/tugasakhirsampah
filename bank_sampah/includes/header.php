@@ -22,28 +22,45 @@ $user_nama = isset($_SESSION['user_nama']) ? $_SESSION['user_nama'] : 'Tamu';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Custom modern scrollbar */
-        ::-webkit-scrollbar { 
-            width: 6px; 
-            height: 6px; 
+        /* Sembunyikan scrollbar pada seluruh halaman web (body, tabel, konten utama - BUKAN di sidebar) agar bersih & tidak mengganggu */
+        html, body, main, section, article, div:not(.sidebar nav) {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE & Edge */
         }
-        ::-webkit-scrollbar-track { 
-            background: transparent; 
-        }
-        ::-webkit-scrollbar-thumb { 
-            background: rgba(156, 163, 175, 0.5); /* Gray-400 with opacity */
-            border-radius: 10px; 
-        }
-        ::-webkit-scrollbar-thumb:hover { 
-            background: rgba(107, 114, 128, 0.8); /* Gray-500 */
+        html::-webkit-scrollbar, body::-webkit-scrollbar, main::-webkit-scrollbar, section::-webkit-scrollbar, article::-webkit-scrollbar, div:not(.sidebar nav)::-webkit-scrollbar { 
+            display: none; /* Chrome, Edge, Safari, Opera */
+            width: 0px; 
+            height: 0px; 
         }
         
-        /* Scrollbar khusus untuk sidebar agar serasi dengan background biru */
-        .sidebar nav::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
+        /* Scrollbar khusus untuk Sidebar: melayang (ngambang) di depan tanpa merusak/menggeser isi menu sedikitpun */
+        .sidebar nav {
+            overflow-y: auto;
+            margin-right: -12px; /* Mendorong jalur scrollbar ke luar area teks agar tidak mengganggu layout menu */
+            padding-right: 12px; /* Kompensasi padding sehingga posisi teks & ikon menu 100% statis tidak bergeser */
+            scrollbar-width: thin;
+            scrollbar-color: transparent transparent;
+            transition: scrollbar-color 0.4s ease-in-out;
         }
-        .sidebar nav::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.4);
+        .sidebar nav:hover {
+            scrollbar-color: rgba(209, 213, 219, 0.35) transparent; /* Muncul perlahan abu tipis transparan saat di-hover */
+        }
+        .sidebar nav::-webkit-scrollbar {
+            width: 4px; /* Batang scrollbar tipis (4px) */
+        }
+        .sidebar nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar nav::-webkit-scrollbar-thumb {
+            background: transparent; /* Default tidak terlihat (transparan) */
+            border-radius: 20px;
+            transition: background-color 0.4s ease-in-out;
+        }
+        .sidebar nav:hover::-webkit-scrollbar-thumb {
+            background: rgba(209, 213, 219, 0.35); /* Muncul perlahan ngambang di depan dengan warna abu tipis transparan */
+        }
+        .sidebar nav:hover::-webkit-scrollbar-thumb:hover {
+            background: rgba(209, 213, 219, 0.6);
         }
         body {
             font-family: 'Poppins', 'Inter', sans-serif;
@@ -83,7 +100,7 @@ $user_nama = isset($_SESSION['user_nama']) ? $_SESSION['user_nama'] : 'Tamu';
 
             <nav class="flex-grow overflow-y-auto">
                 <?php
-                // Aplikasi web hanya untuk admin sekarang — gunakan sidebar admin untuk semua yang login
+                // Web Portal ini murni khusus untuk Admin Bank Sampah
                 include 'sidebar_admin.php';
                 ?>
             </nav>

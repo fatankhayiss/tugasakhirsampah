@@ -4,8 +4,6 @@ import 'package:mobile_user/core/repositories/auth_repository.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
-import '../../../core/repositories/auth_repository.dart';
-import '../../../core/repositories/auth_repository.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {

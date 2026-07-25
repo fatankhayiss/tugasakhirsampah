@@ -67,9 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_driver'])) {
             }
             
             if ($notif_success) {
-                echo "<script>alert('Penugasan berhasil dikirim ke Picker.'); window.location.href='index.php?page=orders/data';</script>";
+                $_SESSION['success_message'] = 'Penugasan berhasil dikirim ke Picker.';
+                redirect(BASE_URL . 'index.php?page=orders/data');
             } else {
-                echo "<script>alert('Gagal mengirim penugasan: " . addslashes($notif_error) . "'); window.location.href='index.php?page=orders/data';</script>";
+                $_SESSION['error_message'] = 'Gagal mengirim penugasan: ' . addslashes($notif_error);
+                redirect(BASE_URL . 'index.php?page=orders/data');
             }
             exit;
         }
@@ -128,7 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_order'])) {
                 }
             }
             
-            echo "<script>alert('Order berhasil diselesaikan dan poin telah ditambahkan!'); window.location.href='index.php?page=orders/data';</script>";
+            $_SESSION['success_message'] = 'Order berhasil diselesaikan dan poin telah ditambahkan!';
+            redirect(BASE_URL . 'index.php?page=orders/data');
             exit;
         }
     }
@@ -309,7 +312,7 @@ $status_labels = [
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 <?php if ($st === 'MENUNGGU_KONFIRMASI'): ?>
-                                    <form method="POST" action="" class="flex items-center space-x-2" onsubmit="return confirm('Konfirmasi penjemputan dan tugaskan picker ini?');">
+                                    <form method="POST" action="" class="flex items-center space-x-2 form-confirm" data-title="Konfirmasi Penugasan" data-text="Konfirmasi penjemputan dan tugaskan picker ini?">
                                         <input type="hidden" name="id_order" value="<?php echo $order['id_order']; ?>">
                                         <select name="id_driver" required class="text-sm border-gray-300 rounded-md shadow-sm focus:border-sky-500 focus:ring-sky-500">
                                             <option value="">-- Pilih Picker --</option>

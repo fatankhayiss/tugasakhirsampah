@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../repositories/profile_repository.dart';
 import '../constants/app_colors.dart';
 import '../navigation/app_dialog_transitions.dart';
-import '../navigation/app_dialog_transitions.dart';
 import '../../shared/widgets/location_picker_map.dart';
 
 /// Helper class to verify mandatory address requirement before initiating pickup/deposit requests.

@@ -126,10 +126,6 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
     $q = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM pengguna WHERE level = 'driver'");
     if ($q) $jumlah_driver = (int)mysqli_fetch_assoc($q)['total'];
 }
-
-// Karena warga tidak lagi login ke dashboard ini, bagian elseif ($user_level == 'warga') bisa dihapus.
-// Kode di bawah ini khusus untuk admin dan petugas.
-
 ?>
 
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -224,7 +220,7 @@ if ($user_level == 'admin' || $user_level == 'petugas') {
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-xl">
             <h2 class="text-xl font-semibold text-gray-700 mb-5 flex items-center">
-                <i class="fas fa-stream mr-3 text-sky-500"></i>Aktivitas Transaksi Terbaru
+                <i class="fas fa-stream mr-3 text-sky-500"></i>Aktivitas Riwayat Terbaru
             </h2>
             <?php if (!empty($aktivitas_terbaru)): ?>
                 <div class="space-y-4">

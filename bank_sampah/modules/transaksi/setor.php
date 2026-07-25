@@ -165,19 +165,16 @@ mysqli_data_seek($result_jenis_sampah, 0);
             },
             submitForm(event) {
                 if (!this.formData.id_warga) {
-                    alert('Harap pilih penyetor terlebih dahulu.');
-                    event.preventDefault();
+                    Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Harap pilih penyetor terlebih dahulu.', confirmButtonColor: '#3085d6' });
                     return false;
                 }
                 if (this.formData.items.length === 0) {
-                    alert('Harap tambahkan minimal satu jenis sampah yang disetor.');
-                    event.preventDefault();
+                    Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Harap tambahkan minimal satu jenis sampah yang disetor.', confirmButtonColor: '#3085d6' });
                     return false;
                 }
                 for (let item of this.formData.items) {
                     if (!item.id_jenis_sampah || item.berat_kg <= 0) {
-                        alert('Pastikan semua detail sampah terisi dengan benar (Jenis Sampah dipilih dan Berat > 0).');
-                        event.preventDefault();
+                        Swal.fire({ icon: 'error', title: 'Peringatan', text: 'Pastikan semua detail sampah terisi dengan benar (Jenis Sampah dipilih dan Berat > 0).', confirmButtonColor: '#3085d6' });
                         return false;
                     }
                 }

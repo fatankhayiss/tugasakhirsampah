@@ -38,7 +38,7 @@ if (!empty($conditions)) {
 
 // Buat dua query terpisah: satu untuk setor, satu untuk tarik_saldo
 $where_clause_setor = $where_clause;
-// Batasi ke tipe setor saja (tarik_saldo tidak ditampilkan di panel ini)
+// Batasi ke tipe setor saja
 $where_clause_setor = (!empty($where_clause_setor) ? $where_clause_setor . ' AND ' : 'WHERE ') . "t.tipe_transaksi = 'setor'";
 
 $base_query = "
@@ -106,8 +106,16 @@ $query_all_warga = "SELECT id_pengguna, nama_lengkap, username FROM pengguna WHE
 $result_all_warga = mysqli_query($koneksi, $query_all_warga);
 ?>
 
+<?php
+$judul_halaman = "Riwayat Semua Transaksi";
+if ($filter_tipe === 'setor') {
+    $judul_halaman = "Riwayat Setor Sampah";
+} elseif ($filter_tipe === 'tarik_saldo') {
+    $judul_halaman = "Riwayat Tarik/Transfer Saldo";
+}
+?>
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Riwayat Semua Transaksi</h1>
+    <h1 class="text-3xl font-bold text-gray-800 mb-6"><?php echo $judul_halaman; ?></h1>
 
     <form method="GET" action="<?php echo BASE_URL; ?>index.php" class="mb-6 bg-white p-4 rounded-lg shadow">
         <input type="hidden" name="page" value="transaksi/riwayat">

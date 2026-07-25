@@ -43,15 +43,15 @@ $allowed_pages = [
     'jenis_sampah/proses_simpan' => 'modules/jenis_sampah/proses_simpan.php',
     'jenis_sampah/hapus' => 'modules/jenis_sampah/hapus.php',
 
-    // Transaksi (oleh Admin & Petugas)
-    'transaksi/setor' => 'modules/transaksi/setor.php',
-    'transaksi/proses_setor' => 'modules/transaksi/proses_setor.php',
+    // Riwayat Transaksi (oleh Admin)
+    'transaksi/setor' => 'modules/transaksi/riwayat.php',
+    'transaksi/proses_setor' => 'modules/transaksi/riwayat.php',
     'transaksi/riwayat' => 'modules/transaksi/riwayat.php', 
+    'riwayat' => 'modules/transaksi/riwayat.php', 
 
     // Laporan
     'laporan/harian' => 'modules/laporan/harian.php',
     'laporan/bulanan' => 'modules/laporan/bulanan.php',
-    'laporan/riwayat_warga' => 'modules/laporan/riwayat_warga.php',
     'laporan/export' => 'modules/laporan/export_handler.php', // Rute untuk handler ekspor Excel
 
     // Edukasi (Artikel/Foto/Video)
