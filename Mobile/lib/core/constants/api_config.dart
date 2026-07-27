@@ -2,6 +2,7 @@
 ///
 /// Ubah [baseUrl] sesuai environment:
 /// - Production Cloud: `https://itrashy.triki.cloud/`
+library;
 import 'environment.dart';
 
 class ApiConfig {

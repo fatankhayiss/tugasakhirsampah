@@ -539,13 +539,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             if ($final_points <= 0) $final_points = $est_pts;
 
             // Credit points and balance to citizen
-            $upd_poin = "UPDATE pengguna SET saldo = COALESCE(saldo, 0) + ? WHERE id_pengguna = ?";
+            $upd_poin = "UPDATE pengguna SET poin = COALESCE(poin, 0) + ?, saldo = COALESCE(saldo, 0) + ? WHERE id_pengguna = ?";
             $stmt_p = mysqli_prepare($koneksi, $upd_poin);
             if ($stmt_p) {
                 $total_rupiah = $final_points * 1000;
-                mysqli_stmt_bind_param($stmt_p, "di", $total_rupiah, $warga_id);
+                mysqli_stmt_bind_param($stmt_p, "idi", $final_points, $total_rupiah, $warga_id);
                 mysqli_stmt_execute($stmt_p);
                 mysqli_stmt_close($stmt_p);
+
+                // Insert into transaksi
+                $ket = "Setoran sampah via Penjemputan Order #" . $order_id;
+                $ins_trx = "INSERT INTO transaksi (id_warga, id_petugas_pencatat, tipe_transaksi, total_nilai, keterangan) VALUES (?, ?, 'setor', ?, ?)";
+                $stmt_trx = mysqli_prepare($koneksi, $ins_trx);
+                mysqli_stmt_bind_param($stmt_trx, "iids", $warga_id, $target_driver_id, $total_rupiah, $ket);
+                mysqli_stmt_execute($stmt_trx);
+                $id_trx = mysqli_insert_id($koneksi);
+                mysqli_stmt_close($stmt_trx);
+
+                // Insert into detail_setoran
+                $get_items = "SELECT oi.id_jenis_sampah, oi.estimasi_berat_kg, js.harga_per_kg FROM order_items oi JOIN jenis_sampah js ON oi.id_jenis_sampah = js.id_jenis_sampah WHERE oi.id_order = ?";
+                $stmt_items = mysqli_prepare($koneksi, $get_items);
+                mysqli_stmt_bind_param($stmt_items, "i", $order_id);
+                mysqli_stmt_execute($stmt_items);
+                $res_items = mysqli_stmt_get_result($stmt_items);
+                while ($itm = mysqli_fetch_assoc($res_items)) {
+                    $est = floatval($itm['estimasi_berat_kg']);
+                    $item_berat = $est_wt > 0 ? ($est / $est_wt) * $actual_wt : $est;
+                    $harga = floatval($itm['harga_per_kg']);
+                    $sub = $item_berat * $harga;
+
+                    $ins_det = "INSERT INTO detail_setoran (id_transaksi_setor, id_jenis_sampah, berat_kg, harga_saat_setor, subtotal_nilai) VALUES (?, ?, ?, ?, ?)";
+                    $stmt_d = mysqli_prepare($koneksi, $ins_det);
+                    mysqli_stmt_bind_param($stmt_d, "iiddd", $id_trx, $itm['id_jenis_sampah'], $item_berat, $harga, $sub);
+                    mysqli_stmt_execute($stmt_d);
+                    mysqli_stmt_close($stmt_d);
+                }
+                mysqli_stmt_close($stmt_items);
             }
         }
 

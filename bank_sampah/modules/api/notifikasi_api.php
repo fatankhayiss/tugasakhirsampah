@@ -24,11 +24,17 @@ function api_respond($success, $message, $data = null, $code = 200) {
 
 function get_auth_user($koneksi) {
     $token = null;
-    $headers = getallheaders();
-    foreach ($headers as $key => $value) {
-        if (strtolower($key) === 'authorization') {
-            $token = str_replace('Bearer ', '', $value);
-            break;
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $token = str_replace('Bearer ', '', $_SERVER['HTTP_AUTHORIZATION']);
+    } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $token = str_replace('Bearer ', '', $_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+    } else {
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        foreach ($headers as $key => $value) {
+            if (strtolower($key) === 'authorization') {
+                $token = str_replace('Bearer ', '', $value);
+                break;
+            }
         }
     }
     if (!$token && isset($_GET['token'])) $token = $_GET['token'];

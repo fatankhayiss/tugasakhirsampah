@@ -8,8 +8,6 @@ import '../../../core/repositories/auth_repository.dart';
 import '../../../core/repositories/profile_repository.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../home/screens/main_navigation_screen.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
 import '../../../shared/widgets/scale_tap.dart';
 import '../../../shared/widgets/location_picker_map.dart';
