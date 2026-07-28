@@ -1,19 +1,11 @@
   import 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/constants/app_colors.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/models/education_model.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/repositories/education_repository.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../shared/widgets/custom_app_bar.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../shared/widgets/scale_tap.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/navigation/app_page_transitions.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'article_detail_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'video_detail_screen.dart';
 
 class EducationScreen extends StatefulWidget {

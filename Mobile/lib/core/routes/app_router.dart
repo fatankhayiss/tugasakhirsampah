@@ -1,31 +1,17 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../navigation/app_page_transitions.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/auth/screens/forgot_password_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/auth/screens/login_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/auth/screens/register_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/auth/screens/verification_code_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/auth/screens/reset_password_screen.dart';
 
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/deposit/screens/manual_deposit_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/home/screens/main_navigation_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/deposit/screens/scan_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/auth/screens/splash_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/profile/screens/transfer_point_page.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../features/orders/screens/order_detail_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'app_routes.dart';
 
 /// Central route generator — clean, scalable, production-ready.

@@ -1,4 +1,3 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/material.dart';
 
 /// Centralized premium slide-from-bottom + fade-in PageRoute builder with M3 SharedAxis outgoing motion.

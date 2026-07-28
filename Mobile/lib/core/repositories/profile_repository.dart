@@ -1,10 +1,6 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../constants/api_config.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../constants/app_images.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../models/profile_model.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../services/api_service.dart';
 
 /// Repository for user profile — fetches from bank_sampah profile_api.php.

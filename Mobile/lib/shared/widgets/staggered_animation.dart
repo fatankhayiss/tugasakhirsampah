@@ -1,4 +1,3 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/material.dart';
 
 /// Reusable Staggered Fade + Slide Up Card Animation (Material 3 compliant).

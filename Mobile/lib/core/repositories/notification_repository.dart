@@ -1,10 +1,6 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/foundation.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../constants/api_config.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../models/notification_model.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../services/api_service.dart';
 
 /// Repository for notifications — fetches from bank_sampah notifikasi_api.php.

@@ -1,18 +1,10 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'dart:convert';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/foundation.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/services.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:http/http.dart' as http;
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../constants/api_config.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../models/detect_result.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../models/scan_record.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../services/api_service.dart';
 
 /// Repository for uploading waste images and receiving YOLO detection results.

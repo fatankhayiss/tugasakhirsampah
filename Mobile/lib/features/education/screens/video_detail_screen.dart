@@ -1,17 +1,10 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter_lucide/flutter_lucide.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:video_player/video_player.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:chewie/chewie.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/constants/app_colors.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/models/education_model.dart';
 
 class VideoDetailScreen extends StatefulWidget {

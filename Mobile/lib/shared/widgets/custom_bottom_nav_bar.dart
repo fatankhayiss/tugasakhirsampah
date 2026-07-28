@@ -1,6 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'custom_nav_item.dart';
 
 class CustomBottomNavBar extends StatelessWidget {

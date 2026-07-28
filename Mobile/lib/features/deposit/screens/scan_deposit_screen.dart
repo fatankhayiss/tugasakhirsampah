@@ -1,24 +1,14 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+// ignore_for_file: use_build_context_synchronously
 import 'dart:io';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:camera/camera.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'package:permission_handler/permission_handler.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/navigation/app_page_transitions.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/repositories/detect_repository.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/models/waste_item.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../../../core/constants/app_colors.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../widgets/scan_frame_widget.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../widgets/camera_button_widget.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import 'waste_scan_result_screen.dart';
 
 class ScanDepositScreen extends StatefulWidget {
@@ -127,7 +117,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
       debugPrint('• Permanent image path: $permanentPath');
 
       if (!mounted) return;
-      // ignore: use_build_context_synchronously
+      
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -183,13 +173,13 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
       // before we attempt to pop it. This prevents race conditions if the API 
       // fails instantly (e.g. 500 error).
       await Future.delayed(const Duration(milliseconds: 300));
-      // ignore: use_build_context_synchronously
+      
       Navigator.of(context, rootNavigator: true).pop();
 
       if (!mounted) return;
       debugPrint('🔵 [ScanDeposit] ⑥ Navigating ke WasteScanResultScreen');
       debugPrint('   localImagePath akan disetel ke: $permanentPath');
-      // ignore: use_build_context_synchronously
+      
       Navigator.pushReplacement(
         context,
         CustomPageRoute(
@@ -209,7 +199,7 @@ class _ScanDepositScreenState extends State<ScanDepositScreen> with SingleTicker
         try { Navigator.of(context, rootNavigator: true).pop(); } catch (_) {}
       }
       if (!mounted) return;
-      // ignore: use_build_context_synchronously
+      
       _showRecognitionErrorDialog();
     } finally {
       if (mounted) setState(() => _isUploading = false);

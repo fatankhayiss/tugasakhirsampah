@@ -1,12 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously
 import '../services/api_service.dart';
-// ignore_for_file: use_build_context_synchronously
 import '../constants/api_config.dart';
-// ignore_for_file: use_build_context_synchronously
 import '../widgets/vehicle_form_sheet.dart';
-// ignore_for_file: use_build_context_synchronously
 import 'package:url_launcher/url_launcher.dart';
 
 class PickupDetailScreen extends StatefulWidget {

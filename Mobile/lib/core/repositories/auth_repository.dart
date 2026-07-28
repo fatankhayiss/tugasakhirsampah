@@ -1,14 +1,8 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../constants/api_config.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../constants/app_images.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../models/login_content.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../models/register_content.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../services/api_service.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
 import '../services/google_auth_service.dart';
 
 /// Repository for authentication — connects to bank_sampah auth_api.php.
