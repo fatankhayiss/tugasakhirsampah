@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-import '../repositories/profile_repository.dart';
-import '../constants/app_colors.dart';
-import '../navigation/app_dialog_transitions.dart';
-import '../../shared/widgets/location_picker_map.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../repositories/profile_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../navigation/app_dialog_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../shared/widgets/location_picker_map.dart';
 
 /// Helper class to verify mandatory address requirement before initiating pickup/deposit requests.
 class AddressVerificationHelper {

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'scale_tap.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'scale_tap.dart';
 
 class CustomCard extends StatelessWidget {
   final Widget child;

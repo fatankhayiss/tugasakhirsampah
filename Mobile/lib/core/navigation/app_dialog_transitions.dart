@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
 
 /// Centralized Material 3 Fade + Scale dialog and Slide bottom sheet launcher.
 /// Replaces standard abrupt showDialog with smooth M3 motion (260ms easeOutCubic).

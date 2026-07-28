@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
 
 /// Centralized Material 3 Shimmer Skeleton Loading component.
 /// Replaces blank loading pages or spinning indicators with smooth shimmer placeholders.

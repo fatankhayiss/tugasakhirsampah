@@ -81,7 +81,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     }
 
-    final prevTaskId = _activeTask?['id_order'];
 
     // Fetch Active Task
     final resTask = await ApiService.instance.get(ApiConfig.driverActiveTask);
