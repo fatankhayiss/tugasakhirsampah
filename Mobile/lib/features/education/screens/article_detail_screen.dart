@@ -3,6 +3,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/education_model.dart';
 import '../../../core/repositories/education_repository.dart';
+import '../../../core/widgets/app_network_image.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final ArticleModel article;
@@ -56,28 +57,12 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       {double? width, double? height, BoxFit fit = BoxFit.cover, String? heroTag}) {
     Widget imageWidget;
     if (imageUrl != null && imageUrl.isNotEmpty) {
-      imageWidget = Image.network(
+      imageWidget = AppNetworkImage(
         imageUrl,
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(imageAsset, width: width, height: height, fit: fit);
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: width,
-            height: height,
-            color: const Color(0xFFF1F5F9),
-            child: const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.primaryBlue,
-              ),
-            ),
-          );
-        },
+        errorWidget: Image.asset(imageAsset, width: width, height: height, fit: fit),
       );
     } else {
       imageWidget = Image.asset(imageAsset, width: width, height: height, fit: fit);

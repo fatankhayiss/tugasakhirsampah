@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($foto_warga) {
             if (str_starts_with($foto_warga, 'http://') || str_starts_with($foto_warga, 'https://')) {
                 $foto_warga_full = $foto_warga;
-            } elseif (str_starts_with($foto_warga, 'assets/')) {
+            } elseif (str_starts_with($foto_warga, 'assets/') || str_starts_with($foto_warga, 'image.php')) {
                 $foto_warga_full = $base_url . $foto_warga;
             } else {
                 $foto_warga_full = $base_upload_url . $foto_warga;
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($foto_driver) {
             if (str_starts_with($foto_driver, 'http://') || str_starts_with($foto_driver, 'https://')) {
                 $foto_driver_full = $foto_driver;
-            } elseif (str_starts_with($foto_driver, 'assets/')) {
+            } elseif (str_starts_with($foto_driver, 'assets/') || str_starts_with($foto_driver, 'image.php')) {
                 $foto_driver_full = $base_url . $foto_driver;
             } else {
                 $foto_driver_full = $base_upload_url . $foto_driver;

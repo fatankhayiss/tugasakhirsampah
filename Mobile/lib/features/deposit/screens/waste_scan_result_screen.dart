@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/models/scan_record.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/constants/waste_labels.dart';
 import '../../../core/navigation/app_page_transitions.dart';
 import '../../../core/repositories/detect_repository.dart';
@@ -775,10 +778,10 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
   }
 
   Widget _buildNetworkImage(String url) {
-    return Image.network(
+    return AppNetworkImage(
       url,
       fit: BoxFit.cover,
-      errorBuilder: (ctx, error, stackTrace) => _imageFallback(),
+      errorWidget: _imageFallback(),
     );
   }
 

@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/api_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_images.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../core/repositories/order_repository.dart';
 
@@ -756,28 +759,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               width: 56,
               height: 56,
               child: hasPhoto
-                  ? Image.network(
+                  ? AppNetworkImage(
                       photoUrl,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.asset(
-                          AppImages.avatar,
-                          fit: BoxFit.cover,
-                        );
-                      },
+                      errorWidget: Image.asset(
+                        AppImages.avatar,
+                        fit: BoxFit.cover,
+                      ),
                     )
                   : Image.asset(
                       AppImages.avatar,

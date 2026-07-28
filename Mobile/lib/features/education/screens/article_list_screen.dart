@@ -4,6 +4,7 @@ import '../../../core/models/education_model.dart';
 import '../../../core/repositories/education_repository.dart';
 import 'article_detail_screen.dart';
 import '../../../core/navigation/app_page_transitions.dart';
+import '../../../core/widgets/app_network_image.dart';
 
 class ArticleListScreen extends StatefulWidget {
   const ArticleListScreen({super.key});
@@ -27,14 +28,12 @@ class _ArticleListScreenState extends State<ArticleListScreen> {
       {double? width, double? height, BoxFit fit = BoxFit.cover, String? heroTag}) {
     Widget imageWidget;
     if (imageUrl != null && imageUrl.isNotEmpty) {
-      imageWidget = Image.network(
+      imageWidget = AppNetworkImage(
         imageUrl,
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(imageAsset, width: width, height: height, fit: fit);
-        },
+        errorWidget: Image.asset(imageAsset, width: width, height: height, fit: fit),
       );
     } else {
       imageWidget = Image.asset(imageAsset, width: width, height: height, fit: fit);

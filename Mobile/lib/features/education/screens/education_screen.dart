@@ -1,10 +1,11 @@
-  import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/education_model.dart';
 import '../../../core/repositories/education_repository.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../shared/widgets/scale_tap.dart';
 import '../../../core/navigation/app_page_transitions.dart';
+import '../../../core/widgets/app_network_image.dart';
 import 'article_detail_screen.dart';
 import 'video_detail_screen.dart';
 
@@ -62,28 +63,12 @@ class _EducationScreenState extends State<EducationScreen> {
       {double? width, double? height, BoxFit fit = BoxFit.cover, String? heroTag}) {
     Widget imageWidget;
     if (imageUrl != null && imageUrl.isNotEmpty) {
-      imageWidget = Image.network(
+      imageWidget = AppNetworkImage(
         imageUrl,
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: (context, error, stackTrace) {
-          return Image.asset(imageAsset, width: width, height: height, fit: fit);
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: width,
-            height: height,
-            color: const Color(0xFFF1F5F9),
-            child: const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.primary,
-              ),
-            ),
-          );
-        },
+        errorWidget: Image.asset(imageAsset, width: width, height: height, fit: fit),
       );
     } else {
       imageWidget = Image.asset(imageAsset, width: width, height: height, fit: fit);

@@ -17,6 +17,7 @@ import '../../../core/navigation/app_page_transitions.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/repositories/profile_repository.dart';
 import '../../../shared/widgets/staggered_animation.dart';
+import '../../../core/widgets/app_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -169,17 +170,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: ClipOval(
                         child: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                            ? Image.network(
+                            ? AppNetworkImage(
                                 _avatarUrl!,
                                 width: 50,
                                 height: 50,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
+                                errorWidget: Container(
                                   width: 50,
                                   height: 50,
                                   color: Colors.grey[200],
                                   alignment: Alignment.center,
-                                  child: Icon(Icons.person, color: Colors.grey[600], size: 28),
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.grey[600],
+                                    size: 30,
+                                  ),
                                 ),
                               )
                             : Container(
@@ -934,7 +939,7 @@ class _EducationCardState extends State<_EducationCard> {
                     child: Hero(
                       tag: widget.heroTag,
                       child: widget.isNetworkImage
-                          ? Image.network(widget.image, fit: BoxFit.cover, errorBuilder: (c, e, s) => AppAssetImage(assetPath: AppImages.education1, fit: BoxFit.cover))
+                          ? AppNetworkImage(widget.image, fit: BoxFit.cover, errorWidget: AppAssetImage(assetPath: AppImages.education1, fit: BoxFit.cover))
                           : AppAssetImage(assetPath: widget.image, fit: BoxFit.cover),
                     ),
                   ),

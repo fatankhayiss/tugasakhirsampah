@@ -12,6 +12,7 @@ import '../../home/screens/main_navigation_screen.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
 import '../../../shared/widgets/scale_tap.dart';
 import '../../../shared/widgets/location_picker_map.dart';
+import '../../../core/widgets/app_network_image.dart';
 import 'package:latlong2/latlong.dart';
 import 'edit_profile_screen.dart';
 
@@ -115,23 +116,22 @@ class _ProfileScreenState extends State<ProfileScreen>
         radius: radius,
         backgroundColor: Colors.white,
         child: ClipOval(
-          child: Image.network(
+          child: AppNetworkImage(
             _avatarUrl!,
             width: radius * 2,
             height: radius * 2,
             fit: BoxFit.cover,
-            errorBuilder:
-                (context, error, stackTrace) => Container(
-                  width: radius * 2,
-                  height: radius * 2,
-                  color: Colors.grey[200],
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.person,
-                    color: Colors.grey[600],
-                    size: radius * 1.1,
-                  ),
-                ),
+            errorWidget: Container(
+              width: radius * 2,
+              height: radius * 2,
+              color: Colors.grey[200],
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.person,
+                color: Colors.grey[600],
+                size: radius * 1.1,
+              ),
+            ),
           ),
         ),
       );

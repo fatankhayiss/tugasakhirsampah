@@ -1,7 +1,11 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/repositories/waste_repository.dart';
 import '../../../core/repositories/profile_repository.dart';
@@ -109,32 +113,28 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
   }
 
   Widget _buildItemImage(WasteItem item, {double? width, double? height, BoxFit fit = BoxFit.cover}) {
+    IconData iconData = Icons.recycling;
+    if (item.imageAsset == 'water_bottle') iconData = LucideIcons.bottle;
+    if (item.imageAsset == 'inventory_2') iconData = LucideIcons.package;
+    if (item.imageAsset == 'description') iconData = LucideIcons.fileText;
+    if (item.imageAsset == 'liquor') iconData = LucideIcons.can;
+
     if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
-      if (item.imageUrl!.startsWith('http://') || item.imageUrl!.startsWith('https://')) {
-        return Image.network(
+      if (item.imageUrl!.startsWith('/') || item.imageUrl!.startsWith('file://')) {
+        return Image.file(
+          File(item.imageUrl!.startsWith('/') ? item.imageUrl!.replaceFirst('/', '') : item.imageUrl!.replaceFirst('file://', '')),
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (c, e, s) => _buildErrorImage(width, height),
+        );
+      } else {
+        return AppNetworkImage(
           item.imageUrl!,
           width: width,
           height: height,
           fit: fit,
-          errorBuilder: (c, e, s) => Container(
-            width: width,
-            height: height,
-            color: AppColors.softGreen,
-            child: const Icon(Icons.broken_image, color: AppColors.primary),
-          ),
-        );
-      } else {
-        return Image.file(
-          File(item.imageUrl!),
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (c, e, s) => Container(
-            width: width,
-            height: height,
-            color: AppColors.softGreen,
-            child: const Icon(Icons.broken_image, color: AppColors.primary),
-          ),
+          errorWidget: _buildErrorImage(width, height),
         );
       }
     }
@@ -142,7 +142,16 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
       width: width,
       height: height,
       color: AppColors.softGreen,
-      child: const Icon(Icons.recycling, color: AppColors.primary, size: 24),
+      child: Icon(iconData, color: AppColors.primary, size: (width ?? 40) * 0.5),
+    );
+  }
+
+  Widget _buildErrorImage(double? width, double? height) {
+    return Container(
+      width: width,
+      height: height,
+      color: AppColors.softGreen,
+      child: const Icon(Icons.broken_image, color: AppColors.primary),
     );
   }
 

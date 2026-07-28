@@ -6,6 +6,7 @@ import '../../../core/repositories/order_repository.dart';
 import '../../orders/models/ongoing_order_model.dart';
 import '../../orders/models/history_item_model.dart';
 import '../../../core/constants/api_config.dart';
+import '../../../core/widgets/app_network_image.dart';
 
 class RedemptionDetailScreen extends StatefulWidget {
   final String redemptionId;
@@ -499,10 +500,10 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
                       width: double.infinity,
                       height: double.infinity,
                       color: Colors.black,
-                      child: Image.network(
-                        '${ApiConfig.baseUrl}/bank_sampah/$proofUrl',
+                      child: AppNetworkImage(
+                        proofUrl,
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Center(
+                        errorWidget: const Center(
                           child: Text('Gagal memuat gambar', style: TextStyle(color: Colors.white)),
                         ),
                       ),
@@ -532,10 +533,10 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Image.network(
-                  '${ApiConfig.baseUrl}/bank_sampah/$proofUrl',
+                AppNetworkImage(
+                  proofUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
+                  errorWidget: Container(
                     padding: const EdgeInsets.all(40),
                     color: const Color(0xFFF9FAFB),
                     child: const Column(

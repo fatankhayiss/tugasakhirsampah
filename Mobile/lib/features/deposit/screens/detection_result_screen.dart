@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/constants/waste_labels.dart';
 
 class DetectionResultScreen extends StatelessWidget {
@@ -114,10 +117,10 @@ class DetectionResultScreen extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
+              AppNetworkImage(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (c, e, s) => const Center(
+                errorWidget: const Center(
                   child: Icon(Icons.image_not_supported, color: Colors.white54),
                 ),
               ),
