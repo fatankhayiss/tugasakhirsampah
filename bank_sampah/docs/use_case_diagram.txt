@@ -1,0 +1,408 @@
+====================================================
+USE CASE DIAGRAM - SISTEM INFORMASI BANK SAMPAH
+Dokumentasi Skripsi | Format: Mermaid Graph
+====================================================
+
+CARA RENDER:
+1. Copy semua kode di bawah (mulai dari "graph LR" sampai baris terakhir tanda ```)
+2. Buka https://mermaid.live
+3. Paste ke editor, diagram akan otomatis muncul
+4. Klik tombol "Download SVG" atau "Download PNG" untuk menyimpan gambar
+
+CATATAN:
+- Aktor  : Admin (satu-satunya aktor di web)
+- <<include>> : Use case yang SELALU dijalankan sebagai bagian dari use case lain
+- <<extend>>  : Use case yang OPSIONAL, hanya dijalankan pada kondisi tertentu
+- Garis lurus (---) : Asosiasi antara aktor dan use case
+- Garis putus (-.->): Relasi include atau extend antar use case
+
+====================================================
+
+```mermaid
+graph LR
+
+%% ============================================================
+%% AKTOR
+%% ============================================================
+    ADMIN(["
+    🧑
+    Admin"])
+
+%% ============================================================
+%% SYSTEM BOUNDARY
+%% ============================================================
+    subgraph SB["        SISTEM INFORMASI BANK SAMPAH        "]
+
+%% ----------------------------
+%% GRUP 1 : AUTENTIKASI
+%% ----------------------------
+        subgraph G_AUTH["Autentikasi"]
+            UC_LOGIN(["Login"])
+            UC_LOGOUT(["Logout"])
+            UC_RESET(["Reset Password"])
+            UC_CEK_EMAIL(["Verifikasi Email"])
+            UC_TOKEN(["Validasi Token Reset"])
+        end
+
+%% ----------------------------
+%% GRUP 2 : DASHBOARD
+%% ----------------------------
+        subgraph G_DASH["Dashboard"]
+            UC_DASH(["Melihat Dashboard"])
+            UC_STAT(["Melihat Statistik Sistem"])
+            UC_AKTIVITAS(["Melihat Aktivitas Terbaru"])
+            UC_SHORTCUT(["Menggunakan Pintasan Cepat"])
+        end
+
+%% ----------------------------
+%% GRUP 3 : KELOLA PENYETOR
+%% ----------------------------
+        subgraph G_PENYETOR["Kelola Data Penyetor"]
+            UC_P_LIST(["Lihat Daftar Penyetor"])
+            UC_P_CARI(["Cari Penyetor"])
+            UC_P_ADD(["Tambah Penyetor"])
+            UC_P_EDIT(["Edit Data Penyetor"])
+            UC_P_DEL(["Hapus Penyetor"])
+            UC_P_DETAIL(["Lihat Detail Penyetor"])
+            UC_P_STATUS(["Ubah Status Aktif/Nonaktif"])
+        end
+
+%% ----------------------------
+%% GRUP 4 : KELOLA PICKER
+%% ----------------------------
+        subgraph G_PICKER["Kelola Data Picker"]
+            UC_PK_LIST(["Lihat Daftar Picker"])
+            UC_PK_CARI(["Cari Picker"])
+            UC_PK_ADD(["Tambah Picker"])
+            UC_PK_EDIT(["Edit Data Picker"])
+            UC_PK_DEL(["Hapus Picker"])
+            UC_PK_DETAIL(["Lihat Detail Picker"])
+        end
+
+%% ----------------------------
+%% GRUP 5 : KELOLA EDUKASI
+%% ----------------------------
+        subgraph G_EDU["Kelola Konten Edukasi"]
+            UC_EDU_LIST(["Lihat Daftar Edukasi"])
+            UC_EDU_CARI(["Cari Konten Edukasi"])
+            UC_EDU_BACA(["Baca Konten Edukasi"])
+            UC_EDU_ART_ADD(["Tambah Artikel Edukasi"])
+            UC_EDU_ART_EDIT(["Edit Artikel Edukasi"])
+            UC_EDU_VID_ADD(["Tambah Video Edukasi"])
+            UC_EDU_VID_EDIT(["Edit Video Edukasi"])
+            UC_EDU_DEL(["Hapus Konten Edukasi"])
+        end
+
+%% ----------------------------
+%% GRUP 6 : KELOLA JENIS SAMPAH
+%% ----------------------------
+        subgraph G_JS["Kelola Jenis Sampah"]
+            UC_JS_LIST(["Lihat Daftar Jenis Sampah"])
+            UC_JS_FILTER(["Filter Kategori Sampah"])
+            UC_JS_ADD(["Tambah Jenis Sampah"])
+            UC_JS_EDIT(["Edit Jenis Sampah"])
+            UC_JS_DEL(["Hapus Jenis Sampah"])
+        end
+
+%% ----------------------------
+%% GRUP 7 : TRANSAKSI
+%% ----------------------------
+        subgraph G_TRX["Kelola Transaksi"]
+            UC_SETOR(["Input Setoran Sampah"])
+            UC_HITUNG(["Hitung Nilai Setoran Otomatis"])
+            UC_TAMBAH_ITEM(["Tambah Item Sampah"])
+            UC_TARIK(["Input Penarikan Saldo"])
+            UC_CEK_SALDO(["Validasi Kecukupan Saldo"])
+            UC_RIWAYAT(["Lihat Riwayat Transaksi"])
+            UC_FILTER_TRX(["Filter Riwayat Transaksi"])
+        end
+
+%% ----------------------------
+%% GRUP 8 : KELOLA ORDERS
+%% ----------------------------
+        subgraph G_ORD["Kelola Orders Penjemputan"]
+            UC_ORD_LIST(["Lihat Daftar Orders"])
+            UC_ORD_DETAIL(["Lihat Detail Order"])
+            UC_ORD_FILTER(["Filter Orders per Status"])
+            UC_ORD_ASSIGN(["Tugaskan Picker ke Order"])
+            UC_ORD_NOTIF(["Kirim Notifikasi ke Picker"])
+            UC_ORD_NOTIF_W(["Kirim Notifikasi ke Warga"])
+            UC_ORD_VALID(["Validasi Order Selesai"])
+        end
+
+%% ----------------------------
+%% GRUP 9 : KELOLA TUKAR POIN
+%% ----------------------------
+        subgraph G_RWD["Kelola Penukaran Poin"]
+            UC_RWD_LIST(["Lihat Daftar Redemption"])
+            UC_RWD_FILTER(["Filter dan Cari Redemption"])
+            UC_RWD_DETAIL(["Lihat Detail Penukaran"])
+            UC_RWD_SELESAI(["Selesaikan Penukaran Poin"])
+            UC_RWD_BUKTI(["Unggah Bukti Transfer"])
+            UC_RWD_AUDIT(["Catat Audit Log"])
+            UC_RWD_NOTIF(["Kirim Notifikasi Hasil ke Warga"])
+            UC_RWD_TOLAK(["Tolak Penukaran Poin"])
+        end
+
+%% ----------------------------
+%% GRUP 10 : LAPORAN
+%% ----------------------------
+        subgraph G_LAP["Laporan"]
+            UC_LAP_HARIAN(["Lihat Laporan Harian"])
+            UC_LAP_BULANAN(["Lihat Laporan Bulanan"])
+            UC_LAP_FILTER(["Filter Laporan per Periode"])
+            UC_LAP_PDF(["Ekspor Laporan ke PDF"])
+            UC_LAP_EXCEL(["Ekspor Laporan ke Excel"])
+        end
+
+%% ----------------------------
+%% GRUP 11 : PROFIL
+%% ----------------------------
+        subgraph G_PROFIL["Kelola Profil"]
+            UC_PROFIL(["Lihat Profil Admin"])
+            UC_PROFIL_EDIT(["Edit Data Profil"])
+            UC_PROFIL_PASS(["Ganti Password"])
+            UC_PROFIL_VALIDASI(["Validasi Password Lama"])
+        end
+
+%% ----------------------------
+%% GRUP 12 : MONITOR AI
+%% ----------------------------
+        subgraph G_AI["Monitor AI Scan"]
+            UC_AI(["Lihat Monitor AI Scan Live"])
+            UC_AI_POLL(["Polling Data Deteksi"])
+            UC_AI_HASIL(["Tampilkan Hasil Deteksi AI"])
+        end
+
+    end
+
+%% ============================================================
+%% ASOSIASI ADMIN KE USE CASE UTAMA
+%% ============================================================
+    ADMIN --- UC_LOGIN
+    ADMIN --- UC_LOGOUT
+    ADMIN --- UC_RESET
+    ADMIN --- UC_DASH
+    ADMIN --- UC_P_LIST
+    ADMIN --- UC_PK_LIST
+    ADMIN --- UC_EDU_LIST
+    ADMIN --- UC_JS_LIST
+    ADMIN --- UC_SETOR
+    ADMIN --- UC_TARIK
+    ADMIN --- UC_RIWAYAT
+    ADMIN --- UC_ORD_LIST
+    ADMIN --- UC_RWD_LIST
+    ADMIN --- UC_LAP_HARIAN
+    ADMIN --- UC_LAP_BULANAN
+    ADMIN --- UC_PROFIL
+    ADMIN --- UC_AI
+
+%% ============================================================
+%% RELASI AUTENTIKASI
+%% ============================================================
+    UC_RESET -.->|"<<include>>"| UC_CEK_EMAIL
+    UC_RESET -.->|"<<include>>"| UC_TOKEN
+
+%% ============================================================
+%% RELASI DASHBOARD
+%% ============================================================
+    UC_DASH -.->|"<<include>>"| UC_STAT
+    UC_DASH -.->|"<<include>>"| UC_AKTIVITAS
+    UC_SHORTCUT -.->|"<<extend>>"| UC_DASH
+
+%% ============================================================
+%% RELASI KELOLA PENYETOR
+%% ============================================================
+    UC_P_LIST -.->|"<<include>>"| UC_P_CARI
+    UC_P_ADD -.->|"<<extend>>"| UC_P_LIST
+    UC_P_EDIT -.->|"<<extend>>"| UC_P_LIST
+    UC_P_DEL -.->|"<<extend>>"| UC_P_LIST
+    UC_P_DETAIL -.->|"<<extend>>"| UC_P_LIST
+    UC_P_STATUS -.->|"<<extend>>"| UC_P_LIST
+
+%% ============================================================
+%% RELASI KELOLA PICKER
+%% ============================================================
+    UC_PK_LIST -.->|"<<include>>"| UC_PK_CARI
+    UC_PK_ADD -.->|"<<extend>>"| UC_PK_LIST
+    UC_PK_EDIT -.->|"<<extend>>"| UC_PK_LIST
+    UC_PK_DEL -.->|"<<extend>>"| UC_PK_LIST
+    UC_PK_DETAIL -.->|"<<extend>>"| UC_PK_LIST
+
+%% ============================================================
+%% RELASI KELOLA EDUKASI
+%% ============================================================
+    UC_EDU_LIST -.->|"<<include>>"| UC_EDU_CARI
+    UC_EDU_BACA -.->|"<<extend>>"| UC_EDU_LIST
+    UC_EDU_ART_ADD -.->|"<<extend>>"| UC_EDU_LIST
+    UC_EDU_ART_EDIT -.->|"<<extend>>"| UC_EDU_LIST
+    UC_EDU_VID_ADD -.->|"<<extend>>"| UC_EDU_LIST
+    UC_EDU_VID_EDIT -.->|"<<extend>>"| UC_EDU_LIST
+    UC_EDU_DEL -.->|"<<extend>>"| UC_EDU_LIST
+
+%% ============================================================
+%% RELASI KELOLA JENIS SAMPAH
+%% ============================================================
+    UC_JS_LIST -.->|"<<include>>"| UC_JS_FILTER
+    UC_JS_ADD -.->|"<<extend>>"| UC_JS_LIST
+    UC_JS_EDIT -.->|"<<extend>>"| UC_JS_LIST
+    UC_JS_DEL -.->|"<<extend>>"| UC_JS_LIST
+
+%% ============================================================
+%% RELASI TRANSAKSI
+%% ============================================================
+    UC_SETOR -.->|"<<include>>"| UC_HITUNG
+    UC_TAMBAH_ITEM -.->|"<<extend>>"| UC_SETOR
+    UC_TARIK -.->|"<<include>>"| UC_CEK_SALDO
+    UC_RIWAYAT -.->|"<<include>>"| UC_FILTER_TRX
+
+%% ============================================================
+%% RELASI ORDERS PENJEMPUTAN
+%% ============================================================
+    UC_ORD_LIST -.->|"<<include>>"| UC_ORD_FILTER
+    UC_ORD_DETAIL -.->|"<<extend>>"| UC_ORD_LIST
+    UC_ORD_ASSIGN -.->|"<<extend>>"| UC_ORD_LIST
+    UC_ORD_VALID -.->|"<<extend>>"| UC_ORD_LIST
+    UC_ORD_ASSIGN -.->|"<<include>>"| UC_ORD_NOTIF
+    UC_ORD_ASSIGN -.->|"<<include>>"| UC_ORD_NOTIF_W
+
+%% ============================================================
+%% RELASI TUKAR POIN / REWARD
+%% ============================================================
+    UC_RWD_LIST -.->|"<<include>>"| UC_RWD_FILTER
+    UC_RWD_DETAIL -.->|"<<extend>>"| UC_RWD_LIST
+    UC_RWD_SELESAI -.->|"<<extend>>"| UC_RWD_LIST
+    UC_RWD_TOLAK -.->|"<<extend>>"| UC_RWD_LIST
+    UC_RWD_SELESAI -.->|"<<include>>"| UC_RWD_BUKTI
+    UC_RWD_SELESAI -.->|"<<include>>"| UC_RWD_AUDIT
+    UC_RWD_SELESAI -.->|"<<include>>"| UC_RWD_NOTIF
+    UC_RWD_TOLAK -.->|"<<include>>"| UC_RWD_AUDIT
+    UC_RWD_TOLAK -.->|"<<include>>"| UC_RWD_NOTIF
+
+%% ============================================================
+%% RELASI LAPORAN
+%% ============================================================
+    UC_LAP_HARIAN -.->|"<<include>>"| UC_LAP_FILTER
+    UC_LAP_BULANAN -.->|"<<include>>"| UC_LAP_FILTER
+    UC_LAP_PDF -.->|"<<extend>>"| UC_LAP_HARIAN
+    UC_LAP_EXCEL -.->|"<<extend>>"| UC_LAP_HARIAN
+    UC_LAP_PDF -.->|"<<extend>>"| UC_LAP_BULANAN
+    UC_LAP_EXCEL -.->|"<<extend>>"| UC_LAP_BULANAN
+
+%% ============================================================
+%% RELASI PROFIL
+%% ============================================================
+    UC_PROFIL_EDIT -.->|"<<extend>>"| UC_PROFIL
+    UC_PROFIL_PASS -.->|"<<extend>>"| UC_PROFIL
+    UC_PROFIL_PASS -.->|"<<include>>"| UC_PROFIL_VALIDASI
+
+%% ============================================================
+%% RELASI MONITOR AI
+%% ============================================================
+    UC_AI -.->|"<<include>>"| UC_AI_POLL
+    UC_AI_POLL -.->|"<<include>>"| UC_AI_HASIL
+```
+
+====================================================
+RINGKASAN USE CASE
+====================================================
+
+TOTAL USE CASE : 57 Use Case
+TOTAL AKTOR    : 1 Aktor (Admin)
+
+DAFTAR USE CASE PER KELOMPOK:
+
+[AUTENTIKASI - 5 UC]
+  UC_LOGIN          = Login
+  UC_LOGOUT         = Logout
+  UC_RESET          = Reset Password
+  UC_CEK_EMAIL      = Verifikasi Email (include dari Reset Password)
+  UC_TOKEN          = Validasi Token Reset (include dari Reset Password)
+
+[DASHBOARD - 4 UC]
+  UC_DASH           = Melihat Dashboard
+  UC_STAT           = Melihat Statistik Sistem (include)
+  UC_AKTIVITAS      = Melihat Aktivitas Terbaru (include)
+  UC_SHORTCUT       = Menggunakan Pintasan Cepat (extend)
+
+[KELOLA PENYETOR - 7 UC]
+  UC_P_LIST         = Lihat Daftar Penyetor
+  UC_P_CARI         = Cari Penyetor (include)
+  UC_P_ADD          = Tambah Penyetor (extend)
+  UC_P_EDIT         = Edit Data Penyetor (extend)
+  UC_P_DEL          = Hapus Penyetor (extend)
+  UC_P_DETAIL       = Lihat Detail Penyetor (extend)
+  UC_P_STATUS       = Ubah Status Aktif/Nonaktif (extend)
+
+[KELOLA PICKER - 6 UC]
+  UC_PK_LIST        = Lihat Daftar Picker
+  UC_PK_CARI        = Cari Picker (include)
+  UC_PK_ADD         = Tambah Picker (extend)
+  UC_PK_EDIT        = Edit Data Picker (extend)
+  UC_PK_DEL         = Hapus Picker (extend)
+  UC_PK_DETAIL      = Lihat Detail Picker (extend)
+
+[KELOLA EDUKASI - 8 UC]
+  UC_EDU_LIST       = Lihat Daftar Edukasi
+  UC_EDU_CARI       = Cari Konten Edukasi (include)
+  UC_EDU_BACA       = Baca Konten Edukasi (extend)
+  UC_EDU_ART_ADD    = Tambah Artikel Edukasi (extend)
+  UC_EDU_ART_EDIT   = Edit Artikel Edukasi (extend)
+  UC_EDU_VID_ADD    = Tambah Video Edukasi (extend)
+  UC_EDU_VID_EDIT   = Edit Video Edukasi (extend)
+  UC_EDU_DEL        = Hapus Konten Edukasi (extend)
+
+[KELOLA JENIS SAMPAH - 5 UC]
+  UC_JS_LIST        = Lihat Daftar Jenis Sampah
+  UC_JS_FILTER      = Filter Kategori Sampah (include)
+  UC_JS_ADD         = Tambah Jenis Sampah (extend)
+  UC_JS_EDIT        = Edit Jenis Sampah (extend)
+  UC_JS_DEL         = Hapus Jenis Sampah (extend)
+
+[KELOLA TRANSAKSI - 7 UC]
+  UC_SETOR          = Input Setoran Sampah
+  UC_HITUNG         = Hitung Nilai Setoran Otomatis (include)
+  UC_TAMBAH_ITEM    = Tambah Item Sampah (extend)
+  UC_TARIK          = Input Penarikan Saldo
+  UC_CEK_SALDO      = Validasi Kecukupan Saldo (include)
+  UC_RIWAYAT        = Lihat Riwayat Transaksi
+  UC_FILTER_TRX     = Filter Riwayat Transaksi (include)
+
+[KELOLA ORDERS - 7 UC]
+  UC_ORD_LIST       = Lihat Daftar Orders
+  UC_ORD_FILTER     = Filter Orders per Status (include)
+  UC_ORD_DETAIL     = Lihat Detail Order (extend)
+  UC_ORD_ASSIGN     = Tugaskan Picker ke Order (extend)
+  UC_ORD_NOTIF      = Kirim Notifikasi ke Picker (include)
+  UC_ORD_NOTIF_W    = Kirim Notifikasi ke Warga (include)
+  UC_ORD_VALID      = Validasi Order Selesai (extend)
+
+[KELOLA TUKAR POIN - 8 UC]
+  UC_RWD_LIST       = Lihat Daftar Redemption
+  UC_RWD_FILTER     = Filter dan Cari Redemption (include)
+  UC_RWD_DETAIL     = Lihat Detail Penukaran (extend)
+  UC_RWD_SELESAI    = Selesaikan Penukaran Poin (extend)
+  UC_RWD_BUKTI      = Unggah Bukti Transfer (include)
+  UC_RWD_AUDIT      = Catat Audit Log (include)
+  UC_RWD_NOTIF      = Kirim Notifikasi Hasil ke Warga (include)
+  UC_RWD_TOLAK      = Tolak Penukaran Poin (extend)
+
+[LAPORAN - 5 UC]
+  UC_LAP_HARIAN     = Lihat Laporan Harian
+  UC_LAP_BULANAN    = Lihat Laporan Bulanan
+  UC_LAP_FILTER     = Filter Laporan per Periode (include)
+  UC_LAP_PDF        = Ekspor Laporan ke PDF (extend)
+  UC_LAP_EXCEL      = Ekspor Laporan ke Excel (extend)
+
+[KELOLA PROFIL - 4 UC]
+  UC_PROFIL         = Lihat Profil Admin
+  UC_PROFIL_EDIT    = Edit Data Profil (extend)
+  UC_PROFIL_PASS    = Ganti Password (extend)
+  UC_PROFIL_VALIDASI= Validasi Password Lama (include)
+
+[MONITOR AI - 3 UC]
+  UC_AI             = Lihat Monitor AI Scan Live
+  UC_AI_POLL        = Polling Data Deteksi (include)
+  UC_AI_HASIL       = Tampilkan Hasil Deteksi AI (include)
+
+====================================================

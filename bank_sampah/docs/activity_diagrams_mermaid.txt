@@ -1,0 +1,909 @@
+====================================================
+UML ACTIVITY DIAGRAM - SISTEM INFORMASI BANK SAMPAH
+Dokumentasi Skripsi | Format: Mermaid Flowchart
+====================================================
+
+
+================================================================
+DIAGRAM 1: LOGIN
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Login]
+    B --> C[Sistem menampilkan form Login]
+    C --> D[Admin mengisi username dan password]
+    D --> E[Admin mengklik tombol Login]
+    E --> F{Metode POST valid?}
+    F -->|Tidak| G[Sistem menampilkan pesan kesalahan metode]
+    G --> H((End))
+    F -->|Ya| I{Kolom username dan password kosong?}
+    I -->|Ya| J[Sistem menampilkan pesan kolom tidak boleh kosong]
+    J --> C
+    I -->|Tidak| K[Sistem melakukan query data pengguna ke database]
+    K --> L{Username ditemukan?}
+    L -->|Tidak| M[Sistem menampilkan pesan username atau password salah]
+    M --> C
+    L -->|Ya| N{Password cocok dengan hash?}
+    N -->|Tidak| M
+    N -->|Ya| O{Level pengguna adalah admin?}
+    O -->|Tidak| P[Sistem menampilkan pesan bukan admin]
+    P --> C
+    O -->|Ya| Q[Sistem menyimpan data sesi pengguna]
+    Q --> R[Sistem mengarahkan ke halaman Dashboard]
+    R --> S[Sistem menampilkan Dashboard Admin]
+    S --> H
+
+
+================================================================
+DIAGRAM 2: LOGOUT
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin mengklik menu Logout]
+    B --> C[Sistem menghapus semua data sesi]
+    C --> D[Sistem menghapus cookie sesi]
+    D --> E[Sistem menghancurkan sesi]
+    E --> F[Sistem mengarahkan ke halaman Login]
+    F --> G[Sistem menampilkan halaman Login]
+    G --> H((End))
+
+
+================================================================
+DIAGRAM 3: DASHBOARD
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Dashboard]
+    B --> C{Sesi login valid?}
+    C -->|Tidak| D[Sistem mengarahkan ke halaman Login]
+    D --> E((End))
+    C -->|Ya| F{Level pengguna adalah admin?}
+    F -->|Tidak| G[Sistem menolak akses]
+    G --> E
+    F -->|Ya| H[Sistem mengambil data statistik dari database]
+    H --> I[Sistem menghitung jumlah penyetor]
+    I --> J[Sistem menghitung jumlah jenis sampah]
+    J --> K[Sistem menghitung total berat setoran bulan ini]
+    K --> L[Sistem menghitung total saldo bank sampah]
+    L --> M[Sistem menghitung jumlah orders pending dan selesai]
+    M --> N[Sistem menghitung jumlah picker]
+    N --> O[Sistem mengambil 5 aktivitas terbaru]
+    O --> P[Sistem menampilkan semua statistik pada Dashboard]
+    P --> Q{Admin memilih pintasan cepat?}
+    Q -->|Tambah Penyetor| R[Sistem mengarahkan ke halaman Tambah Penyetor]
+    Q -->|Tambah Picker| S[Sistem mengarahkan ke halaman Tambah Picker]
+    Q -->|Monitor AI| T[Sistem mengarahkan ke halaman Monitor AI Scan]
+    Q -->|Validasi Tukar Poin| U[Sistem mengarahkan ke halaman Reward]
+    Q -->|Tambah Jenis Sampah| V[Sistem mengarahkan ke halaman Tambah Jenis Sampah]
+    Q -->|Tambah Edukasi| W[Sistem mengarahkan ke halaman Tambah Edukasi]
+    Q -->|Tidak| X((End))
+    R --> E
+    S --> E
+    T --> E
+    U --> E
+    V --> E
+    W --> E
+
+
+================================================================
+DIAGRAM 4: KELOLA DATA PENYETOR (CRUD)
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Data Penyetor]
+    B --> C[Sistem menampilkan daftar penyetor dengan pagination]
+    C --> D{Admin memilih aksi}
+
+    D -->|Cari| E[Admin mengisi kata kunci pencarian]
+    E --> F[Sistem memfilter data berdasarkan nama, username, email, telepon]
+    F --> G[Sistem menampilkan hasil pencarian]
+    G --> D
+
+    D -->|Tambah| H[Sistem menampilkan form tambah penyetor]
+    H --> I[Admin mengisi data nama, username, password, alamat, telepon, email]
+    I --> J[Admin mengklik simpan]
+    J --> K[Sistem memvalidasi data]
+    K --> L{Data valid?}
+    L -->|Tidak| M[Sistem menampilkan pesan error validasi]
+    M --> H
+    L -->|Ya| N[Sistem menyimpan data penyetor ke database]
+    N --> O[Sistem menampilkan notifikasi sukses]
+    O --> C
+
+    D -->|Lihat Detail| P[Sistem menampilkan detail data penyetor]
+    P --> Q[Sistem menampilkan riwayat transaksi penyetor]
+    Q --> D
+
+    D -->|Edit| R[Sistem menampilkan form edit penyetor]
+    R --> S[Admin mengubah data penyetor]
+    S --> T[Admin mengklik simpan perubahan]
+    T --> U[Sistem memvalidasi data]
+    U --> V{Data valid?}
+    V -->|Tidak| W[Sistem menampilkan pesan error]
+    W --> R
+    V -->|Ya| X[Sistem memperbarui data penyetor di database]
+    X --> Y[Sistem menampilkan notifikasi sukses]
+    Y --> C
+
+    D -->|Toggle Status| Z[Admin mengklik status Aktif atau Nonaktif]
+    Z --> AA[Sistem membalik status akun penyetor]
+    AA --> AB[Sistem menampilkan notifikasi perubahan status]
+    AB --> C
+
+    D -->|Hapus| AC[Sistem menampilkan konfirmasi hapus]
+    AC --> AD{Admin yakin menghapus?}
+    AD -->|Tidak| C
+    AD -->|Ya| AE[Sistem menghapus data penyetor dan transaksi terkait]
+    AE --> AF[Sistem menampilkan notifikasi sukses hapus]
+    AF --> C
+
+    C --> AG((End))
+
+
+================================================================
+DIAGRAM 5: KELOLA DATA PICKER/DRIVER (CRUD)
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Data Picker]
+    B --> C[Sistem menampilkan daftar picker dengan pagination]
+    C --> D{Admin memilih aksi}
+
+    D -->|Cari| E[Admin mengisi kata kunci pencarian]
+    E --> F[Sistem memfilter data berdasarkan nama, username, telepon]
+    F --> G[Sistem menampilkan hasil pencarian]
+    G --> D
+
+    D -->|Tambah| H[Sistem menampilkan form tambah picker]
+    H --> I[Admin mengisi data nama, username, password, telepon, kendaraan]
+    I --> J[Admin mengklik simpan]
+    J --> K[Sistem memvalidasi data]
+    K --> L{Data valid?}
+    L -->|Tidak| M[Sistem menampilkan pesan error validasi]
+    M --> H
+    L -->|Ya| N[Sistem menyimpan data picker ke database dengan level driver]
+    N --> O[Sistem menampilkan notifikasi sukses]
+    O --> C
+
+    D -->|Lihat Detail| P[Sistem menampilkan detail data picker]
+    P --> Q[Sistem menampilkan riwayat penugasan picker]
+    Q --> D
+
+    D -->|Edit| R[Sistem menampilkan form edit picker]
+    R --> S[Admin mengubah data picker]
+    S --> T[Admin mengklik simpan perubahan]
+    T --> U[Sistem memvalidasi data]
+    U --> V{Data valid?}
+    V -->|Tidak| W[Sistem menampilkan pesan error]
+    W --> R
+    V -->|Ya| X[Sistem memperbarui data picker di database]
+    X --> Y[Sistem menampilkan notifikasi sukses]
+    Y --> C
+
+    D -->|Hapus| Z[Sistem menampilkan konfirmasi hapus]
+    Z --> AA{Admin yakin menghapus?}
+    AA -->|Tidak| C
+    AA -->|Ya| AB[Sistem menghapus data picker dari database]
+    AB --> AC[Sistem menampilkan notifikasi sukses hapus]
+    AC --> C
+
+    C --> AD((End))
+
+
+================================================================
+DIAGRAM 6: KELOLA EDUKASI - ARTIKEL (CRUD)
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Edukasi]
+    B --> C[Sistem menampilkan daftar konten edukasi]
+    C --> D{Admin memilih aksi}
+
+    D -->|Cari| E[Admin mengisi kata kunci judul atau isi]
+    E --> F[Sistem memfilter data edukasi]
+    F --> G[Sistem menampilkan hasil pencarian]
+    G --> D
+
+    D -->|Baca Konten| H[Sistem membuka modal konten edukasi]
+    H --> I[Sistem menampilkan konten lengkap via AJAX]
+    I --> J[Admin menutup modal]
+    J --> D
+
+    D -->|Tambah Artikel| K[Sistem menampilkan form tambah artikel]
+    K --> L[Admin mengisi judul, konten, dan gambar]
+    L --> M[Admin mengklik simpan]
+    M --> N[Sistem memvalidasi data]
+    N --> O{Data valid?}
+    O -->|Tidak| P[Sistem menampilkan pesan error]
+    P --> K
+    O -->|Ya| Q[Sistem menyimpan artikel ke database]
+    Q --> R[Sistem menampilkan notifikasi sukses]
+    R --> C
+
+    D -->|Edit Artikel| S[Sistem menampilkan form edit artikel]
+    S --> T[Admin mengubah data artikel]
+    T --> U[Admin mengklik simpan perubahan]
+    U --> V[Sistem memvalidasi data]
+    V --> W{Data valid?}
+    W -->|Tidak| X[Sistem menampilkan pesan error]
+    X --> S
+    W -->|Ya| Y[Sistem memperbarui artikel di database]
+    Y --> Z[Sistem menampilkan notifikasi sukses]
+    Z --> C
+
+    D -->|Hapus| AA[Sistem menampilkan konfirmasi hapus]
+    AA --> AB{Admin yakin menghapus?}
+    AB -->|Tidak| C
+    AB -->|Ya| AC[Sistem menghapus artikel dari database]
+    AC --> AD[Sistem menampilkan notifikasi sukses hapus]
+    AD --> C
+
+    C --> AE((End))
+
+
+================================================================
+DIAGRAM 7: KELOLA EDUKASI - VIDEO (CRUD)
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Edukasi]
+    B --> C[Sistem menampilkan daftar konten edukasi]
+    C --> D[Admin mengklik Tambah Video]
+    D --> E[Sistem menampilkan form tambah video]
+    E --> F[Admin mengisi judul, konten, dan sumber video]
+    F --> G{Tipe sumber video?}
+    G -->|URL YouTube| H[Admin mengisi URL video YouTube]
+    G -->|Upload File| I[Admin memilih dan mengunggah file video]
+    H --> J[Admin mengklik simpan]
+    I --> J
+    J --> K[Sistem memvalidasi data]
+    K --> L{Data valid?}
+    L -->|Tidak| M[Sistem menampilkan pesan error]
+    M --> E
+    L -->|Ya| N[Sistem menyimpan video ke database]
+    N --> O[Sistem menampilkan notifikasi sukses]
+    O --> C
+
+    C --> P{Admin memilih Edit Video}
+    P -->|Ya| Q[Sistem menampilkan form edit video]
+    Q --> R[Admin mengubah data video]
+    R --> S[Admin mengklik simpan perubahan]
+    S --> T[Sistem memvalidasi data]
+    T --> U{Data valid?}
+    U -->|Tidak| V[Sistem menampilkan pesan error]
+    V --> Q
+    U -->|Ya| W[Sistem memperbarui data video di database]
+    W --> X[Sistem menampilkan notifikasi sukses]
+    X --> C
+    P -->|Tidak| Y((End))
+    C --> Y
+
+
+================================================================
+DIAGRAM 8: KELOLA JENIS SAMPAH - KATEGORI (CRUD)
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Jenis Sampah]
+    B --> C[Sistem menampilkan daftar jenis sampah]
+    C --> D{Admin memilih aksi}
+
+    D -->|Cari| E[Admin mengisi kata kunci nama sampah]
+    E --> F[Sistem memfilter data jenis sampah]
+    F --> G[Sistem menampilkan hasil pencarian]
+    G --> D
+
+    D -->|Filter Kategori| H[Admin memilih kategori sampah dari dropdown]
+    H --> I[Sistem memfilter berdasarkan kategori]
+    I --> G
+
+    D -->|Tambah| J[Sistem menampilkan form tambah jenis sampah]
+    J --> K[Admin mengisi nama sampah, kategori, harga per kg, satuan, dan gambar]
+    K --> L[Admin mengklik simpan]
+    L --> M[Sistem memvalidasi data]
+    M --> N{Data valid?}
+    N -->|Tidak| O[Sistem menampilkan pesan error]
+    O --> J
+    N -->|Ya| P[Sistem menyimpan jenis sampah ke database]
+    P --> Q[Sistem menampilkan notifikasi sukses]
+    Q --> C
+
+    D -->|Edit| R[Sistem menampilkan form edit jenis sampah]
+    R --> S[Admin mengubah data jenis sampah]
+    S --> T[Admin mengklik simpan perubahan]
+    T --> U[Sistem memvalidasi data]
+    U --> V{Data valid?}
+    V -->|Tidak| W[Sistem menampilkan pesan error]
+    W --> R
+    V -->|Ya| X[Sistem memperbarui data jenis sampah di database]
+    X --> Y[Sistem menampilkan notifikasi sukses]
+    Y --> C
+
+    D -->|Hapus| Z[Sistem menampilkan konfirmasi hapus]
+    Z --> AA{Admin yakin menghapus?}
+    AA -->|Tidak| C
+    AA -->|Ya| AB{Jenis sampah digunakan dalam transaksi?}
+    AB -->|Ya| AC[Sistem menampilkan pesan tidak dapat dihapus]
+    AC --> C
+    AB -->|Tidak| AD[Sistem menghapus jenis sampah dari database]
+    AD --> AE[Sistem menampilkan notifikasi sukses hapus]
+    AE --> C
+
+    C --> AF((End))
+
+
+================================================================
+DIAGRAM 9: TRANSAKSI SETOR SAMPAH
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Input Setoran Sampah]
+    B --> C[Sistem menampilkan form setoran]
+    C --> D[Sistem memuat daftar penyetor dan jenis sampah]
+    D --> E[Admin memilih penyetor dari dropdown]
+    E --> F[Admin memilih tanggal transaksi]
+    F --> G[Admin memilih jenis sampah dan memasukkan berat kg]
+    G --> H{Ingin tambah item sampah lain?}
+    H -->|Ya| I[Admin mengklik tambah baris item]
+    I --> G
+    H -->|Tidak| J[Sistem menghitung otomatis subtotal dan total nilai]
+    J --> K[Admin mengklik simpan transaksi]
+    K --> L[Sistem memvalidasi data penyetor, item sampah, dan berat]
+    L --> M{Data valid?}
+    M -->|Tidak| N[Sistem menampilkan pesan error validasi]
+    N --> C
+    M -->|Ya| O[Sistem menyimpan transaksi ke tabel transaksi]
+    O --> P[Sistem menyimpan detail item ke tabel detail_setoran]
+    P --> Q[Sistem menambahkan saldo penyetor sesuai total nilai]
+    Q --> R[Sistem menampilkan notifikasi transaksi berhasil]
+    R --> S[Sistem mengarahkan ke halaman riwayat transaksi]
+    S --> T((End))
+
+
+================================================================
+DIAGRAM 10: TRANSAKSI TARIK SALDO
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Tarik Saldo]
+    B --> C[Sistem menampilkan form penarikan saldo]
+    C --> D[Admin memilih penyetor dari dropdown]
+    D --> E[Sistem menampilkan saldo aktif penyetor terpilih]
+    E --> F[Admin mengisi jumlah penarikan]
+    F --> G[Admin mengisi tanggal transaksi]
+    G --> H[Admin mengisi keterangan opsional]
+    H --> I[Admin mengklik simpan transaksi]
+    I --> J[Sistem memvalidasi data]
+    J --> K{Data valid?}
+    K -->|Tidak| L[Sistem menampilkan pesan error validasi]
+    L --> C
+    K -->|Ya| M{Jumlah penarikan melebihi saldo?}
+    M -->|Ya| N[Sistem menampilkan pesan saldo tidak mencukupi]
+    N --> C
+    M -->|Tidak| O[Sistem menyimpan transaksi tarik saldo ke database]
+    O --> P[Sistem mengurangi saldo penyetor]
+    P --> Q[Sistem menampilkan notifikasi transaksi berhasil]
+    Q --> R[Sistem mengarahkan ke halaman riwayat transaksi]
+    R --> S((End))
+
+
+================================================================
+DIAGRAM 11: RIWAYAT TRANSAKSI
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Riwayat Transaksi]
+    B --> C[Sistem menampilkan semua riwayat transaksi setor dan tarik]
+    C --> D{Admin menerapkan filter?}
+
+    D -->|Filter Penyetor| E[Admin memilih nama penyetor dari dropdown]
+    E --> F[Sistem memfilter berdasarkan ID penyetor]
+    F --> G[Sistem menampilkan riwayat transaksi penyetor tersebut]
+    G --> D
+
+    D -->|Filter Tipe| H[Admin memilih tipe setor atau tarik saldo]
+    H --> I[Sistem memfilter berdasarkan tipe transaksi]
+    I --> G
+
+    D -->|Filter Tanggal| J[Admin mengisi tanggal mulai dan tanggal akhir]
+    J --> K[Sistem memfilter berdasarkan rentang tanggal]
+    K --> G
+
+    D -->|Tidak| L[Sistem menampilkan semua data tanpa filter]
+    L --> M[Admin melihat detail item setoran per transaksi]
+    M --> N((End))
+
+
+================================================================
+DIAGRAM 12: KELOLA ORDERS PENJEMPUTAN (CRUD)
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Orders Penjemputan]
+    B --> C[Sistem menampilkan daftar semua orders dari mobile]
+    C --> D{Admin memilih aksi}
+
+    D -->|Filter Status| E[Admin memilih status order]
+    E --> F[Sistem memfilter orders berdasarkan status]
+    F --> G[Sistem menampilkan orders sesuai filter]
+    G --> D
+
+    D -->|Lihat Detail| H[Sistem menampilkan detail order penjemputan]
+    H --> I[Sistem menampilkan informasi warga, lokasi, dan status]
+    I --> D
+
+    D -->|Tugaskan Picker| J[Sistem menampilkan daftar picker tersedia]
+    J --> K[Admin memilih picker yang akan ditugaskan]
+    K --> L[Admin mengklik assign picker]
+    L --> M[Sistem memperbarui status order menjadi DRIVER_DITUGASKAN]
+    M --> N[Sistem mengirim notifikasi ke picker]
+    N --> O[Sistem mengirim notifikasi ke warga]
+    O --> P[Sistem menampilkan notifikasi penugasan berhasil]
+    P --> C
+
+    D -->|Validasi Selesai| Q[Admin memverifikasi order telah selesai]
+    Q --> R{Order sudah selesai dari picker?}
+    R -->|Tidak| S[Sistem menampilkan status order masih berlangsung]
+    S --> C
+    R -->|Ya| T[Sistem menampilkan konfirmasi validasi]
+    T --> U[Admin mengklik konfirmasi]
+    U --> V[Sistem memperbarui status order menjadi VALIDASI_BANK_SAMPAH]
+    V --> W[Sistem menampilkan notifikasi sukses]
+    W --> C
+
+    C --> X((End))
+
+
+================================================================
+DIAGRAM 13: KELOLA PENUKARAN POIN / REWARD (CRUD)
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Manajemen Tukar Poin]
+    B --> C[Sistem menampilkan daftar pengajuan redemption]
+    C --> D{Admin memilih tab status}
+
+    D -->|Tab Pending| E[Sistem menampilkan pengajuan pending]
+    D -->|Tab Diproses| F[Sistem menampilkan pengajuan diproses]
+    D -->|Tab Selesai| G[Sistem menampilkan pengajuan selesai]
+    D -->|Tab Ditolak| H[Sistem menampilkan pengajuan ditolak]
+    D -->|Tab Semua| I[Sistem menampilkan semua pengajuan]
+
+    E --> J{Admin memilih aksi}
+    F --> J
+
+    J -->|Filter dan Cari| K[Admin mengisi kata kunci atau rentang tanggal]
+    K --> L[Sistem memfilter data redemption]
+    L --> M[Sistem menampilkan hasil filter]
+    M --> J
+
+    J -->|Lihat Detail| N[Sistem menampilkan detail pengajuan tukar poin]
+    N --> O[Sistem menampilkan informasi warga, poin, provider, dan rekening]
+    O --> J
+
+    J -->|Selesaikan| P[Admin mengklik tombol Selesai]
+    P --> Q[Sistem menampilkan modal konfirmasi selesai]
+    Q --> R[Admin mengunggah bukti transfer]
+    R --> S{File bukti transfer diunggah?}
+    S -->|Tidak| T[Sistem menampilkan pesan bukti wajib diunggah]
+    T --> Q
+    S -->|Ya| U[Admin mengklik Konfirmasi Selesai]
+    U --> V[Sistem menyimpan bukti transfer]
+    V --> W[Sistem memperbarui status menjadi completed]
+    W --> X[Sistem memotong poin warga secara permanen]
+    X --> Y[Sistem mencatat ke tabel audit log]
+    Y --> Z[Sistem mengirim notifikasi ke warga]
+    Z --> AA[Sistem menampilkan notifikasi sukses]
+    AA --> C
+
+    J -->|Tolak| AB[Admin mengklik tombol Tolak]
+    AB --> AC[Sistem menampilkan modal konfirmasi tolak]
+    AC --> AD[Admin mengisi alasan penolakan]
+    AD --> AE{Alasan penolakan terisi?}
+    AE -->|Tidak| AF[Sistem menampilkan pesan alasan wajib diisi]
+    AF --> AC
+    AE -->|Ya| AG[Admin mengklik Konfirmasi Tolak]
+    AG --> AH[Sistem memperbarui status menjadi rejected]
+    AH --> AI[Sistem mengembalikan poin ke saldo aktif warga]
+    AI --> AJ[Sistem mencatat ke tabel audit log]
+    AJ --> AK[Sistem mengirim notifikasi penolakan ke warga]
+    AK --> AL[Sistem menampilkan notifikasi sukses tolak]
+    AL --> C
+
+    C --> AM((End))
+
+
+================================================================
+DIAGRAM 14: LAPORAN HARIAN
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Laporan Harian]
+    B --> C[Sistem menampilkan laporan hari ini secara default]
+    C --> D[Sistem menampilkan total pemasukan setoran hari ini]
+    D --> E[Sistem menampilkan total pengeluaran penarikan hari ini]
+    E --> F[Sistem menampilkan daftar transaksi setor hari ini]
+    F --> G[Sistem menampilkan daftar transaksi tarik saldo hari ini]
+    G --> H{Admin memilih tanggal lain?}
+    H -->|Ya| I[Admin memilih tanggal dari date picker]
+    I --> J[Admin mengklik tampilkan laporan]
+    J --> K[Sistem mengambil data transaksi sesuai tanggal dipilih]
+    K --> L[Sistem menampilkan laporan sesuai tanggal]
+    L --> H
+    H -->|Tidak| M{Admin ingin ekspor laporan?}
+    M -->|Ekspor PDF| N[Sistem menghasilkan file PDF laporan harian]
+    N --> O[Sistem mengunduh file PDF ke komputer admin]
+    O --> H
+    M -->|Ekspor Excel| P[Sistem menghasilkan file Excel laporan harian]
+    P --> Q[Sistem mengunduh file Excel ke komputer admin]
+    Q --> H
+    M -->|Tidak| R((End))
+
+
+================================================================
+DIAGRAM 15: LAPORAN BULANAN
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Laporan Bulanan]
+    B --> C[Sistem menampilkan laporan bulan dan tahun saat ini]
+    C --> D[Sistem menghitung total transaksi setor dan tarik bulan ini]
+    D --> E[Sistem menampilkan ringkasan statistik bulanan]
+    E --> F[Sistem menampilkan grafik dan tabel transaksi bulanan]
+    F --> G{Admin mengubah periode laporan?}
+    G -->|Ya| H[Admin memilih bulan dan tahun dari form filter]
+    H --> I[Admin mengklik tampilkan laporan]
+    I --> J[Sistem mengambil data transaksi sesuai periode]
+    J --> K[Sistem menampilkan laporan periode dipilih]
+    K --> G
+    G -->|Tidak| L{Admin ingin ekspor laporan?}
+    L -->|Ekspor PDF| M[Sistem menghasilkan file PDF laporan bulanan]
+    M --> N[Sistem mengunduh file PDF ke komputer admin]
+    N --> G
+    L -->|Ekspor Excel| O[Sistem menghasilkan file Excel laporan bulanan]
+    O --> P[Sistem mengunduh file Excel ke komputer admin]
+    P --> G
+    L -->|Tidak| Q((End))
+
+
+================================================================
+DIAGRAM 16: KELOLA PROFIL ADMIN
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Profil]
+    B --> C[Sistem mengambil data profil admin dari database]
+    C --> D{Data pengguna ditemukan?}
+    D -->|Tidak| E[Sistem menghancurkan sesi dan mengarahkan ke Login]
+    E --> F((End))
+    D -->|Ya| G[Sistem menampilkan data profil admin]
+    G --> H{Admin memilih aksi}
+
+    H -->|Edit Profil| I[Sistem menampilkan form edit profil]
+    I --> J[Admin mengubah nama lengkap, alamat, dan nomor telepon]
+    J --> K[Admin mengklik simpan perubahan]
+    K --> L[Sistem memvalidasi data]
+    L --> M{Data valid?}
+    M -->|Tidak| N[Sistem menampilkan pesan error]
+    N --> I
+    M -->|Ya| O[Sistem memperbarui data profil di database]
+    O --> P[Sistem memperbarui nama di sesi]
+    P --> Q[Sistem menampilkan notifikasi profil berhasil diperbarui]
+    Q --> G
+
+    H -->|Ganti Password| R[Admin mengisi password lama]
+    R --> S[Admin mengisi password baru dan konfirmasi password baru]
+    S --> T[Admin mengklik ganti password]
+    T --> U[Sistem memvalidasi password lama]
+    U --> V{Password lama cocok?}
+    V -->|Tidak| W[Sistem menampilkan pesan password lama salah]
+    W --> R
+    V -->|Ya| X{Password baru dan konfirmasi cocok?}
+    X -->|Tidak| Y[Sistem menampilkan pesan konfirmasi password tidak sesuai]
+    Y --> R
+    X -->|Ya| Z[Sistem meng-hash password baru]
+    Z --> AA[Sistem menyimpan password baru ke database]
+    AA --> AB[Sistem menampilkan notifikasi password berhasil diubah]
+    AB --> G
+
+    H -->|Tidak| AC((End))
+
+
+================================================================
+DIAGRAM 17: MONITOR AI SCAN
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman Live Monitor AI Scan]
+    B --> C[Sistem memuat halaman monitor]
+    C --> D[Sistem melakukan polling ke endpoint data setiap 3 detik]
+    D --> E{Data deteksi baru tersedia?}
+    E -->|Tidak| F[Sistem menampilkan pesan belum ada aktivitas scan]
+    F --> G[Sistem menunggu 3 detik]
+    G --> D
+    E -->|Ya| H[Sistem mengambil data deteksi terbaru dari database]
+    H --> I{Data berubah dari sebelumnya?}
+    I -->|Tidak| J[Sistem tidak memperbarui tampilan untuk menghindari flicker]
+    J --> G
+    I -->|Ya| K[Sistem menampilkan kartu hasil deteksi AI]
+    K --> L[Sistem menampilkan gambar yang discan pengguna mobile]
+    L --> M[Sistem menampilkan label hasil deteksi dari AI]
+    M --> N[Sistem menampilkan nama pengguna yang melakukan scan]
+    N --> O[Sistem menampilkan waktu scan]
+    O --> P[Sistem menandai deteksi terbaru dengan badge NEW]
+    P --> G
+
+
+================================================================
+DIAGRAM 18: PENCARIAN DATA
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin berada pada halaman yang memiliki fitur pencarian]
+    B --> C{Halaman apa?}
+
+    C -->|Penyetor| D[Admin mengisi kata kunci di field pencarian penyetor]
+    D --> E[Admin mengklik tombol Cari]
+    E --> F[Sistem memfilter data berdasarkan nama, username, email, dan telepon]
+    F --> G[Sistem menampilkan hasil pencarian dengan pagination]
+    G --> H{Hasil ditemukan?}
+    H -->|Ya| I[Sistem menampilkan daftar penyetor sesuai kata kunci]
+    H -->|Tidak| J[Sistem menampilkan pesan data tidak ditemukan]
+    I --> K((End))
+    J --> K
+
+    C -->|Edukasi| L[Admin mengisi kata kunci judul atau isi edukasi]
+    L --> M[Admin mengklik tombol Cari]
+    M --> N[Sistem memfilter data edukasi berdasarkan judul dan konten]
+    N --> O[Sistem menampilkan hasil pencarian konten edukasi]
+    O --> K
+
+    C -->|Reward| P[Admin mengisi kata kunci kode transaksi, nama warga, atau provider]
+    P --> Q[Admin mengklik tombol Filter]
+    Q --> R[Sistem memfilter data redemption]
+    R --> S[Sistem menampilkan hasil pencarian redemption]
+    S --> K
+
+    C -->|Picker| T[Admin mengisi kata kunci nama atau telepon picker]
+    T --> U[Admin mengklik tombol Cari]
+    U --> V[Sistem memfilter data picker]
+    V --> W[Sistem menampilkan hasil pencarian picker]
+    W --> K
+
+
+================================================================
+DIAGRAM 19: FILTER DATA
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin berada pada halaman yang memiliki fitur filter]
+    B --> C{Halaman filter mana?}
+
+    C -->|Riwayat Transaksi| D[Admin memilih filter penyetor]
+    D --> E[Admin memilih filter tipe setor atau tarik]
+    E --> F[Admin mengisi rentang tanggal mulai dan akhir]
+    F --> G[Admin mengklik Terapkan Filter]
+    G --> H[Sistem membangun query dengan kondisi filter]
+    H --> I[Sistem menjalankan query ke database]
+    I --> J[Sistem menampilkan hasil transaksi sesuai filter]
+    J --> K((End))
+
+    C -->|Reward Redemption| L[Admin memilih tab status pending, diproses, selesai, ditolak]
+    L --> M[Admin mengisi kata kunci pencarian]
+    M --> N[Admin mengisi rentang tanggal]
+    N --> O[Admin memilih urutan sorting]
+    O --> P[Admin mengklik tombol Filter]
+    P --> Q[Sistem memfilter data redemption berdasarkan semua kriteria]
+    Q --> R[Sistem menampilkan hasil yang sudah difilter]
+    R --> K
+
+    C -->|Laporan| S[Admin memilih bulan dan tahun laporan]
+    S --> T[Admin mengklik tampilkan laporan]
+    T --> U[Sistem mengambil data sesuai periode laporan]
+    U --> V[Sistem menampilkan laporan yang sudah difilter]
+    V --> K
+
+
+================================================================
+DIAGRAM 20: RESET PASSWORD
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Pengguna membuka halaman Reset Password]
+    B --> C[Sistem menampilkan form reset password]
+    C --> D[Pengguna mengisi alamat email terdaftar]
+    D --> E[Pengguna mengklik tombol Kirim]
+    E --> F[Sistem memvalidasi format email]
+    F --> G{Format email valid?}
+    G -->|Tidak| H[Sistem menampilkan pesan format email tidak valid]
+    H --> C
+    G -->|Ya| I[Sistem mencari email di database]
+    I --> J{Email ditemukan?}
+    J -->|Tidak| K[Sistem menampilkan pesan email tidak terdaftar]
+    K --> C
+    J -->|Ya| L[Sistem menghasilkan token reset password unik]
+    L --> M[Sistem menyimpan token ke database]
+    M --> N[Sistem mengirim email berisi link reset password]
+    N --> O[Sistem menampilkan pesan email berhasil dikirim]
+    O --> P[Pengguna membuka email dan mengklik link reset]
+    P --> Q[Sistem memverifikasi token dari link]
+    Q --> R{Token valid dan belum kedaluwarsa?}
+    R -->|Tidak| S[Sistem menampilkan pesan token tidak valid atau kedaluwarsa]
+    S --> T((End))
+    R -->|Ya| U[Sistem menampilkan form isi password baru]
+    U --> V[Pengguna mengisi password baru dan konfirmasi]
+    V --> W[Pengguna mengklik simpan]
+    W --> X[Sistem memvalidasi kesesuaian password baru]
+    X --> Y{Password baru dan konfirmasi cocok?}
+    Y -->|Tidak| Z[Sistem menampilkan pesan password tidak sesuai]
+    Z --> U
+    Y -->|Ya| AA[Sistem meng-hash password baru]
+    AA --> AB[Sistem menyimpan password baru ke database]
+    AB --> AC[Sistem menghapus token reset password]
+    AC --> AD[Sistem menampilkan notifikasi password berhasil diubah]
+    AD --> AE[Sistem mengarahkan ke halaman Login]
+    AE --> T
+
+
+================================================================
+DIAGRAM 21: KELOLA NOTIFIKASI (SISTEM)
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Sistem menghasilkan notifikasi secara otomatis]
+    B --> C{Jenis notifikasi?}
+
+    C -->|Penugasan Picker| D[Sistem membuat notifikasi untuk picker yang ditugaskan]
+    D --> E[Sistem mengecek apakah notifikasi sudah ada sebelumnya]
+    E --> F{Notifikasi sudah ada?}
+    F -->|Ya| G[Sistem tidak membuat notifikasi duplikat]
+    F -->|Tidak| H[Sistem menyimpan notifikasi ke tabel notifikasi]
+    H --> I[Sistem mengirim notifikasi ke warga pemilik order]
+    I --> J[Sistem menampilkan notifikasi di aplikasi mobile]
+    J --> K((End))
+    G --> K
+
+    C -->|Penukaran Poin Selesai| L[Sistem membuat notifikasi sukses untuk warga]
+    L --> M[Sistem menyimpan notifikasi ke database]
+    M --> N[Warga menerima notifikasi di aplikasi mobile]
+    N --> K
+
+    C -->|Penukaran Poin Ditolak| O[Sistem membuat notifikasi penolakan untuk warga]
+    O --> P[Sistem menyertakan alasan penolakan]
+    P --> Q[Sistem menyimpan notifikasi ke database]
+    Q --> R[Warga menerima notifikasi penolakan di aplikasi mobile]
+    R --> K
+
+
+================================================================
+DIAGRAM 22: EKSPOR LAPORAN
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Admin membuka halaman laporan harian atau bulanan]
+    B --> C[Sistem menampilkan data laporan]
+    C --> D[Admin mengklik tombol Ekspor]
+    D --> E{Pilih format ekspor}
+
+    E -->|PDF| F[Sistem mempersiapkan data laporan untuk format PDF]
+    F --> G[Sistem menghasilkan file PDF menggunakan library PDF]
+    G --> H{File berhasil dibuat?}
+    H -->|Ya| I[Sistem mengunduh file PDF ke komputer admin]
+    I --> J[Sistem menampilkan notifikasi unduhan berhasil]
+    J --> K((End))
+    H -->|Tidak| L[Sistem menampilkan pesan error]
+    L --> C
+
+    E -->|Excel| M[Sistem mempersiapkan data laporan untuk format Excel]
+    M --> N[Sistem menghasilkan file Excel menggunakan library Spreadsheet]
+    N --> O{File berhasil dibuat?}
+    O -->|Ya| P[Sistem mengunduh file Excel ke komputer admin]
+    P --> Q[Sistem menampilkan notifikasi unduhan berhasil]
+    Q --> K
+    O -->|Tidak| R[Sistem menampilkan pesan error]
+    R --> C
+
+
+================================================================
+DIAGRAM 23: API MOBILE - SINKRONISASI DATA
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Aplikasi mobile mengirim request ke API]
+    B --> C[Sistem menerima request HTTP]
+    C --> D[Sistem memverifikasi API key atau token autentikasi]
+    D --> E{Autentikasi valid?}
+    E -->|Tidak| F[Sistem mengembalikan response 401 Unauthorized]
+    F --> G((End))
+    E -->|Ya| H{Jenis endpoint API?}
+
+    H -->|GET Data Edukasi| I[Sistem mengambil data edukasi dari database]
+    I --> J[Sistem mengembalikan data JSON edukasi]
+    J --> K[Aplikasi mobile menampilkan konten edukasi]
+    K --> G
+
+    H -->|POST Scan AI| L[Sistem menerima gambar dari mobile]
+    L --> M[Sistem memproses gambar dengan model AI]
+    M --> N[Sistem menyimpan hasil deteksi ke database]
+    N --> O[Sistem mengembalikan label hasil deteksi ke mobile]
+    O --> P[Aplikasi mobile menampilkan hasil scan]
+    P --> G
+
+    H -->|POST Order Penjemputan| Q[Sistem menerima data order dari mobile]
+    Q --> R[Sistem menyimpan order ke tabel orders]
+    R --> S[Sistem membuat notifikasi untuk admin]
+    S --> T[Sistem mengembalikan response sukses order dibuat]
+    T --> G
+
+    H -->|GET Notifikasi| U[Sistem mengambil notifikasi pengguna dari database]
+    U --> V[Sistem mengembalikan data notifikasi dalam JSON]
+    V --> W[Aplikasi mobile menampilkan notifikasi]
+    W --> G
+
+    H -->|POST Tukar Poin| X[Sistem menerima request penukaran poin dari mobile]
+    X --> Y[Sistem memvalidasi saldo poin warga]
+    Y --> Z{Saldo mencukupi?}
+    Z -->|Tidak| AA[Sistem mengembalikan response saldo tidak cukup]
+    AA --> G
+    Z -->|Ya| AB[Sistem membuat record redemption dengan status pending]
+    AB --> AC[Sistem memindahkan poin ke reserved_saldo]
+    AC --> AD[Sistem mengembalikan response pengajuan berhasil]
+    AD --> G
+
+
+================================================================
+DIAGRAM 24: MANAJEMEN SESI DAN KEAMANAN
+================================================================
+
+flowchart TD
+    A((Start))
+    A --> B[Pengguna mengakses halaman manapun di sistem]
+    B --> C[Sistem memeriksa header request]
+    C --> D{Sesi aktif dan valid?}
+    D -->|Tidak| E[Sistem mengarahkan ke halaman Login]
+    E --> F[Sistem menampilkan pesan sesi berakhir]
+    F --> G((End))
+    D -->|Ya| H{Level pengguna sesuai dengan hak akses halaman?}
+    H -->|Tidak| I[Sistem menampilkan pesan akses ditolak]
+    I --> J[Sistem mengarahkan ke halaman yang sesuai]
+    J --> G
+    H -->|Ya| K[Sistem mengizinkan akses ke halaman]
+    K --> L[Sistem menjalankan konten halaman]
+    L --> M{Sesi melebihi batas waktu?}
+    M -->|Ya| N[Sistem menghancurkan sesi secara otomatis]
+    N --> E
+    M -->|Tidak| O[Sistem memperpanjang waktu sesi]
+    O --> P[Sistem menampilkan konten halaman]
+    P --> G
+
+
+====================================================
+CARA PENGGUNAAN:
+1. Copy code diagram yang diinginkan (mulai dari "flowchart TD" hingga baris terakhir)
+2. Buka https://mermaid.live atau gunakan ekstensi Mermaid di VS Code
+3. Paste code ke editor Mermaid
+4. Diagram akan otomatis ter-render
+====================================================

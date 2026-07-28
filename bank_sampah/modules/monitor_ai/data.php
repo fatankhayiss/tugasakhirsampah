@@ -21,8 +21,8 @@ function time_elapsed_string($datetime, $full = false) {
     $ago = new DateTime($datetime);
     $diff = $now->diff($ago);
 
-    $diff->w = floor($diff->d / 7);
-    $diff->d -= $diff->w * 7;
+    $diff_w = floor($diff->d / 7);
+    $diff_d = $diff->d - ($diff_w * 7);
 
     $string = array(
         'y' => 'tahun',
@@ -33,9 +33,20 @@ function time_elapsed_string($datetime, $full = false) {
         'i' => 'menit',
         's' => 'detik',
     );
+    
+    $diff_values = [
+        'y' => $diff->y,
+        'm' => $diff->m,
+        'w' => $diff_w,
+        'd' => $diff_d,
+        'h' => $diff->h,
+        'i' => $diff->i,
+        's' => $diff->s,
+    ];
+
     foreach ($string as $k => &$v) {
-        if ($diff->$k) {
-            $v = $diff->$k . ' ' . $v;
+        if ($diff_values[$k]) {
+            $v = $diff_values[$k] . ' ' . $v;
         } else {
             unset($string[$k]);
         }

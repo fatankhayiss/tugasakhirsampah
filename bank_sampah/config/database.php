@@ -33,10 +33,10 @@ if (!$koneksi) {
 // Environment Configuration
 // Ubah ke 'production' saat deploy ke server (misal: serv00)
 // Ubah ke 'development' untuk mode lokal
-define('APP_ENV', 'production'); 
+define('APP_ENV', 'development'); 
 
 if (APP_ENV === 'development') {
-    define('BASE_URL', 'http://192.168.110.62/tugasakhirsampah/bank_sampah/');
+    define('BASE_URL', 'http://banksampah.test/'); 
 } else {
     define('BASE_URL', 'https://itrashy.triki.cloud/');
 }
