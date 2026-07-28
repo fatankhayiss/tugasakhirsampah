@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/repositories/waste_repository.dart';
+import '../../../core/repositories/profile_repository.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
 import '../../../core/navigation/app_page_transitions.dart';
