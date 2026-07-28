@@ -47,7 +47,7 @@ WORKER_PORT  = config.SERVER_PORT
 BACKLOG      = 10
 LOG_FILE     = Path(__file__).parent / "worker.log"
 MODEL_PATH   = Path(__file__).parent / "best.onnx"
-CONFIDENCE   = 0.20   # Minimum detection confidence threshold
+CONFIDENCE   = 0.05   # Minimum detection confidence threshold
 MAX_IMG_SIZE = 640    # YOLO input size
 
 # ─────────────────────────────────────────────
@@ -209,13 +209,29 @@ def letterbox(im, new_shape=(640, 640), color=(114, 114, 114)):
     return im
 
 def _preprocess(image_path: str) -> "numpy.ndarray":  # type: ignore[name-defined]
-    """Load image and preprocess to YOLO input tensor [1, 3, H, W] float32 0..1."""
+    """Load image, fix EXIF rotation, and preprocess to YOLO input tensor [1, 3, H, W] float32 0..1."""
     import cv2
     import numpy as np
+    try:
+        from PIL import Image, ImageOps
+    except ImportError:
+        Image = None
 
-    img = cv2.imread(image_path)
-    if img is None:
-        raise ValueError(f"cv2 tidak dapat membaca gambar: {image_path}")
+    if Image is not None:
+        try:
+            pil_img = Image.open(image_path)
+            pil_img = ImageOps.exif_transpose(pil_img)
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+            img_np = np.array(pil_img)
+            # Convert RGB (PIL) to BGR (OpenCV)
+            img = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        except Exception as e:
+            raise ValueError(f"Gagal memproses EXIF gambar: {image_path}. Error: {e}")
+    else:
+        img = cv2.imread(image_path)
+        if img is None:
+            raise ValueError(f"cv2 tidak dapat membaca gambar: {image_path}")
 
     h, w = _input_shape
     # Use letterbox to maintain aspect ratio instead of squashing

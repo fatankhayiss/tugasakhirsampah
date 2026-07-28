@@ -676,6 +676,34 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
             ],
           ),
           const SizedBox(height: 16),
+          if (_record!.confidence < 0.60)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                border: Border.all(color: Colors.orange.shade200),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Tingkat keyakinan AI rendah. Silakan periksa kembali dan Edit jika hasilnya kurang tepat.',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
           _buildDetailCard(),
           const SizedBox(height: 16),
           _buildWeightSummary(),
