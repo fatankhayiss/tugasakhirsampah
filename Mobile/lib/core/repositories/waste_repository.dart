@@ -21,28 +21,22 @@ class WasteRepository {
             name: item['nama'] ?? '',
             imageAsset: _getImageForWaste(item['nama'] ?? ''),
             pricePerKg: (item['harga_per_kg'] as num?)?.toDouble() ?? 0,
+            category: item['kategori'],
+            description: item['deskripsi'],
           );
         }).toList();
+      } else {
+        throw Exception(response.message.isNotEmpty ? response.message : 'Gagal memuat kategori sampah.');
       }
     } catch (e) {
       debugPrint('WASTE REPO ERROR: $e');
+      throw Exception('Tidak dapat terhubung ke server. Pastikan Anda memiliki koneksi internet.');
     }
-
-    // Fallback: data statis
-    return _fallbackWaste();
   }
 
-  /// Synchronous fallback for screens that can't await.
-  List<WasteItem> getAvailableWasteSync() => _fallbackWaste();
-
-  List<WasteItem> _fallbackWaste() {
-    return [
-      WasteItem(id: '1', name: 'Botol Plastik', imageAsset: AppImages.image1, pricePerKg: 3000),
-      WasteItem(id: '2', name: 'Kardus', imageAsset: AppImages.image2, pricePerKg: 1500),
-      WasteItem(id: '3', name: 'Kertas', imageAsset: AppImages.frame, pricePerKg: 1200),
-      WasteItem(id: '4', name: 'Besi', imageAsset: AppImages.image1, pricePerKg: 2500),
-    ];
-  }
+  /// Synchronous fallback removed because data must be live.
+  /// If you need sync data, provide an empty list or cached valid data.
+  List<WasteItem> getAvailableWasteSync() => [];
 
   String _getImageForWaste(String name) {
     final lower = name.toLowerCase();

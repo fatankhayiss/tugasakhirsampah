@@ -57,6 +57,7 @@ class DriverStyles {
       case 'DRIVER_MENUJU_LOKASI':
       case 'ON_THE_WAY':
       case 'ONTHEWAY':
+      case 'PICKER_HAMPIR_TIBA':
       case 'DRIVER_TIBA':
         return const Color(0xFF16A34A);
       case 'SAMPAH_DIJEMPUT':
@@ -83,8 +84,10 @@ class DriverStyles {
         return 'Picker Ditugaskan';
       case 'DRIVER_MENUJU_LOKASI':
         return 'Picker Menuju Lokasi';
+      case 'PICKER_HAMPIR_TIBA':
+        return 'Picker Hampir Tiba';
       case 'DRIVER_TIBA':
-        return 'Picker Sudah Dekat';
+        return 'Picker Sudah Tiba';
       case 'SAMPAH_DIJEMPUT':
         return 'Sampah Dijemput';
       case 'VALIDASI_BANK_SAMPAH':

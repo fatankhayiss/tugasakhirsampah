@@ -6,6 +6,8 @@ import '../../../core/repositories/order_repository.dart';
 import '../../orders/models/ongoing_order_model.dart';
 import '../../orders/models/history_item_model.dart';
 import '../../../core/widgets/app_network_image.dart';
+import 'package:idn_finlogos/idn_finlogos.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class RedemptionDetailScreen extends StatefulWidget {
   final String redemptionId;
@@ -287,7 +289,48 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
                               const Divider(height: 24, color: AppColors.border),
                               _DetailRow(title: 'Tujuan', content: dest),
                               const Divider(height: 24, color: AppColors.border),
-                              _DetailRow(title: 'Penyedia Layanan', content: provider),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Penyedia Layanan',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textSoft,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Flexible(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (IdnFinLogos.get(provider) != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 8),
+                                            child: SvgPicture.asset(
+                                              IdnFinLogos.get(provider)!.assetPath,
+                                              package: 'idn_finlogos',
+                                              height: 18,
+                                            ),
+                                          ),
+                                        Text(
+                                          provider,
+                                          textAlign: TextAlign.right,
+                                          style: const TextStyle(
+                                            fontFamily: 'Plus Jakarta Sans',
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textDark,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                               const Divider(height: 24, color: AppColors.border),
                               _DetailRow(title: 'Nomor Rekening / HP', content: _maskAccount(accNum)),
                               const Divider(height: 24, color: AppColors.border),

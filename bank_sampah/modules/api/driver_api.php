@@ -67,7 +67,7 @@ if ($action === 'get_active_task') {
                    w.no_telepon as telp_warga, w.alamat as alamat_warga, w.foto_profil as foto_warga
             FROM orders o
             JOIN pengguna w ON o.id_warga = w.id_pengguna
-            WHERE o.id_driver = ? AND o.status IN ('DRIVER_DITUGASKAN','DRIVER_MENUJU_LOKASI','DRIVER_TIBA','SAMPAH_DIJEMPUT')
+            WHERE o.id_driver = ? AND o.status IN ('DRIVER_DITUGASKAN','DRIVER_MENUJU_LOKASI','PICKER_HAMPIR_TIBA','DRIVER_TIBA','SAMPAH_DIJEMPUT')
             ORDER BY o.created_at ASC LIMIT 1";
     $stmt_order = mysqli_prepare($koneksi, $sql);
     mysqli_stmt_bind_param($stmt_order, "i", $id_driver);
@@ -151,7 +151,7 @@ elseif ($action === 'get_dashboard_stats') {
     mysqli_stmt_close($stmt_tb);
 
     // Pending (in progress)
-    $stmt_p = mysqli_prepare($koneksi, "SELECT COUNT(*) as pending_orders FROM orders WHERE id_driver = ? AND status IN ('DRIVER_DITUGASKAN','DRIVER_MENUJU_LOKASI','DRIVER_TIBA','SAMPAH_DIJEMPUT')");
+    $stmt_p = mysqli_prepare($koneksi, "SELECT COUNT(*) as pending_orders FROM orders WHERE id_driver = ? AND status IN ('DRIVER_DITUGASKAN','DRIVER_MENUJU_LOKASI','PICKER_HAMPIR_TIBA','DRIVER_TIBA','SAMPAH_DIJEMPUT')");
     mysqli_stmt_bind_param($stmt_p, "i", $id_driver);
     mysqli_stmt_execute($stmt_p);
     $row_p = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_p));
@@ -181,7 +181,7 @@ elseif ($action === 'get_orders') {
             WHERE o.id_driver = ?";
     if (!empty($status_filter)) {
         if ($status_filter === 'active') {
-            $sql .= " AND o.status IN ('DRIVER_DITUGASKAN','DRIVER_MENUJU_LOKASI','DRIVER_TIBA','SAMPAH_DIJEMPUT')";
+            $sql .= " AND o.status IN ('DRIVER_DITUGASKAN','DRIVER_MENUJU_LOKASI','PICKER_HAMPIR_TIBA','DRIVER_TIBA','SAMPAH_DIJEMPUT')";
         } else {
             $sql .= " AND o.status = '" . mysqli_real_escape_string($koneksi, $status_filter) . "'";
         }

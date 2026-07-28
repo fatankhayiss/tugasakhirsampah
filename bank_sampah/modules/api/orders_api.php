@@ -437,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         api_respond(false, 'id_order dan status wajib diisi', null, 400);
     }
 
-    $valid_statuses = ['MENUNGGU_KONFIRMASI', 'DRIVER_DITUGASKAN', 'DRIVER_MENUJU_LOKASI', 'DRIVER_TIBA', 'PENIMBANGAN', 'SAMPAH_DIJEMPUT', 'VALIDASI_BANK_SAMPAH', 'SELESAI', 'DIBATALKAN'];
+    $valid_statuses = ['MENUNGGU_KONFIRMASI', 'DRIVER_DITUGASKAN', 'DRIVER_MENUJU_LOKASI', 'PICKER_HAMPIR_TIBA', 'DRIVER_TIBA', 'PENIMBANGAN', 'SAMPAH_DIJEMPUT', 'VALIDASI_BANK_SAMPAH', 'SELESAI', 'DIBATALKAN'];
     if (!in_array($new_status, $valid_statuses)) {
         api_respond(false, 'Status tidak valid', null, 400);
     }
@@ -584,7 +584,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
                 'MENUNGGU_KONFIRMASI' => ['Permintaan Dikonfirmasi', 'Permintaan Anda telah dikonfirmasi.', 'pickup'],
                 'DRIVER_DITUGASKAN'    => ['Picker Ditugaskan', 'Picker telah ditugaskan.', 'pickup'],
                 'DRIVER_MENUJU_LOKASI'  => ['Picker Menuju Lokasi', 'Picker sedang menuju lokasi Anda.', 'pickup'],
-                'DRIVER_TIBA'           => ['📍 Picker Sudah Dekat', 'Picker Anda telah tiba di sekitar lokasi penjemputan. Silakan siapkan sampah yang akan diserahkan.', 'pickup'],
+                'PICKER_HAMPIR_TIBA'    => ['📍 Picker Sudah Dekat', 'Picker Anda sudah dekat dengan lokasi penjemputan.', 'pickup'],
+                'DRIVER_TIBA'           => ['📍 Picker Sudah Tiba', 'Picker Anda telah tiba di lokasi penjemputan. Silakan serahkan sampah.', 'pickup'],
                 'PENIMBANGAN'          => ['Penimbangan Berat', 'Picker sedang melakukan penimbangan.', 'pickup'],
                 'SAMPAH_DIJEMPUT'       => ['Sampah Dijemput', 'Sampah berhasil dijemput.', 'pickup'],
                 'MENUJU_BANK_SAMPAH'   => ['Menuju Bank Sampah', 'Sampah sedang dibawa ke Bank Sampah.', 'pickup'],

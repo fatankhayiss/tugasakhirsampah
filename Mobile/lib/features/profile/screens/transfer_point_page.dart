@@ -7,6 +7,8 @@ import '../../../core/models/notification_model.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../core/repositories/order_repository.dart';
 import '../../../core/repositories/profile_repository.dart';
+import 'package:idn_finlogos/idn_finlogos.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class TransferPointPage extends StatefulWidget {
   const TransferPointPage({super.key});
@@ -471,6 +473,22 @@ class _TransferPointPageState extends State<TransferPointPage>
     );
   }
 
+  Widget _buildProviderLogo(String providerName, IconData defaultIcon, bool isSelected) {
+    final logoMeta = IdnFinLogos.get(providerName);
+    if (logoMeta != null) {
+      return SvgPicture.asset(
+        logoMeta.assetPath,
+        package: 'idn_finlogos',
+        height: 26,
+      );
+    }
+    return Icon(
+      defaultIcon,
+      color: isSelected ? AppColors.primary : AppColors.textSoft,
+      size: 26,
+    );
+  }
+
   Widget _buildProviderGrid() {
     final items = _selectedCategory == 'Bank' ? _banks : _ewallets;
     final isEWallet = _selectedCategory == 'E-Wallet';
@@ -528,11 +546,7 @@ class _TransferPointPageState extends State<TransferPointPage>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      item['icon'],
-                      color: isSelected ? AppColors.primary : AppColors.textSoft,
-                      size: 24,
-                    ),
+                    _buildProviderLogo(item['name'], item['icon'], isSelected),
                     const SizedBox(height: 8),
                     Text(
                       item['name'],
@@ -658,6 +672,18 @@ class _TransferPointPageState extends State<TransferPointPage>
     final pts = int.tryParse(_amountController.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     final estAmount = _formatRupiah(pts);
 
+    Widget iconWidget = const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 22);
+    if (_selectedProvider != null) {
+      final logoMeta = IdnFinLogos.get(_selectedProvider!);
+      if (logoMeta != null) {
+        iconWidget = SvgPicture.asset(
+          logoMeta.assetPath,
+          package: 'idn_finlogos',
+          height: 22,
+        );
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -676,7 +702,7 @@ class _TransferPointPageState extends State<TransferPointPage>
                   color: AppColors.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 22),
+                child: iconWidget,
               ),
               const SizedBox(width: 12),
               Column(

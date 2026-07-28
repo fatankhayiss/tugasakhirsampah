@@ -637,19 +637,19 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
       return _buildFallbackView(
         icon: Icons.search_off_rounded,
         iconColor: const Color(0xFFD97706),
-        title: 'Sampah tidak dapat dikenali',
+        title: 'Sampah tidak dikenali',
         subtitle: 'Pastikan sampah terlihat jelas dalam foto.',
         showManualButton: true,
       );
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildImagePreview(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Row(
             children: [
               Container(
@@ -658,51 +658,41 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                   color: AppColors.softGreen,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.check_circle_rounded,
-                    color: AppColors.primary, size: 20),
+                child: const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               const Expanded(
                 child: Text(
                   'Sampah terdeteksi!',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 17,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
                   ),
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: _openEditSheet,
-                icon: const Icon(Icons.scale_rounded, size: 16),
-                label: const Text('Berat'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           _buildDetailCard(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _buildWeightSummary(),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _confirmAndProceed,
               icon: const Icon(Icons.check_circle_outline_rounded),
-              label: const Text('Konfirmasi & Lanjutkan'),
+              label: const Text('Lanjutkan Transaksi'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                minimumSize: const Size.fromHeight(56),
-                textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                minimumSize: const Size.fromHeight(60),
+                textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, fontFamily: 'Plus Jakarta Sans'),
+                elevation: 4,
+                shadowColor: AppColors.primary.withValues(alpha: 0.4),
               ),
             ),
           ),
@@ -715,13 +705,14 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
               label: const Text('Pilih Kategori Manual'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                minimumSize: const Size.fromHeight(56),
+                side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                minimumSize: const Size.fromHeight(60),
+                textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, fontFamily: 'Plus Jakarta Sans'),
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -749,23 +740,22 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(24),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
           AspectRatio(
-            aspectRatio: 16 / 9,
+            aspectRatio: 3 / 4, // Portrait ratio suitable for mobile camera
             child: SizedBox(width: double.infinity, child: imageWidget),
           ),
           const Positioned(
-            top: 10, right: 10,
+            top: 16, right: 16,
             child: _ScanBadge(),
           ),
           if (_record != null && _record!.confidence > 0)
             Positioned(
-              bottom: 10, left: 10,
+              bottom: 16, left: 16,
               child: _ConfidenceBadge(
                 confidence: '${(_record!.confidence * 100).toStringAsFixed(0)}%',
               ),

@@ -600,6 +600,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  idn_finlogos:
+    dependency: "direct main"
+    description:
+      name: idn_finlogos
+      sha256: "3532b1dc7e24aee3c6e1282777f3a75041c03ed453529e1e195f4f8dd1678a22"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.0"
   image_cropper:
     dependency: "direct main"
     description:

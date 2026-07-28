@@ -6,6 +6,8 @@ import '../../../shared/widgets/scale_tap.dart';
 import '../models/history_item_model.dart';
 import '../screens/order_detail_screen.dart';
 import '../screens/redemption_detail_screen.dart';
+import 'package:idn_finlogos/idn_finlogos.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class TransactionCard extends StatefulWidget {
   final HistoryItemModel item;
@@ -169,15 +171,43 @@ class _TransactionCardState extends State<TransactionCard> {
               const SizedBox(height: 18),
 
               // Title and Date/Time Info
-              Text(
-                widget.item.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                  letterSpacing: -0.2,
+              if (widget.item.type == HistoryType.pencairan && widget.item.provider != null && IdnFinLogos.get(widget.item.provider!) != null)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: SvgPicture.asset(
+                        IdnFinLogos.get(widget.item.provider!)!.assetPath,
+                        package: 'idn_finlogos',
+                        height: 20,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.item.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  widget.item.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                    letterSpacing: -0.2,
+                  ),
                 ),
-              ),
               const SizedBox(height: 4),
               Text(
                 widget.item.date,

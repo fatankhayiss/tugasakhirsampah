@@ -62,6 +62,9 @@ class ApiService {
     final token = await getToken();
     final headers = <String, String>{
       'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
     };
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
@@ -80,15 +83,27 @@ class ApiService {
         });
       }
       final headers = await _headers();
+      debugPrint('\n==================================================');
+      debugPrint('🔵 [API REQUEST] GET');
+      debugPrint('🌐 URL: $uri');
+      debugPrint('🏷️ HEADERS: $headers');
       debugPrint('==================================================');
-      debugPrint('API REQUEST (GET)');
-      debugPrint('URL: $uri');
-      debugPrint('HEADERS: $headers');
+      
+      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 15));
+      
+      debugPrint('\n==================================================');
+      debugPrint('🟢 [API RESPONSE] GET');
+      debugPrint('🌐 URL: $uri');
+      debugPrint('🔢 STATUS: ${response.statusCode}');
+      debugPrint('📦 BODY: ${response.body}');
       debugPrint('==================================================');
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+      
       return _parseResponse(response);
     } catch (e) {
-      debugPrint('API Error (GET $url): $e');
+      debugPrint('\n==================================================');
+      debugPrint('🔴 [API ERROR] GET $url');
+      debugPrint('❌ ERROR: $e');
+      debugPrint('==================================================');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
@@ -98,15 +113,28 @@ class ApiService {
     try {
       final uri = Uri.parse(url);
       final headers = await _headers();
+      debugPrint('\n==================================================');
+      debugPrint('🔵 [API REQUEST] POST');
+      debugPrint('🌐 URL: $uri');
+      debugPrint('🏷️ HEADERS: $headers');
+      debugPrint('📨 BODY: $body');
       debugPrint('==================================================');
-      debugPrint('API REQUEST (POST)');
-      debugPrint('URL: $uri');
-      debugPrint('HEADERS: $headers');
+      
+      final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 15));
+      
+      debugPrint('\n==================================================');
+      debugPrint('🟢 [API RESPONSE] POST');
+      debugPrint('🌐 URL: $uri');
+      debugPrint('🔢 STATUS: ${response.statusCode}');
+      debugPrint('📦 BODY: ${response.body}');
       debugPrint('==================================================');
-      final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
+      
       return _parseResponse(response);
     } catch (e) {
-      debugPrint('API Error (POST $url): $e');
+      debugPrint('\n==================================================');
+      debugPrint('🔴 [API ERROR] POST $url');
+      debugPrint('❌ ERROR: $e');
+      debugPrint('==================================================');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
@@ -135,16 +163,31 @@ class ApiService {
           ));
         }
       }
+      
+      debugPrint('\n==================================================');
+      debugPrint('🔵 [API REQUEST] MULTIPART POST');
+      debugPrint('🌐 URL: $uri');
+      debugPrint('🏷️ HEADERS: ${request.headers}');
+      debugPrint('📨 FIELDS: $fields');
+      debugPrint('📁 FILES: ${files?.keys}');
       debugPrint('==================================================');
-      debugPrint('API REQUEST (MULTIPART POST)');
-      debugPrint('URL: $uri');
-      debugPrint('HEADERS: ${request.headers}');
+      
+      final streamed = await request.send().timeout(const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 30));
+      
+      debugPrint('\n==================================================');
+      debugPrint('🟢 [API RESPONSE] MULTIPART POST');
+      debugPrint('🌐 URL: $uri');
+      debugPrint('🔢 STATUS: ${response.statusCode}');
+      debugPrint('📦 BODY: ${response.body}');
       debugPrint('==================================================');
-      final streamed = await request.send().timeout(const Duration(seconds: 15));
-      final response = await http.Response.fromStream(streamed).timeout(const Duration(seconds: 15));
+      
       return _parseResponse(response);
     } catch (e) {
-      debugPrint('API Error (Multipart POST $url): $e');
+      debugPrint('\n==================================================');
+      debugPrint('🔴 [API ERROR] MULTIPART POST $url');
+      debugPrint('❌ ERROR: $e');
+      debugPrint('==================================================');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }
@@ -155,19 +198,33 @@ class ApiService {
       final uri = Uri.parse(url);
       final headers = await _headers();
       headers['Content-Type'] = 'application/json';
+      
+      debugPrint('\n==================================================');
+      debugPrint('🔵 [API REQUEST] PUT');
+      debugPrint('🌐 URL: $uri');
+      debugPrint('🏷️ HEADERS: $headers');
+      debugPrint('📨 BODY: ${body != null ? json.encode(body) : null}');
       debugPrint('==================================================');
-      debugPrint('API REQUEST (PUT)');
-      debugPrint('URL: $uri');
-      debugPrint('HEADERS: $headers');
-      debugPrint('==================================================');
+      
       final response = await http.put(
         uri,
         headers: headers,
         body: body != null ? json.encode(body) : null,
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 15));
+      
+      debugPrint('\n==================================================');
+      debugPrint('🟢 [API RESPONSE] PUT');
+      debugPrint('🌐 URL: $uri');
+      debugPrint('🔢 STATUS: ${response.statusCode}');
+      debugPrint('📦 BODY: ${response.body}');
+      debugPrint('==================================================');
+      
       return _parseResponse(response);
     } catch (e) {
-      debugPrint('API Error (PUT $url): $e');
+      debugPrint('\n==================================================');
+      debugPrint('🔴 [API ERROR] PUT $url');
+      debugPrint('❌ ERROR: $e');
+      debugPrint('==================================================');
       return ApiResponse(success: false, message: 'Network error: $e');
     }
   }

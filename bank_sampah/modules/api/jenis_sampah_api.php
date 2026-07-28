@@ -35,7 +35,7 @@ if ($search !== '') {
     $types = 'ss';
 }
 
-$sql = "SELECT id_jenis_sampah, nama_sampah, harga_per_kg, deskripsi, satuan, kategori, gambar, video, cara_pengolahan
+$sql = "SELECT id_jenis_sampah, nama_sampah, harga_per_kg, deskripsi, satuan, kategori, gambar, cara_pengolahan
         FROM jenis_sampah $where ORDER BY nama_sampah ASC";
 
 if (!empty($params)) {
@@ -58,7 +58,6 @@ if ($result) {
             'satuan' => $row['satuan'] ?? 'kg',
             'kategori' => $row['kategori'] ?? null,
             'gambar' => $row['gambar'] ?? null,
-            'video' => $row['video'] ?? null,
             'cara_pengolahan' => $row['cara_pengolahan'] ?? null,
         ];
     }

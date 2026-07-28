@@ -142,6 +142,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'DRIVER_MENUJU_LOKASI':
       case 'PICKER_DITUGASKAN':
       case 'PICKER_MENUJU_LOKASI':
+      case 'PICKER_HAMPIR_TIBA':
         return const Color(0xFFEFF6FF);
       case 'PENIMBANGAN':
         return const Color(0xFFFEF3C7);
@@ -171,6 +172,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'DRIVER_MENUJU_LOKASI':
       case 'PICKER_DITUGASKAN':
       case 'PICKER_MENUJU_LOKASI':
+      case 'PICKER_HAMPIR_TIBA':
         return const Color(0xFF2563EB);
       case 'PENIMBANGAN':
         return const Color(0xFFD97706);
@@ -197,8 +199,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         return 'PICKER DITUGASKAN';
       case 'DRIVER_MENUJU_LOKASI':
         return 'PICKER MENUJU LOKASI';
+      case 'PICKER_HAMPIR_TIBA':
+        return 'PICKER HAMPIR TIBA';
       case 'DRIVER_TIBA':
-        return 'PICKER SUDAH DEKAT';
+        return 'PICKER SUDAH TIBA';
       case 'PENIMBANGAN':
         return 'PENIMBANGAN BERAT';
       case 'SAMPAH_DIJEMPUT':
@@ -1163,13 +1167,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Widget _build7StageTimeline(String currentStatus) {
     final isTiba = currentStatus.toUpperCase() == 'DRIVER_TIBA';
+    final isAlmostThere = currentStatus.toUpperCase() == 'PICKER_HAMPIR_TIBA';
     final stages = [
       {'title': 'Permintaan Dikirim', 'desc': 'Permintaan penjemputan telah berhasil dibuat'},
       {'title': 'Menunggu Konfirmasi', 'desc': 'Menunggu konfirmasi dari Admin Bank Sampah'},
       {'title': 'Picker Ditugaskan', 'desc': 'Petugas Picker telah ditugaskan'},
       {
-        'title': isTiba ? 'Picker Sudah Dekat' : 'Picker Menuju Lokasi', 
-        'desc': isTiba ? 'Picker telah berada di sekitar lokasi Anda. Silakan siapkan sampah untuk proses penjemputan.' : 'Picker sedang dalam perjalanan ke lokasi Penyetor'
+        'title': isTiba ? 'Picker Sudah Tiba' : (isAlmostThere ? 'Picker Hampir Tiba' : 'Picker Menuju Lokasi'), 
+        'desc': isTiba ? 'Picker telah tiba di lokasi Anda.' : (isAlmostThere ? 'Picker telah berada di sekitar lokasi Anda. Silakan siapkan sampah untuk proses penjemputan.' : 'Picker sedang dalam perjalanan ke lokasi Penyetor')
       },
       {'title': 'Sampah Dijemput', 'desc': 'Sampah berhasil diangkut oleh Picker'},
       {'title': 'Waiting Validation', 'desc': 'Sedang divalidasi oleh Admin'},

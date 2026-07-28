@@ -31,18 +31,40 @@ class ApiService {
     final token = prefs.getString(_tokenKey);
     return {
       'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
 
   Future<ApiResponse> get(String url) async {
     try {
+      final headers = await _getHeaders();
+      debugPrint('\n==================================================');
+      debugPrint('🔵 [API REQUEST] GET');
+      debugPrint('🌐 URL: $url');
+      debugPrint('🏷️ HEADERS: $headers');
+      debugPrint('==================================================');
+      
       final response = await http.get(
         Uri.parse(url),
-        headers: await _getHeaders(),
+        headers: headers,
       ).timeout(const Duration(seconds: 30));
+      
+      debugPrint('\n==================================================');
+      debugPrint('🟢 [API RESPONSE] GET');
+      debugPrint('🌐 URL: $url');
+      debugPrint('🔢 STATUS: ${response.statusCode}');
+      debugPrint('📦 BODY: ${response.body}');
+      debugPrint('==================================================');
+      
       return _processResponse(response);
     } catch (e) {
+      debugPrint('\n==================================================');
+      debugPrint('🔴 [API ERROR] GET $url');
+      debugPrint('❌ ERROR: $e');
+      debugPrint('==================================================');
       return ApiResponse(
         success: false,
         message: 'Koneksi gagal: $e',
@@ -53,13 +75,33 @@ class ApiService {
 
   Future<ApiResponse> post(String url, {Map<String, dynamic>? body}) async {
     try {
+      final headers = await _getHeaders();
+      debugPrint('\n==================================================');
+      debugPrint('🔵 [API REQUEST] POST');
+      debugPrint('🌐 URL: $url');
+      debugPrint('🏷️ HEADERS: $headers');
+      debugPrint('📨 BODY: $body');
+      debugPrint('==================================================');
+      
       final response = await http.post(
         Uri.parse(url),
-        headers: await _getHeaders(),
+        headers: headers,
         body: body,
       ).timeout(const Duration(seconds: 30));
+      
+      debugPrint('\n==================================================');
+      debugPrint('🟢 [API RESPONSE] POST');
+      debugPrint('🌐 URL: $url');
+      debugPrint('🔢 STATUS: ${response.statusCode}');
+      debugPrint('📦 BODY: ${response.body}');
+      debugPrint('==================================================');
+      
       return _processResponse(response);
     } catch (e) {
+      debugPrint('\n==================================================');
+      debugPrint('🔴 [API ERROR] POST $url');
+      debugPrint('❌ ERROR: $e');
+      debugPrint('==================================================');
       return ApiResponse(
         success: false,
         message: 'Koneksi gagal: $e',
@@ -70,13 +112,33 @@ class ApiService {
 
   Future<ApiResponse> put(String url, {Map<String, dynamic>? body}) async {
     try {
+      final headers = await _getHeaders();
+      debugPrint('\n==================================================');
+      debugPrint('🔵 [API REQUEST] PUT');
+      debugPrint('🌐 URL: $url');
+      debugPrint('🏷️ HEADERS: $headers');
+      debugPrint('📨 BODY: $body');
+      debugPrint('==================================================');
+      
       final response = await http.put(
         Uri.parse(url),
-        headers: await _getHeaders(),
+        headers: headers,
         body: body,
       ).timeout(const Duration(seconds: 15));
+      
+      debugPrint('\n==================================================');
+      debugPrint('🟢 [API RESPONSE] PUT');
+      debugPrint('🌐 URL: $url');
+      debugPrint('🔢 STATUS: ${response.statusCode}');
+      debugPrint('📦 BODY: ${response.body}');
+      debugPrint('==================================================');
+      
       return _processResponse(response);
     } catch (e) {
+      debugPrint('\n==================================================');
+      debugPrint('🔴 [API ERROR] PUT $url');
+      debugPrint('❌ ERROR: $e');
+      debugPrint('==================================================');
       return ApiResponse(
         success: false,
         message: 'Koneksi gagal: $e',

@@ -24,7 +24,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _agreedToTerms = false;
 
   bool _isRegisterPressed = false;
   bool _isLoading = false;
@@ -103,14 +102,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _showAlertDialog(
         'Password Tidak Cocok',
         'Password dan konfirmasi password tidak cocok.',
-      );
-      return;
-    }
-
-    if (!_agreedToTerms) {
-      _showAlertDialog(
-        'Peringatan',
-        'Anda wajib menyetujui Ketentuan Layanan & Kebijakan Privasi.',
       );
       return;
     }
@@ -345,93 +336,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       });
                     },
                   ),
-                  const SizedBox(height: 20),
-
-                  // Terms Checkbox
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Checkbox(
-                          value: _agreedToTerms,
-                          onChanged: (value) {
-                            setState(() {
-                              _agreedToTerms = value ?? false;
-                            });
-                          },
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          activeColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.border),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              ' ',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                                height: 1.5,
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () {},
-                              child: Text(
-                                content.termsLinkText,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const Text(
-                              ' and the ',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () {},
-                              child: Text(
-                                content.privacyLinkText,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const Text(
-                              '.',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 30),
 
                   // Register Button
                   GestureDetector(
                     onTapDown:
-                        (_agreedToTerms && !_isLoading)
+                        (!_isLoading)
                             ? (_) => setState(() => _isRegisterPressed = true)
                             : null,
                     onTapUp:
-                        (_agreedToTerms && !_isLoading)
+                        (!_isLoading)
                             ? (_) {
                               setState(() => _isRegisterPressed = false);
                               _handleRegister();
@@ -442,18 +356,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       transform:
-                          Matrix4.identity()..scaleByDouble(
-                            _isRegisterPressed ? 0.95 : 1.0,
-                            _isRegisterPressed ? 0.95 : 1.0,
-                            1.0,
-                            1.0,
+                          Matrix4.identity()..scale(
+                            _isRegisterPressed ? 0.98 : 1.0,
                           ),
                       transformAlignment: Alignment.center,
                       width: double.infinity,
                       height: 56,
                       decoration: BoxDecoration(
                         gradient:
-                            (_agreedToTerms && !_isLoading)
+                            (!_isLoading)
                                 ? const LinearGradient(
                                   colors: [
                                     AppColors.primaryBlue,
@@ -468,7 +379,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                         borderRadius: BorderRadius.circular(24),
                         boxShadow:
-                            (_agreedToTerms && !_isLoading)
+                            (!_isLoading)
                                 ? [
                                   BoxShadow(
                                     color: AppColors.primaryBlue.withValues(
@@ -493,13 +404,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               )
                               : Text(
                                 content.registerButtonText,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color:
-                                      (_agreedToTerms && !_isLoading)
-                                          ? Colors.white
-                                          : Colors.grey[500],
+                                  color: Colors.white,
                                   letterSpacing: 0.5,
                                 ),
                               ),

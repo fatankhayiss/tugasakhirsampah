@@ -812,7 +812,8 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
 
     final isPendingOrAccepted = st == 'PENDING' || st == 'ACCEPTED' || st == 'MENUNGGU_KONFIRMASI' || st == 'DRIVER_DITUGASKAN';
     final isOnTheWay = st == 'ON_THE_WAY' || st == 'DALAM_PERJALANAN' || st == 'DRIVER_MENUJU_LOKASI';
-    final isArrived = st == 'DRIVER_TIBA' || st == 'PICKER_HAMPIR_TIBA';
+    final isAlmostThere = st == 'PICKER_HAMPIR_TIBA';
+    final isArrived = st == 'DRIVER_TIBA';
 
     return Column(
       children: [
@@ -865,6 +866,31 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
                   ));
                 }
               } else if (isOnTheWay) {
+                if (!mounted) return;
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                );
+                final orderId = int.tryParse(task['id_order'].toString()) ?? 0;
+                final res = await ApiService().updateOrderStatus(orderId, 'PICKER_HAMPIR_TIBA');
+                if (!mounted) return;
+                Navigator.of(context).pop();
+                if (res['success'] == true) {
+                  setState(() {
+                    _task['status'] = 'PICKER_HAMPIR_TIBA';
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Status diperbarui: Picker Hampir Tiba!'),
+                    backgroundColor: AppColors.primary,
+                  ));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(res['message']?.toString() ?? 'Gagal memperbarui status'),
+                    backgroundColor: AppColors.badgeCancelled,
+                  ));
+                }
+              } else if (isAlmostThere) {
                 if (!mounted) return;
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -959,10 +985,10 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(isPendingOrAccepted ? Icons.play_arrow_rounded : (isOnTheWay ? Icons.location_on_rounded : Icons.scale_rounded), size: 22),
+                Icon(isPendingOrAccepted ? Icons.play_arrow_rounded : (isOnTheWay ? Icons.directions_car_rounded : (isAlmostThere ? Icons.location_on_rounded : Icons.scale_rounded)), size: 22),
                 const SizedBox(width: 10),
                 Text(
-                  isPendingOrAccepted ? 'Mulai Perjalanan' : (isOnTheWay ? 'Saya Sudah Tiba' : 'Mulai Timbang'),
+                  isPendingOrAccepted ? 'Mulai Perjalanan' : (isOnTheWay ? 'Saya Sudah Dekat' : (isAlmostThere ? 'Saya Sudah Tiba' : 'Mulai Timbang')),
                   style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                 ),
               ],
@@ -973,7 +999,11 @@ class _PickupDetailScreenState extends State<PickupDetailScreen> {
         Text(
           isPendingOrAccepted
               ? 'Tekan tombol di atas saat Anda mulai berangkat menuju alamat Penyetor.'
-              : 'Tekan tombol di atas saat Anda telah tiba di sekitar alamat Penyetor.',
+              : (isOnTheWay
+                  ? 'Tekan tombol di atas saat Anda hampir tiba di alamat Penyetor.'
+                  : (isAlmostThere
+                      ? 'Tekan tombol di atas saat Anda telah tiba di sekitar alamat Penyetor.'
+                      : 'Tekan tombol di atas untuk memulai penimbangan.')),
           textAlign: TextAlign.center,
           style: const TextStyle(fontFamily: 'Plus Jakarta Sans', color: AppColors.textMuted, fontSize: 12),
         ),

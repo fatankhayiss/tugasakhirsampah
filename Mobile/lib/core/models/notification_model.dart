@@ -72,9 +72,12 @@ class NotificationModel {
     } else if (upperMsg == 'PICKER ON THE WAY' || upperMsg == 'DRIVER_MENUJU_LOKASI' || upperTitle == 'PICKER ON THE WAY') {
       title = 'Picker Menuju Lokasi';
       message = 'Picker sedang menuju lokasi Anda.';
-    } else if (upperMsg == 'PICKER NEARBY' || upperMsg == 'DRIVER_TIBA' || upperTitle == 'PICKER NEARBY' || upperMsg.contains('TIBADI SEKITAR') || upperMsg.contains('TELAH TIBA') || upperTitle.contains('DEKAT')) {
+    } else if (upperMsg == 'PICKER NEARBY' || upperMsg == 'PICKER_HAMPIR_TIBA' || upperTitle == 'PICKER NEARBY' || upperMsg.contains('TIBADI SEKITAR') || upperTitle.contains('DEKAT')) {
       title = '📍 Picker Sudah Dekat';
-      message = 'Picker Anda telah tiba di sekitar lokasi penjemputan. Silakan siapkan sampah yang akan diserahkan.';
+      message = 'Picker Anda sudah dekat dengan lokasi penjemputan.';
+    } else if (upperMsg == 'DRIVER_TIBA' || upperMsg.contains('TELAH TIBA') || upperTitle.contains('TIBA')) {
+      title = '📍 Picker Sudah Tiba';
+      message = 'Picker Anda telah tiba di lokasi penjemputan. Silakan serahkan sampah.';
     } else if (upperMsg == 'WEIGHT VALIDATION' || upperMsg == 'PENIMBANGAN' || upperTitle == 'WEIGHT VALIDATION') {
       title = 'Penimbangan Berat';
       message = 'Picker sedang melakukan penimbangan.';

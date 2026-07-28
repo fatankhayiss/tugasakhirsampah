@@ -825,7 +825,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
 
                                 try {
                                   final profile = await ProfileRepository().getProfile();
-                                  if (!mounted) return;
+                                  if (!context.mounted) return;
                                   Navigator.pop(context); // Close dialog
                                   Navigator.push(
                                     context,
@@ -834,7 +834,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
                                     ),
                                   );
                                 } catch (e) {
-                                  if (!mounted) return;
+                                  if (!context.mounted) return;
                                   Navigator.pop(context); // Close dialog
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text('Gagal mengambil profil: $e'), backgroundColor: Colors.redAccent),

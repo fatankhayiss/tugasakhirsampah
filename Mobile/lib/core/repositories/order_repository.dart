@@ -82,7 +82,7 @@ class OrderRepository extends ChangeNotifier {
       if (userId.isNotEmpty) {
         final response = await _api.get(ApiConfig.orders, queryParams: {
           'user_id': userId,
-          'status': 'MENUNGGU_KONFIRMASI,DRIVER_DITUGASKAN,DRIVER_MENUJU_LOKASI,DRIVER_TIBA,PENIMBANGAN,SAMPAH_DIJEMPUT,MENUJU_BANK_SAMPAH,VALIDASI_BANK_SAMPAH,POIN_DIPROSES',
+          'status': 'MENUNGGU_KONFIRMASI,DRIVER_DITUGASKAN,DRIVER_MENUJU_LOKASI,PICKER_HAMPIR_TIBA,DRIVER_TIBA,PENIMBANGAN,SAMPAH_DIJEMPUT,MENUJU_BANK_SAMPAH,VALIDASI_BANK_SAMPAH,POIN_DIPROSES',
         });
 
         if (response.success && response.data != null) {

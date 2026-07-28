@@ -7,6 +7,8 @@ import '../../../shared/widgets/scale_tap.dart';
 import '../models/ongoing_order_model.dart';
 import '../screens/order_detail_screen.dart';
 import '../screens/redemption_detail_screen.dart';
+import 'package:idn_finlogos/idn_finlogos.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class OngoingCard extends StatefulWidget {
   final OngoingOrderModel order;
@@ -145,15 +147,43 @@ class _OngoingCardState extends State<OngoingCard> {
               const SizedBox(height: 18),
 
               // Title and Date/Time Info
-              Text(
-                widget.order.title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                  letterSpacing: -0.2,
+              if (widget.order.isRedemption && widget.order.provider != null && IdnFinLogos.get(widget.order.provider!) != null)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: SvgPicture.asset(
+                        IdnFinLogos.get(widget.order.provider!)!.assetPath,
+                        package: 'idn_finlogos',
+                        height: 20,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.order.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  widget.order.title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                    letterSpacing: -0.2,
+                  ),
                 ),
-              ),
               const SizedBox(height: 4),
               Text(
                 widget.order.date,

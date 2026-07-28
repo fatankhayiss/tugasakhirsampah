@@ -10,6 +10,7 @@ class WasteItem {
   final String? imageUrl;
   final String? category;
   final String? confidence;
+  final String? description;
   final bool isScanned;
 
   WasteItem({
@@ -22,6 +23,7 @@ class WasteItem {
     this.imageUrl,
     this.category,
     this.confidence,
+    this.description,
     this.isScanned = false,
   });
 
