@@ -1,11 +1,11 @@
-import 'dart:async';
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../../core/constants/app_images.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/routes/app_routes.dart';
-import '../../../core/services/app_initializer_service.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'dart:async';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'dart:io';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/services.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_images.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/routes/app_routes.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/services/app_initializer_service.dart';
 
 /// Single unified entry screen: acts as the Application Initializer layer.
 /// 

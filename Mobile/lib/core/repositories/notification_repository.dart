@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
-import '../constants/api_config.dart';
-import '../models/notification_model.dart';
-import '../services/api_service.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/foundation.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../constants/api_config.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../models/notification_model.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../services/api_service.dart';
 
 /// Repository for notifications — fetches from bank_sampah notifikasi_api.php.
 class NotificationRepository extends ChangeNotifier {

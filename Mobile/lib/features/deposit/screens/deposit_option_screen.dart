@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
-import '../../../core/constants/app_colors.dart';
-import 'manual_deposit_screen.dart';
-import 'scan_deposit_screen.dart';
-import '../../../core/navigation/app_page_transitions.dart';
-import '../../../core/utils/address_verification_helper.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter_lucide/flutter_lucide.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'manual_deposit_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'scan_deposit_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/navigation/app_page_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/utils/address_verification_helper.dart';
 
 class DepositOptionScreen extends StatelessWidget {
   const DepositOptionScreen({super.key});

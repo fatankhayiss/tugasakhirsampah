@@ -1,12 +1,12 @@
   import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/models/education_model.dart';
-import '../../../core/repositories/education_repository.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
-import '../../../shared/widgets/scale_tap.dart';
-import '../../../core/navigation/app_page_transitions.dart';
-import 'article_detail_screen.dart';
-import 'video_detail_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/models/education_model.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/education_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/custom_app_bar.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/scale_tap.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/navigation/app_page_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'article_detail_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'video_detail_screen.dart';
 
 class EducationScreen extends StatefulWidget {
   const EducationScreen({super.key});

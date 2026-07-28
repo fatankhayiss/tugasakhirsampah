@@ -10,7 +10,7 @@ class Environment {
       case AppEnvironment.dev:
         return 'http://10.128.52.227/tugasakhirsampah/bank_sampah/';
       case AppEnvironment.production:
-        return 'https://itrashy.triki.cloud/';
+        return 'http://192.168.129.68/tugasakhirsampah/bank_sampah/';
     }
   }
 }

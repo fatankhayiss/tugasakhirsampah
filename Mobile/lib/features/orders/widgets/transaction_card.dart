@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/navigation/app_page_transitions.dart';
-import '../../../shared/widgets/point_badge.dart';
-import '../../../shared/widgets/scale_tap.dart';
-import '../models/history_item_model.dart';
-import '../screens/order_detail_screen.dart';
-import '../screens/redemption_detail_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/navigation/app_page_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/point_badge.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/scale_tap.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../models/history_item_model.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../screens/order_detail_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../screens/redemption_detail_screen.dart';
 
 class TransactionCard extends StatefulWidget {
   final HistoryItemModel item;

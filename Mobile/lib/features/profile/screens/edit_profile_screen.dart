@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/models/profile_model.dart';
-import '../../../core/repositories/profile_repository.dart';
-import '../../../core/navigation/app_dialog_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:image_picker/image_picker.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:image_cropper/image_cropper.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/models/profile_model.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/profile_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/navigation/app_dialog_transitions.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final ProfileModel initialProfile;

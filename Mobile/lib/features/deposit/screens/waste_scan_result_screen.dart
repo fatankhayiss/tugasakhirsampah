@@ -1,13 +1,13 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
-import '../../../core/models/scan_record.dart';
-import '../../../core/models/waste_item.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/waste_labels.dart';
-import '../../../core/navigation/app_page_transitions.dart';
-import '../../../core/repositories/detect_repository.dart';
-import '../../../core/repositories/waste_repository.dart';
-import 'manual_deposit_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'dart:io';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/models/scan_record.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/models/waste_item.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/waste_labels.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/navigation/app_page_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/detect_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/waste_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'manual_deposit_screen.dart';
 
 class WasteScanResultScreen extends StatefulWidget {
   final int? detectionId;

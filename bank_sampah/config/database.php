@@ -38,7 +38,7 @@ define('APP_ENV', 'development');
 if (APP_ENV === 'development') {
     define('BASE_URL', 'http://banksampah.test/'); 
 } else {
-    define('BASE_URL', 'https://itrashy.triki.cloud/');
+    define('BASE_URL', 'http://192.168.129.68/tugasakhirsampah/bank_sampah/');
 }
 
 if (session_status() == PHP_SESSION_NONE) {

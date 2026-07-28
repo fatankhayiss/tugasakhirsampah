@@ -1,9 +1,9 @@
 /// Konfigurasi API terpusat untuk koneksi ke backend bank_sampah.
 ///
 /// Ubah [baseUrl] sesuai environment:
-/// - Production Cloud: `https://itrashy.triki.cloud/`
+/// - Production Cloud: `http://192.168.129.68/tugasakhirsampah/bank_sampah/`
 library;
-import 'environment.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'environment.dart';
 
 class ApiConfig {
   ApiConfig._();

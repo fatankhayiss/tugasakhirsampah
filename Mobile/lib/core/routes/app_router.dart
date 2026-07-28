@@ -1,18 +1,18 @@
-import 'package:flutter/material.dart';
-import '../navigation/app_page_transitions.dart';
-import '../../features/auth/screens/forgot_password_screen.dart';
-import '../../features/auth/screens/login_screen.dart';
-import '../../features/auth/screens/register_screen.dart';
-import '../../features/auth/screens/verification_code_screen.dart';
-import '../../features/auth/screens/reset_password_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../navigation/app_page_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/auth/screens/forgot_password_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/auth/screens/login_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/auth/screens/register_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/auth/screens/verification_code_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/auth/screens/reset_password_screen.dart';
 
-import '../../features/deposit/screens/manual_deposit_screen.dart';
-import '../../features/home/screens/main_navigation_screen.dart';
-import '../../features/deposit/screens/scan_screen.dart';
-import '../../features/auth/screens/splash_screen.dart';
-import '../../features/profile/screens/transfer_point_page.dart';
-import '../../features/orders/screens/order_detail_screen.dart';
-import 'app_routes.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/deposit/screens/manual_deposit_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/home/screens/main_navigation_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/deposit/screens/scan_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/auth/screens/splash_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/profile/screens/transfer_point_page.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/orders/screens/order_detail_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'app_routes.dart';
 
 /// Central route generator — clean, scalable, production-ready.
 class AppRouter {

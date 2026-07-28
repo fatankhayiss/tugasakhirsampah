@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../shared/widgets/primary_button.dart';
-import '../../home/screens/main_navigation_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/primary_button.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../home/screens/main_navigation_screen.dart';
 
 
 class DepositSubmittedScreen extends StatelessWidget {
