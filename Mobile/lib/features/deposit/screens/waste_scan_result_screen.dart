@@ -304,28 +304,28 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                                   
                                   // Show loading overlay
                                   showDialog(
-                                    context: ctx,
+                                    context: context,
                                     barrierDismissible: false,
                                     builder: (c) => const Center(child: CircularProgressIndicator()),
                                   );
 
                                   final success = await DetectRepository().updateScanRecord(widget.detectionId!, _record!.kategoriSampah, w);
                                   
-                                  // ignore: use_build_context_synchronously
-                                  Navigator.pop(ctx); // Close loading overlay
+                                  await Future.delayed(const Duration(milliseconds: 300));
+                                  if (!mounted) return;
+                                  Navigator.of(context, rootNavigator: true).pop(); // Close loading overlay
                                   
                                   if (success) {
-                                    // ignore: use_build_context_synchronously
-                                    Navigator.pop(ctx); // Close bottom sheet
-                                    // ignore: use_build_context_synchronously
-                                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                                    if (!mounted) return;
+                                    Navigator.pop(context); // Close bottom sheet
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                       content: Text('Hasil scan berhasil diperbarui.'),
                                       backgroundColor: Colors.green,
                                     ));
                                     _fetchRecord(); // Refresh data from DB
                                   } else {
-                                    // ignore: use_build_context_synchronously
-                                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                       content: Text('Gagal menyimpan perubahan.'),
                                       backgroundColor: Colors.red,
                                     ));
@@ -526,28 +526,28 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                           child: ElevatedButton.icon(
                             onPressed: () async {
                               showDialog(
-                                context: ctx,
+                                context: context,
                                 barrierDismissible: false,
                                 builder: (c) => const Center(child: CircularProgressIndicator()),
                               );
 
                               final success = await DetectRepository().updateScanRecord(widget.detectionId!, selectedCategory?.name ?? 'Lainnya', _record!.berat);
                               
-                              // ignore: use_build_context_synchronously
-                              Navigator.pop(ctx);
+                              await Future.delayed(const Duration(milliseconds: 300));
+                              if (!mounted) return;
+                              Navigator.of(context, rootNavigator: true).pop();
                               
                               if (success) {
-                                // ignore: use_build_context_synchronously
-                                Navigator.pop(ctx);
-                                // ignore: use_build_context_synchronously
-                                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                                if (!mounted) return;
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                   content: Text('Kategori berhasil diperbarui.'),
                                   backgroundColor: Colors.green,
                                 ));
                                 _fetchRecord();
                               } else {
-                                // ignore: use_build_context_synchronously
-                                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                                   content: Text('Gagal menyimpan perubahan.'),
                                   backgroundColor: Colors.red,
                                 ));

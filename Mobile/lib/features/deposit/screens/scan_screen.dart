@@ -323,12 +323,7 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
             child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.w600)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              if (_isCameraInitialized && !_isUploading) {
-                _handleCapture();
-              }
-            },
+            onPressed: () => Navigator.pop(ctx),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
               foregroundColor: Colors.white,
@@ -460,7 +455,10 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
 
     return ScanFrameWidget(
       isBlue: false,
-      child: CameraPreview(_cameraController!),
+      child: AspectRatio(
+        aspectRatio: 1 / _cameraController!.value.aspectRatio,
+        child: CameraPreview(_cameraController!),
+      ),
     );
   }
 

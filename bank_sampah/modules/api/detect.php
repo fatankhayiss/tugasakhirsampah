@@ -128,7 +128,10 @@ if ($file['size'] > 5 * 1024 * 1024) {
 // ─────────────────────────────────────────────
 // 2. Save uploaded image to disk
 // ─────────────────────────────────────────────
-$uploadDir = sys_get_temp_dir() . '/';
+$uploadDir = __DIR__ . '/../../assets/uploads/';
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0755, true);
+}
 
 $ext      = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', pathinfo($file['name'], PATHINFO_EXTENSION)));
 $filename = 'img_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . ($ext ?: 'jpg');
