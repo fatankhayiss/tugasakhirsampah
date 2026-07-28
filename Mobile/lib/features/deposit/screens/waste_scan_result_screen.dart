@@ -35,6 +35,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
   ScanRecord? _record;
   bool _isLoading = true;
   String? _errorMessage;
+  WasteItem? _matchedCategory;
 
   List<WasteItem> _availableCategories = [];
 
@@ -75,6 +76,27 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
         _availableCategories = categories;
         if (record != null) {
           _record = record;
+          
+          try {
+            _matchedCategory = _availableCategories.firstWhere(
+              (cat) => cat.name.toLowerCase() == WasteLabels.display(record.kategoriSampah).toLowerCase()
+            );
+            debugPrint('--- LOGGING HASIL SCAN ---');
+            debugPrint('YOLO Class: ${record.kategoriSampah}');
+            debugPrint('Kategori ditemukan');
+            debugPrint('Category ID: ${_matchedCategory!.id}');
+            debugPrint('Nama: ${_matchedCategory!.name}');
+            debugPrint('Harga per Kg: ${_matchedCategory!.pricePerKg}');
+            debugPrint('Poin per Kg: ${_matchedCategory!.pricePerKg}');
+            debugPrint('Object yang dikirim ke Flutter: ${_matchedCategory!.name}');
+            debugPrint('--------------------------');
+          } catch (_) {
+            _matchedCategory = null;
+            debugPrint('--- LOGGING HASIL SCAN ---');
+            debugPrint('YOLO Class: ${record.kategoriSampah}');
+            debugPrint('Kategori tidak ditemukan di master data!');
+            debugPrint('--------------------------');
+          }
         } else {
           _errorMessage = 'Gagal memuat data deteksi dari server.';
         }
@@ -96,10 +118,10 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
         ? widget.localImagePath
         : _record!.imageUrl;
 
-    double pricePerKg = 0;
-    if (_record!.berat > 0) {
-      pricePerKg = _record!.estimasiPoin / _record!.berat;
-    }
+    final categoryId = _matchedCategory?.id ?? 'scan_${DateTime.now().millisecondsSinceEpoch}';
+    final categoryName = _matchedCategory?.name ?? WasteLabels.display(_record!.kategoriSampah);
+    final categoryPrice = _matchedCategory?.pricePerKg ?? 0.0;
+    final categoryDesc = _matchedCategory?.category ?? WasteLabels.display(_record!.kategoriSampah);
 
     Navigator.pushReplacement(
       context,
@@ -107,13 +129,13 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
         page: ManualDepositScreen(
           initialCartItems: widget.existingCartItems,
           activeScannedItem: WasteItem(
-            id: 'scan_${DateTime.now().millisecondsSinceEpoch}',
-            name: WasteLabels.display(_record!.kategoriSampah),
+            id: categoryId,
+            name: categoryName,
             imageAsset: 'water_bottle', // generic icon fallback
-            pricePerKg: pricePerKg,
+            pricePerKg: categoryPrice,
             weight: _record!.berat,
             imageUrl: imageUrl,
-            category: WasteLabels.display(_record!.kategoriSampah),
+            category: categoryDesc,
             confidence: '${(_record!.confidence * 100).toStringAsFixed(0)}%',
             isScanned: true,
           ),
@@ -137,7 +159,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     if (_record == null) return;
 
     double sheetWeight = _record!.berat;
-    double pointsPerKg = _record!.berat > 0 ? (_record!.estimasiPoin / _record!.berat) : 0;
+    double pointsPerKg = _matchedCategory?.pricePerKg ?? 0.0;
     final weightController = TextEditingController(text: sheetWeight.toString());
     final formKey = GlobalKey<FormState>();
 
@@ -819,6 +841,9 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
   Widget _buildWeightSummary() {
     if (_record == null) return const SizedBox.shrink();
 
+    double harga = _matchedCategory?.pricePerKg ?? 0.0;
+    double estimasiPoin = harga * _record!.berat;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -844,7 +869,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
               iconColor: AppColors.primary,
               bgColor: AppColors.softGreen,
               label: 'Est. Poin',
-              value: _record!.estimasiPoin.toStringAsFixed(0),
+              value: estimasiPoin.toStringAsFixed(0),
             ),
           ),
           Container(width: 1, height: 36, margin: const EdgeInsets.symmetric(horizontal: 12), color: AppColors.border),
@@ -886,8 +911,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
   Widget _buildDetailCard() {
     if (_record == null) return const SizedBox.shrink();
     
-    double harga = 0;
-    if (_record!.berat > 0) harga = _record!.estimasiPoin / _record!.berat;
+    double harga = _matchedCategory?.pricePerKg ?? 0.0;
 
     return Material(
       color: Colors.white,
