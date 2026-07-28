@@ -33,12 +33,12 @@ if (!$koneksi) {
 // Environment Configuration
 // Ubah ke 'production' saat deploy ke server (misal: serv00)
 // Ubah ke 'development' untuk mode lokal
-define('APP_ENV', 'production'); 
+define('APP_ENV', 'development'); 
 
 if (APP_ENV === 'development') {
-    define('BASE_URL', 'http://192.168.110.62/tugasakhirsampah/bank_sampah/');
+    define('BASE_URL', 'http://192.168.129.68/tugasakhirsampah/bank_sampah/');
 } else {
-    define('BASE_URL', 'https://itrashy.triki.cloud/');
+    define('BASE_URL', 'http://192.168.129.68/tugasakhirsampah/bank_sampah/');
 }
 
 if (session_status() == PHP_SESSION_NONE) {
