@@ -152,105 +152,26 @@ $detected_labels  = $worker_result['labels'];
 $worker_unavailable = $worker_result['worker_unavailable'];
 
 // ─────────────────────────────────────────────
-// 4. Match labels against jenis_sampah table
+// 4. Extract results (no DB matching needed)
 // ─────────────────────────────────────────────
-//
-// The Python worker now returns two keys:
-//   labels:     ["plastik_pet", ...]         (backward compat strings)
-//   detections: [{label, confidence}, ...]   (with confidence score)
-// Build a confidence lookup map.
-$confidence_map = [];
-$box_map = [];
+$results = [];
 if (isset($worker_result['detections']) && is_array($worker_result['detections'])) {
     foreach ($worker_result['detections'] as $d) {
         if (isset($d['label'])) {
-            $confidence_map[$d['label']] = $d['confidence'] ?? null;
-            $box_map[$d['label']] = $d['box'] ?? null;
+            $results[] = [
+                'class'      => $d['label'],
+                'confidence' => $d['confidence'] ?? 0.0,
+                'box'        => $d['box'] ?? null
+            ];
         }
     }
-}
-
-$results = [];
-if (!empty($detected_labels)) {
+} else if (!empty($detected_labels)) {
     foreach ($detected_labels as $label) {
-        $label_safe  = mysqli_real_escape_string($koneksi, $label);
-        $label_lower = strtolower(trim($label));
-        $label_norm  = mysqli_real_escape_string($koneksi, $label_lower); // e.g. "plastik_pet"
-
-        // Split into significant tokens (≥3 chars) e.g. ["plastik","pet"]
-        $tokens = array_values(array_filter(
-            preg_split('/[_\s]+/', $label_lower),
-            fn($t) => strlen($t) >= 3
-        ));
-
-        // ── Priority 1: exact normalised match ───────────────────────────────
-        // REPLACE(LOWER(nama_sampah),' ','_') = 'plastik_pet'  → "Plastik PET" ✓
-        $sql = "SELECT id_jenis_sampah, nama_sampah, kategori, deskripsi, cara_pengolahan, gambar, harga_per_kg
-                FROM jenis_sampah
-                WHERE REPLACE(LOWER(nama_sampah),' ','_') = '$label_norm'
-                LIMIT 1";
-        $res = mysqli_query($koneksi, $sql);
-
-        // ── Priority 2: all tokens AND-ed (most specific multi-word) ─────────
-        if (!$res || mysqli_num_rows($res) === 0) {
-            if (count($tokens) > 1) {
-                $and_parts = array_map(fn($t) =>
-                    "LOWER(nama_sampah) LIKE '%" . mysqli_real_escape_string($koneksi, $t) . "%'",
-                    $tokens
-                );
-                $sql = "SELECT id_jenis_sampah, nama_sampah, kategori, deskripsi, cara_pengolahan, gambar, harga_per_kg
-                        FROM jenis_sampah
-                        WHERE " . implode(' AND ', $and_parts) . "
-                        LIMIT 1";
-                $res = mysqli_query($koneksi, $sql);
-            }
-        }
-
-        // ── Priority 3: any token OR fallback ────────────────────────────────
-        if (!$res || mysqli_num_rows($res) === 0) {
-            $or_parts = ["LOWER(nama_sampah) LIKE '%$label_norm%'"];
-            foreach ($tokens as $tok) {
-                $tok_safe    = mysqli_real_escape_string($koneksi, $tok);
-                $or_parts[]  = "LOWER(nama_sampah) LIKE '%$tok_safe%'";
-                $or_parts[]  = "LOWER(kategori) LIKE '%$tok_safe%'";
-            }
-            $sql = "SELECT id_jenis_sampah, nama_sampah, kategori, deskripsi, cara_pengolahan, gambar, harga_per_kg
-                    FROM jenis_sampah
-                    WHERE " . implode(' OR ', $or_parts) . "
-                    LIMIT 1";
-            $res = mysqli_query($koneksi, $sql);
-        }
-
-        if ($res && mysqli_num_rows($res) > 0) {
-            $row     = mysqli_fetch_assoc($res);
-            $img_url = null;
-            if (!empty($row['gambar'])) {
-                $img_url = rtrim(BASE_URL, '/') . '/' . ltrim($row['gambar'], '/');
-            }
-            $results[] = [
-                'label'           => $label,
-                'id_jenis_sampah' => (int)$row['id_jenis_sampah'],
-                'nama_sampah'     => $row['nama_sampah'],
-                'kategori'        => $row['kategori'] ?? null,
-                'deskripsi'       => $row['deskripsi'] ?? null,
-                'cara_pengolahan' => $row['cara_pengolahan'] ?? null,
-                'harga_per_kg'    => $row['harga_per_kg'] !== null ? (float)$row['harga_per_kg'] : null,
-                'gambar'          => $img_url,
-                'confidence'      => $confidence_map[$label] ?? null,
-                'box'             => $box_map[$label] ?? null,
-                'found'           => true,
-            ];
-        } else {
-            $results[] = [
-                'label'      => $label,
-                'nama_sampah'=> $label,
-                'kategori'   => null,
-                'harga_per_kg'=> null,
-                'confidence' => $confidence_map[$label] ?? null,
-                'box'        => $box_map[$label] ?? null,
-                'found'      => false,
-            ];
-        }
+        $results[] = [
+            'class'      => $label,
+            'confidence' => 0.0,
+            'box'        => null
+        ];
     }
 }
 
@@ -297,14 +218,13 @@ if ($tbl_exists) {
     $top_kategori_sampah = 'Tidak Dikenali';
     $top_confidence = 0.0;
     $top_berat = 1.0;
-    $top_estimasi = 0.0;
+    $top_estimasi = 0.0; // Wait, without joining jenis_sampah, we don't know the price. But Flutter handles this.
     
     if (!empty($results)) {
         $first = $results[0];
-        $top_kategori_sampah = !empty($first['nama_sampah']) ? $first['nama_sampah'] : ($first['label'] ?? 'Tidak Dikenali');
+        $top_kategori_sampah = !empty($first['class']) ? $first['class'] : 'Tidak Dikenali';
         $top_confidence = isset($first['confidence']) ? floatval($first['confidence']) : 0.0;
-        $harga = isset($first['harga_per_kg']) ? floatval($first['harga_per_kg']) : 250.0;
-        $top_estimasi = $top_berat * $harga;
+        // Default values, will be updated from Flutter
     }
     $cat_esc = mysqli_real_escape_string($koneksi, $top_kategori_sampah);
 

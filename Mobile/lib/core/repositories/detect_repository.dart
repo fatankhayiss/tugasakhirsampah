@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api_config.dart';
+import '../constants/waste_labels.dart';
 import '../models/detect_result.dart';
 import '../models/scan_record.dart';
 import '../services/api_service.dart';
@@ -93,12 +94,12 @@ class DetectRepository {
         for (int i = 0; i < result.detections.length; i++) {
           final det = result.detections[i];
           debugPrint('Deteksi #${i + 1}:');
-          debugPrint('- Label YOLO   : ${det['label']}');
+          debugPrint('- Label YOLO   : ${det['class']}');
           debugPrint('- Confidence   : ${det['confidence']}%');
           debugPrint('- Bounding Box : ${det['box']}');
-          debugPrint('- Kategori App : ${det['nama_sampah'] ?? 'Sampah Lainnya'}');
+          debugPrint('- Kategori App : ${WasteLabels.display(det['class'] as String?)}');
         }
-        debugPrint('\n👉 Kategori Terpilih: ${result.detections.first['nama_sampah'] ?? 'Sampah Lainnya'}');
+        debugPrint('\n👉 Kategori Terpilih: ${WasteLabels.display(result.detections.first['class'] as String?)}');
       }
       debugPrint('==================================================\n');
       

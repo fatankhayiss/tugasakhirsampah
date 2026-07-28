@@ -108,12 +108,12 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
           initialCartItems: widget.existingCartItems,
           activeScannedItem: WasteItem(
             id: 'scan_${DateTime.now().millisecondsSinceEpoch}',
-            name: _record!.kategoriSampah,
+            name: WasteLabels.display(_record!.kategoriSampah),
             imageAsset: 'water_bottle', // generic icon fallback
             pricePerKg: pricePerKg,
             weight: _record!.berat,
             imageUrl: imageUrl,
-            category: _record!.kategoriSampah,
+            category: WasteLabels.display(_record!.kategoriSampah),
             confidence: '${(_record!.confidence * 100).toStringAsFixed(0)}%',
             isScanned: true,
           ),
@@ -361,12 +361,12 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     WasteItem? selectedCategory;
     try {
       selectedCategory = _availableCategories.firstWhere(
-        (cat) => cat.name.toLowerCase() == _record!.kategoriSampah.toLowerCase()
+        (cat) => cat.name.toLowerCase() == WasteLabels.display(_record!.kategoriSampah).toLowerCase()
       );
     } catch (_) {
       selectedCategory = _availableCategories.isNotEmpty 
           ? _availableCategories.first 
-          : WasteItem(id: '0', name: _record!.kategoriSampah, imageAsset: '', pricePerKg: 0);
+          : WasteItem(id: '0', name: WasteLabels.display(_record!.kategoriSampah), imageAsset: '', pricePerKg: 0);
     }
 
     showModalBottomSheet(
@@ -532,7 +532,8 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                                 builder: (c) => const Center(child: CircularProgressIndicator()),
                               );
 
-                              final success = await DetectRepository().updateScanRecord(widget.detectionId!, selectedCategory?.name ?? 'Lainnya', _record!.berat);
+                              final rawKey = WasteLabels.reverseDisplay(selectedCategory?.name);
+                              final success = await DetectRepository().updateScanRecord(widget.detectionId!, rawKey, _record!.berat);
                               
                               await Future.delayed(const Duration(milliseconds: 300));
                               if (!mounted) return;
