@@ -7,8 +7,8 @@ import '../../../core/models/notification_model.dart';
 import '../../../core/repositories/notification_repository.dart';
 import '../../../core/repositories/order_repository.dart';
 import '../../../core/repositories/profile_repository.dart';
-import 'package:idn_finlogos/idn_finlogos.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../core/utils/fin_logo_helper.dart';
 
 class TransferPointPage extends StatefulWidget {
   const TransferPointPage({super.key});
@@ -474,19 +474,7 @@ class _TransferPointPageState extends State<TransferPointPage>
   }
 
   Widget _buildProviderLogo(String providerName, IconData defaultIcon, bool isSelected) {
-    final logoMeta = IdnFinLogos.get(providerName);
-    if (logoMeta != null) {
-      return SvgPicture.asset(
-        logoMeta.assetPath,
-        package: 'idn_finlogos',
-        height: 26,
-      );
-    }
-    return Icon(
-      defaultIcon,
-      color: isSelected ? AppColors.primary : AppColors.textSoft,
-      size: 26,
-    );
+    return FinLogoHelper.getLogoWidget(providerName, width: 48, height: 32);
   }
 
   Widget _buildProviderGrid() {
@@ -674,14 +662,7 @@ class _TransferPointPageState extends State<TransferPointPage>
 
     Widget iconWidget = const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 22);
     if (_selectedProvider != null) {
-      final logoMeta = IdnFinLogos.get(_selectedProvider!);
-      if (logoMeta != null) {
-        iconWidget = SvgPicture.asset(
-          logoMeta.assetPath,
-          package: 'idn_finlogos',
-          height: 22,
-        );
-      }
+      iconWidget = FinLogoHelper.getLogoWidget(_selectedProvider!, width: 48, height: 32);
     }
 
     return Container(

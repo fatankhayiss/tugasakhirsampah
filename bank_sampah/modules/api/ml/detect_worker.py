@@ -47,7 +47,7 @@ WORKER_PORT  = config.SERVER_PORT
 BACKLOG      = 10
 LOG_FILE     = Path(__file__).parent / "worker.log"
 MODEL_PATH   = Path(__file__).parent / "best.onnx"
-CONFIDENCE   = 0.25   # Minimum detection confidence threshold
+CONFIDENCE   = 0.20   # Minimum detection confidence threshold
 MAX_IMG_SIZE = 640    # YOLO input size
 
 # ─────────────────────────────────────────────
@@ -184,6 +184,30 @@ def load_model():
 # ─────────────────────────────────────────────
 # Inference
 # ─────────────────────────────────────────────
+def letterbox(im, new_shape=(640, 640), color=(114, 114, 114)):
+    # Resize and pad image while meeting stride-multiple constraints
+    import cv2
+    import numpy as np
+    shape = im.shape[:2]  # current shape [height, width]
+    
+    # Scale ratio (new / old)
+    r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+
+    # Compute padding
+    new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
+    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
+
+    dw /= 2  # divide padding into 2 sides
+    dh /= 2
+
+    if shape[::-1] != new_unpad:  # resize
+        im = cv2.resize(im, new_unpad, interpolation=cv2.INTER_LINEAR)
+    
+    top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+    left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+    im = cv2.copyMakeBorder(im, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
+    return im
+
 def _preprocess(image_path: str) -> "numpy.ndarray":  # type: ignore[name-defined]
     """Load image and preprocess to YOLO input tensor [1, 3, H, W] float32 0..1."""
     import cv2
@@ -194,7 +218,8 @@ def _preprocess(image_path: str) -> "numpy.ndarray":  # type: ignore[name-define
         raise ValueError(f"cv2 tidak dapat membaca gambar: {image_path}")
 
     h, w = _input_shape
-    img_resized = cv2.resize(img, (w, h))
+    # Use letterbox to maintain aspect ratio instead of squashing
+    img_resized = letterbox(img, (h, w))
     img_rgb     = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
     img_float   = img_rgb.astype(np.float32) / 255.0
     img_chw     = img_float.transpose(2, 0, 1)          # HWC → CHW
@@ -210,7 +235,7 @@ def _postprocess(outputs, conf_threshold: float = CONFIDENCE) -> list[dict]:
       - First 4 rows: cx, cy, w, h
       - Remaining rows: class scores (no objectness)
 
-    Returns: [{"label": str, "confidence": float}, ...] unique by label (highest confidence kept).
+    Returns: [{"label": str, "confidence": float, "box": [...]}, ...] unique by label (highest confidence kept).
     """
     import numpy as np
 
@@ -218,6 +243,7 @@ def _postprocess(outputs, conf_threshold: float = CONFIDENCE) -> list[dict]:
     raw = raw[0]              # shape [4+C, N]
 
     num_classes = len(_class_names)
+    boxes = raw[0:4, :].T     # [N, 4]
     # Scores matrix: [N, C]
     scores = raw[4: 4 + num_classes, :].T    # [N, C]
 
@@ -229,22 +255,34 @@ def _postprocess(outputs, conf_threshold: float = CONFIDENCE) -> list[dict]:
     mask = max_scores >= conf_threshold
     filtered_scores = max_scores[mask].tolist()
     detected_ids    = class_ids[mask].tolist()
+    filtered_boxes  = boxes[mask].tolist()
 
     # Unique labels, keeping best confidence per class
-    best: dict[int, float] = {}
-    for cid, conf in zip(detected_ids, filtered_scores):
-        if cid not in best or conf > best[cid]:
-            best[cid] = conf
+    best_info: dict[int, dict] = {}
+    for cid, conf, box in zip(detected_ids, filtered_scores, filtered_boxes):
+        if cid not in best_info or conf > best_info[cid]["confidence"]:
+            best_info[cid] = {"confidence": conf, "box": box}
 
-    # Build result list in first-seen order
+    # Sort by confidence descending
+    sorted_classes = sorted(best_info.items(), key=lambda x: x[1]["confidence"], reverse=True)
+
+    # Build result list
     result: list[dict] = []
-    seen: set[int] = set()
-    for cid in detected_ids:
-        if cid not in seen:
-            seen.add(cid)
-            label = _class_names[cid] if cid < len(_class_names) else f"class_{cid}"
-            conf  = round(float(best[cid]) * 100, 1)  # 0-100 scale, 1 decimal
-            result.append({"label": label, "confidence": conf})
+    for cid, info in sorted_classes:
+        label = _class_names[cid] if cid < len(_class_names) else f"class_{cid}"
+        conf_percent  = round(float(info["confidence"]) * 100, 1)  # 0-100 scale, 1 decimal
+        
+        cx, cy, w, h = info["box"]
+        x_min = round(cx - (w / 2), 2)
+        y_min = round(cy - (h / 2), 2)
+        x_max = round(cx + (w / 2), 2)
+        y_max = round(cy + (h / 2), 2)
+        
+        result.append({
+            "label": label, 
+            "confidence": conf_percent,
+            "box": [x_min, y_min, x_max, y_max]
+        })
 
     return result
 

@@ -6,8 +6,8 @@ import '../../../shared/widgets/scale_tap.dart';
 import '../models/history_item_model.dart';
 import '../screens/order_detail_screen.dart';
 import '../screens/redemption_detail_screen.dart';
-import 'package:idn_finlogos/idn_finlogos.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../core/utils/fin_logo_helper.dart';
 
 class TransactionCard extends StatefulWidget {
   final HistoryItemModel item;
@@ -171,16 +171,16 @@ class _TransactionCardState extends State<TransactionCard> {
               const SizedBox(height: 18),
 
               // Title and Date/Time Info
-              if (widget.item.type == HistoryType.pencairan && widget.item.provider != null && IdnFinLogos.get(widget.item.provider!) != null)
+              if (widget.item.type == HistoryType.pencairan && widget.item.provider != null)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: SvgPicture.asset(
-                        IdnFinLogos.get(widget.item.provider!)!.assetPath,
-                        package: 'idn_finlogos',
+                      child: FinLogoHelper.getLogoWidget(
+                        widget.item.provider!,
                         height: 20,
+                        width: 32,
                       ),
                     ),
                     Expanded(

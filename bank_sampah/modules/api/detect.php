@@ -160,10 +160,12 @@ $worker_unavailable = $worker_result['worker_unavailable'];
 //   detections: [{label, confidence}, ...]   (with confidence score)
 // Build a confidence lookup map.
 $confidence_map = [];
+$box_map = [];
 if (isset($worker_result['detections']) && is_array($worker_result['detections'])) {
     foreach ($worker_result['detections'] as $d) {
         if (isset($d['label'])) {
             $confidence_map[$d['label']] = $d['confidence'] ?? null;
+            $box_map[$d['label']] = $d['box'] ?? null;
         }
     }
 }
@@ -235,6 +237,7 @@ if (!empty($detected_labels)) {
                 'harga_per_kg'    => $row['harga_per_kg'] !== null ? (float)$row['harga_per_kg'] : null,
                 'gambar'          => $img_url,
                 'confidence'      => $confidence_map[$label] ?? null,
+                'box'             => $box_map[$label] ?? null,
                 'found'           => true,
             ];
         } else {
@@ -244,6 +247,7 @@ if (!empty($detected_labels)) {
                 'kategori'   => null,
                 'harga_per_kg'=> null,
                 'confidence' => $confidence_map[$label] ?? null,
+                'box'        => $box_map[$label] ?? null,
                 'found'      => false,
             ];
         }

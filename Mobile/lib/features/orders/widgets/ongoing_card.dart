@@ -7,8 +7,8 @@ import '../../../shared/widgets/scale_tap.dart';
 import '../models/ongoing_order_model.dart';
 import '../screens/order_detail_screen.dart';
 import '../screens/redemption_detail_screen.dart';
-import 'package:idn_finlogos/idn_finlogos.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../core/utils/fin_logo_helper.dart';
 
 class OngoingCard extends StatefulWidget {
   final OngoingOrderModel order;
@@ -147,16 +147,16 @@ class _OngoingCardState extends State<OngoingCard> {
               const SizedBox(height: 18),
 
               // Title and Date/Time Info
-              if (widget.order.isRedemption && widget.order.provider != null && IdnFinLogos.get(widget.order.provider!) != null)
+              if (widget.order.isRedemption && widget.order.provider != null)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: SvgPicture.asset(
-                        IdnFinLogos.get(widget.order.provider!)!.assetPath,
-                        package: 'idn_finlogos',
+                      child: FinLogoHelper.getLogoWidget(
+                        widget.order.provider!,
                         height: 20,
+                        width: 32,
                       ),
                     ),
                     Expanded(

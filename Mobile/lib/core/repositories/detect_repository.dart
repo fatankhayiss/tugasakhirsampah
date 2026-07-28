@@ -83,6 +83,25 @@ class DetectRepository {
       
       debugPrint('✓ JSON parsed: success=${result.success}, labels=${result.labels.length}, detections=${result.detections.length}');
       
+      debugPrint('\n==================================================');
+      debugPrint('📊 HASIL DETEKSI YOLO (DEBUG)');
+      debugPrint('==================================================');
+      if (result.detections.isEmpty) {
+        debugPrint('Tidak ada objek yang terdeteksi (Confidence di bawah threshold / Kosong).');
+        debugPrint('Kategori akhir: Sampah Lainnya');
+      } else {
+        for (int i = 0; i < result.detections.length; i++) {
+          final det = result.detections[i];
+          debugPrint('Deteksi #${i + 1}:');
+          debugPrint('- Label YOLO   : ${det['label']}');
+          debugPrint('- Confidence   : ${det['confidence']}%');
+          debugPrint('- Bounding Box : ${det['box']}');
+          debugPrint('- Kategori App : ${det['nama_sampah'] ?? 'Sampah Lainnya'}');
+        }
+        debugPrint('\n👉 Kategori Terpilih: ${result.detections.first['nama_sampah'] ?? 'Sampah Lainnya'}');
+      }
+      debugPrint('==================================================\n');
+      
       return result;
     } catch (e) {
       debugPrint('\n❌ [DetectRepository] Error / Koneksi gagal: $e');

@@ -6,8 +6,8 @@ import '../../../core/repositories/order_repository.dart';
 import '../../orders/models/ongoing_order_model.dart';
 import '../../orders/models/history_item_model.dart';
 import '../../../core/widgets/app_network_image.dart';
-import 'package:idn_finlogos/idn_finlogos.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../../core/utils/fin_logo_helper.dart';
 
 class RedemptionDetailScreen extends StatefulWidget {
   final String redemptionId;
@@ -307,13 +307,13 @@ class _RedemptionDetailScreenState extends State<RedemptionDetailScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        if (IdnFinLogos.get(provider) != null)
+                                        if (provider != null)
                                           Padding(
-                                            padding: const EdgeInsets.only(right: 8),
-                                            child: SvgPicture.asset(
-                                              IdnFinLogos.get(provider)!.assetPath,
-                                              package: 'idn_finlogos',
-                                              height: 18,
+                                            padding: const EdgeInsets.only(right: 8.0),
+                                            child: FinLogoHelper.getLogoWidget(
+                                              provider,
+                                              height: 22,
+                                              width: 36,
                                             ),
                                           ),
                                         Text(
