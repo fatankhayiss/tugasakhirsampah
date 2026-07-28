@@ -36,7 +36,7 @@ if (!$koneksi) {
 define('APP_ENV', 'development'); 
 
 if (APP_ENV === 'development') {
-    define('BASE_URL', 'http://banksampah.test/'); 
+    define('BASE_URL', 'http://192.168.129.68/tugasakhirsampah/bank_sampah/');
 } else {
     define('BASE_URL', 'http://192.168.129.68/tugasakhirsampah/bank_sampah/');
 }
