@@ -1,14 +1,9 @@
-// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/models/waste_item.dart';
 import '../../../core/repositories/waste_repository.dart';
-import '../../../core/repositories/profile_repository.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/navigation/app_dialog_transitions.dart';
 import '../../../core/navigation/app_page_transitions.dart';
@@ -114,10 +109,10 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
 
   Widget _buildItemImage(WasteItem item, {double? width, double? height, BoxFit fit = BoxFit.cover}) {
     IconData iconData = Icons.recycling;
-    if (item.imageAsset == 'water_bottle') iconData = LucideIcons.bottle;
-    if (item.imageAsset == 'inventory_2') iconData = LucideIcons.package;
-    if (item.imageAsset == 'description') iconData = LucideIcons.fileText;
-    if (item.imageAsset == 'liquor') iconData = LucideIcons.can;
+    if (item.imageAsset == 'water_bottle') iconData = Icons.water_drop;
+    if (item.imageAsset == 'inventory_2') iconData = Icons.inventory_2;
+    if (item.imageAsset == 'description') iconData = Icons.description;
+    if (item.imageAsset == 'liquor') iconData = Icons.liquor;
 
     if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
       if (item.imageUrl!.startsWith('/') || item.imageUrl!.startsWith('file://')) {

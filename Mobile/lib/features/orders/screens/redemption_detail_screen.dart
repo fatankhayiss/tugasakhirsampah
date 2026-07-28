@@ -5,7 +5,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/repositories/order_repository.dart';
 import '../../orders/models/ongoing_order_model.dart';
 import '../../orders/models/history_item_model.dart';
-import '../../../core/constants/api_config.dart';
 import '../../../core/widgets/app_network_image.dart';
 
 class RedemptionDetailScreen extends StatefulWidget {
