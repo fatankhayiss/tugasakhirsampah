@@ -1,14 +1,25 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/order_repository.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../deposit/widgets/deposit_method_modal.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../models/history_item_model.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../widgets/empty_state_widget.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../widgets/filter_chip_widget.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../widgets/history_card.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../widgets/ongoing_card.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../widgets/segmented_tab.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../widgets/transaction_card.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/repositories/order_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../deposit/widgets/deposit_method_modal.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../models/history_item_model.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../widgets/empty_state_widget.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../widgets/filter_chip_widget.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../widgets/history_card.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../widgets/ongoing_card.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../widgets/segmented_tab.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../widgets/transaction_card.dart';
 
 class OrdersScreen extends StatefulWidget {
   final dynamic newOrder;

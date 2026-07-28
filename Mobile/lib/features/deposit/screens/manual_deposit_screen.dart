@@ -1,14 +1,25 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'dart:io';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/models/waste_item.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/waste_repository.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/profile_repository.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/primary_button.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/navigation/app_dialog_transitions.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/navigation/app_page_transitions.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'checkout_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'scan_deposit_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'dart:io';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/models/waste_item.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/repositories/waste_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/repositories/profile_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../shared/widgets/primary_button.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/navigation/app_dialog_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/navigation/app_page_transitions.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'checkout_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'scan_deposit_screen.dart';
 
 class ManualDepositScreen extends StatefulWidget {
   final List<WasteItem>? initialCartItems;

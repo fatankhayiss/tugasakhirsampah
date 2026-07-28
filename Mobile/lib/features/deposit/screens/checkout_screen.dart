@@ -1,15 +1,27 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter_lucide/flutter_lucide.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:latlong2/latlong.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/models/notification_model.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/models/waste_item.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/models/profile_model.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/notification_repository.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/order_repository.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/primary_button.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/location_picker_map.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'deposit_submitted_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'package:flutter_lucide/flutter_lucide.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'package:latlong2/latlong.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/models/notification_model.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/models/waste_item.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/models/profile_model.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/repositories/notification_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/repositories/order_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../shared/widgets/primary_button.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../shared/widgets/location_picker_map.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'deposit_submitted_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final List<WasteItem> cartItems;

@@ -1,14 +1,25 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'dart:async';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/constants/app_colors.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../core/repositories/notification_repository.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/bottom_navbar.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../../shared/widgets/exit_app_dialog.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'home_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../notification/screens/notifications_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../orders/screens/orders_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../orders/screens/order_detail_screen.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../profile/screens/profile_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'dart:async';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../core/repositories/notification_repository.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../shared/widgets/bottom_navbar.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../../shared/widgets/exit_app_dialog.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'home_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../notification/screens/notifications_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../orders/screens/orders_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../orders/screens/order_detail_screen.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../profile/screens/profile_screen.dart';
 
 /// Main shell — bottom nav + tab pages + double-back exit.
 class MainNavigationScreen extends StatefulWidget {

@@ -1,8 +1,13 @@
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/material.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'package:flutter/services.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../core/constants/app_colors.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport '../../features/deposit/widgets/deposit_method_modal.dart';
-// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field`nimport 'scale_tap.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'package:flutter/material.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'package:flutter/services.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../core/constants/app_colors.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import '../../features/deposit/widgets/deposit_method_modal.dart';
+// ignore_for_file: use_build_context_synchronously, depend_on_referenced_packages, unused_field
+import 'scale_tap.dart';
 
 /// Premium floating capsule-style Bottom Navigation Bar with elevated center FAB.
 class BottomNavbar extends StatelessWidget {
