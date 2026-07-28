@@ -633,12 +633,12 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
       );
     }
 
-    if (_record == null) {
+    if (_record == null || _record!.kategoriSampah == 'Tidak Dikenali') {
       return _buildFallbackView(
         icon: Icons.search_off_rounded,
         iconColor: const Color(0xFFD97706),
-        title: 'Sampah tidak dikenali',
-        subtitle: 'Pastikan sampah terlihat jelas dalam foto.',
+        title: 'Sampah Tidak Dikenali',
+        subtitle: 'AI tidak dapat mengenali objek pada foto ini.\nSilakan foto ulang dengan lebih jelas atau pilih kategori secara manual.',
         showManualButton: true,
       );
     }

@@ -294,14 +294,14 @@ if ($tbl_exists) {
     $file_esc     = mysqli_real_escape_string($koneksi, $file_db_path);
     $user_val     = ($user_id !== null) ? intval($user_id) : 'NULL';
     
-    $top_kategori_sampah = 'Lainnya';
+    $top_kategori_sampah = 'Tidak Dikenali';
     $top_confidence = 0.0;
     $top_berat = 1.0;
     $top_estimasi = 0.0;
     
     if (!empty($results)) {
         $first = $results[0];
-        $top_kategori_sampah = !empty($first['nama_sampah']) ? $first['nama_sampah'] : ($first['label'] ?? 'Lainnya');
+        $top_kategori_sampah = !empty($first['nama_sampah']) ? $first['nama_sampah'] : ($first['label'] ?? 'Tidak Dikenali');
         $top_confidence = isset($first['confidence']) ? floatval($first['confidence']) : 0.0;
         $harga = isset($first['harga_per_kg']) ? floatval($first['harga_per_kg']) : 250.0;
         $top_estimasi = $top_berat * $harga;

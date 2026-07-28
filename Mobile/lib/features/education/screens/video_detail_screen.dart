@@ -232,11 +232,13 @@ class _ChewieVideoPlayerState extends State<_ChewieVideoPlayer> {
   Future<void> _initializePlayer() async {
     _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
     await _videoPlayerController.initialize();
+    final aspectRatio = _videoPlayerController.value.aspectRatio;
+
     _chewieController = ChewieController(
       videoPlayerController: _videoPlayerController,
       autoPlay: false,
       looping: false,
-      aspectRatio: 16 / 9,
+      aspectRatio: aspectRatio > 0 ? aspectRatio : 16 / 9,
       errorBuilder: (context, errorMessage) {
         return Center(
           child: Text(
@@ -259,8 +261,9 @@ class _ChewieVideoPlayerState extends State<_ChewieVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     if (_chewieController != null && _chewieController!.videoPlayerController.value.isInitialized) {
+      final aspectRatio = _chewieController!.videoPlayerController.value.aspectRatio;
       return AspectRatio(
-        aspectRatio: 16 / 9,
+        aspectRatio: aspectRatio > 0 ? aspectRatio : 16 / 9,
         child: Chewie(controller: _chewieController!),
       );
     }

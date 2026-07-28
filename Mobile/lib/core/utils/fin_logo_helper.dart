@@ -93,7 +93,6 @@ class FinLogoHelper {
     if (meta != null) {
       return SvgPicture.asset(
         meta.assetPath,
-        package: 'idn_finlogos',
         width: width,
         height: height,
         semanticsLabel: meta.name,

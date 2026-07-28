@@ -21,7 +21,7 @@ class ScanRecord {
     return ScanRecord(
       idDeteksi: json['id_deteksi'] ?? 0,
       imageUrl: json['image_url']?.toString(),
-      kategoriSampah: json['kategori_sampah']?.toString() ?? 'Lainnya',
+      kategoriSampah: json['kategori_sampah']?.toString() ?? 'Tidak Dikenali',
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
       berat: (json['berat'] as num?)?.toDouble() ?? 1.0,
       estimasiPoin: (json['estimasi_poin'] as num?)?.toDouble() ?? 0.0,
