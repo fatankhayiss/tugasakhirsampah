@@ -6,26 +6,26 @@ Future<void> main() async {
   
   // 1. Test Jenis Sampah (GET)
   final jenisSampahUrl = baseUrl + 'jenis_sampah_api.php';
-  print('Testing GET \$jenisSampahUrl');
+  print('Testing GET $jenisSampahUrl');
   try {
     final response = await http.get(Uri.parse(jenisSampahUrl));
-    print('Status Code: \${response.statusCode}');
+    print('Status Code: ${response.statusCode}');
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Success: \${data['success']}');
-      print('Item count: \${(data['data'] as List).length}');
+      print('Success: ${data["success"]}');
+      print('Item count: ${(data["data"] as List).length}');
     } else {
-      print('Failed with body: \${response.body}');
+      print('Failed with body: ${response.body}');
     }
   } catch (e) {
-    print('Error: \$e');
+    print('Error: $e');
   }
 
   print('\n-----------------------\n');
 
   // 2. Test Login (POST)
   final loginUrl = baseUrl + 'auth_api.php?action=login';
-  print('Testing POST \$loginUrl');
+  print('Testing POST $loginUrl');
   try {
     final response = await http.post(
       Uri.parse(loginUrl),
@@ -34,10 +34,10 @@ Future<void> main() async {
         'password': 'wrong'
       }
     );
-    print('Status Code: \${response.statusCode}');
+    print('Status Code: ${response.statusCode}');
     final data = json.decode(response.body);
-    print('Response: \$data');
+    print('Response: $data');
   } catch (e) {
-    print('Error: \$e');
+    print('Error: $e');
   }
 }

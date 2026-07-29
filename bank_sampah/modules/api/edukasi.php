@@ -19,7 +19,7 @@ function abs_url($path) {
     if (preg_match('#^https?://#', $path)) return $path;
     
     // Gunakan BASE_URL dari database.php yang sudah dipastikan production URL
-    $base = defined('BASE_URL') ? BASE_URL : 'http://172.20.10.13/tugasakhirsampah/bank_sampah/';
+    $base = defined('BASE_URL') ? BASE_URL : 'http://192.168.111.14/tugasakhirsampah/bank_sampah/';
     
     $normalized = rtrim($base, '/') . '/' . ltrim($path, '/');
     return $normalized;

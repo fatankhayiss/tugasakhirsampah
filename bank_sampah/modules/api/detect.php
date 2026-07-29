@@ -232,6 +232,8 @@ if ($tbl_exists) {
                      VALUES ($user_val, '$file_esc', '$labels_esc', '$matched_esc', '', '$cat_esc', $top_confidence, $top_berat, $top_estimasi)";
     if (mysqli_query($koneksi, $ins_sql)) {
         $insert_id = mysqli_insert_id($koneksi);
+    } else {
+        error_log("❌ Error inserting deteksi: " . mysqli_error($koneksi));
     }
 }
 

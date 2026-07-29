@@ -44,8 +44,8 @@ class DetectRepository {
 
       // Attach user_id if logged in
       final userData = await ApiService.instance.getUserData();
-      if (userData != null && userData['id_pengguna'] != null) {
-        request.fields['user_id'] = userData['id_pengguna'].toString();
+      if (userData != null && userData['id'] != null) {
+        request.fields['user_id'] = userData['id'].toString();
       }
 
       debugPrint('✓ Upload started');
@@ -136,8 +136,8 @@ class DetectRepository {
       );
 
       final userData = await ApiService.instance.getUserData();
-      if (userData != null && userData['id_pengguna'] != null) {
-        request.fields['user_id'] = userData['id_pengguna'].toString();
+      if (userData != null && userData['id'] != null) {
+        request.fields['user_id'] = userData['id'].toString();
       }
 
       final streamedResponse = await request.send().timeout(_timeout);
@@ -165,8 +165,8 @@ class DetectRepository {
     final request = http.MultipartRequest('POST', uri);
     request.files.add(await http.MultipartFile.fromPath('image', filePath));
     final userData = await ApiService.instance.getUserData();
-    if (userData != null && userData['id_pengguna'] != null) {
-      request.fields['user_id'] = userData['id_pengguna'].toString();
+    if (userData != null && userData['id'] != null) {
+      request.fields['user_id'] = userData['id'].toString();
     }
     final streamed = await request.send().timeout(_timeout);
     return await http.Response.fromStream(streamed);
@@ -182,8 +182,8 @@ class DetectRepository {
       http.MultipartFile.fromBytes('image', bytes, filename: assetPath.split('/').last),
     );
     final userData = await ApiService.instance.getUserData();
-    if (userData != null && userData['id_pengguna'] != null) {
-      request.fields['user_id'] = userData['id_pengguna'].toString();
+    if (userData != null && userData['id'] != null) {
+      request.fields['user_id'] = userData['id'].toString();
     }
     final streamed = await request.send().timeout(_timeout);
     return await http.Response.fromStream(streamed);

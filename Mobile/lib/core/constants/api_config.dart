@@ -1,7 +1,7 @@
 /// Konfigurasi API terpusat untuk koneksi ke backend bank_sampah.
 ///
 /// Ubah [baseUrl] sesuai environment:
-/// - Production Cloud: `http://172.20.10.13/tugasakhirsampah/bank_sampah/`
+/// - Production Cloud: `http://192.168.111.14/tugasakhirsampah/bank_sampah/`
 library;
 import 'environment.dart';
 
