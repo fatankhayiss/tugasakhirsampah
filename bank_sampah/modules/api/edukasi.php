@@ -18,8 +18,10 @@ function abs_url($path) {
     if (!$path) return null;
     if (preg_match('#^https?://#', $path)) return $path;
     
-    // Gunakan BASE_URL dari database.php yang sudah dipastikan production URL
-    $base = defined('BASE_URL') ? BASE_URL : 'http://192.168.111.14/tugasakhirsampah/bank_sampah/';
+    // Gunakan host dinamis agar gambar bisa diload dari HP/Emulator maupun web
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '192.168.196.14';
+    $base = $protocol . '://' . $host . '/tugasakhirsampah/bank_sampah/';
     
     $normalized = rtrim($base, '/') . '/' . ltrim($path, '/');
     return $normalized;

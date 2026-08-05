@@ -1,0 +1,23 @@
+﻿```mermaid
+sequenceDiagram
+    participant Admin
+    participant Browser
+    participant Web Application
+    participant Database
+
+    Admin->>Browser: Membuka halaman Dashboard
+    Browser->>Web Application: Kirim request ke index.php (Dashboard)
+    Web Application->>Web Application: Validasi session login
+    
+    alt Session tidak valid
+        Web Application-->>Browser: Redirect ke halaman Login
+        Browser-->>Admin: Tampilkan halaman Login
+    else Session valid
+        Web Application->>Database: Query ambil statistik (Total Pengguna, Transaksi, dll)
+        Database-->>Web Application: Kembalikan data statistik
+        Web Application->>Database: Query ambil data grafik
+        Database-->>Web Application: Kembalikan data grafik
+        Web Application-->>Browser: Tampilkan halaman Dashboard beserta data
+        Browser-->>Admin: Menampilkan ringkasan Dashboard
+    end
+```

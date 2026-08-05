@@ -49,7 +49,16 @@ if (!empty($params)) {
 
 $items = [];
 if ($result) {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '192.168.196.14';
+    $base = $protocol . '://' . $host . '/tugasakhirsampah/bank_sampah/';
+
     while ($row = mysqli_fetch_assoc($result)) {
+        $gambar_url = null;
+        if (!empty($row['gambar'])) {
+            $gambar_url = rtrim($base, '/') . '/' . ltrim($row['gambar'], '/');
+        }
+
         $items[] = [
             'id' => (int)$row['id_jenis_sampah'],
             'nama' => $row['nama_sampah'],
@@ -57,7 +66,7 @@ if ($result) {
             'deskripsi' => $row['deskripsi'] ?? null,
             'satuan' => $row['satuan'] ?? 'kg',
             'kategori' => $row['kategori'] ?? null,
-            'gambar' => $row['gambar'] ?? null,
+            'gambar' => $gambar_url,
             'cara_pengolahan' => $row['cara_pengolahan'] ?? null,
         ];
     }

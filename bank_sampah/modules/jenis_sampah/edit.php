@@ -10,7 +10,7 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $id_jenis_sampah = sanitize_input($_GET['id']);
 
 // Ambil data jenis sampah dari database
-$query = "SELECT id_jenis_sampah, nama_sampah, harga_per_kg, deskripsi, satuan FROM jenis_sampah WHERE id_jenis_sampah = ?";
+$query = "SELECT id_jenis_sampah, nama_sampah, harga_per_kg, deskripsi, satuan, kategori FROM jenis_sampah WHERE id_jenis_sampah = ?";
 $stmt = mysqli_prepare($koneksi, $query);
 mysqli_stmt_bind_param($stmt, "i", $id_jenis_sampah);
 mysqli_stmt_execute($stmt);
@@ -42,6 +42,15 @@ if (!$jenis_sampah) {
                  <div>
                     <label for="satuan" class="block text-sm font-medium text-gray-700 mb-1">Satuan <span class="text-red-500">*</span></label>
                     <input type="text" name="satuan" id="satuan" required value="<?php echo htmlspecialchars($jenis_sampah['satuan']); ?>" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm" placeholder="Contoh: kg, buah, liter">
+                </div>
+                <div>
+                    <label for="kategori" class="block text-sm font-medium text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
+                    <select name="kategori" id="kategori" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm">
+                        <option value="Sampah Anorganik" <?php echo ($jenis_sampah['kategori'] == 'Sampah Anorganik') ? 'selected' : ''; ?>>Sampah Anorganik</option>
+                        <option value="Sampah Organik" <?php echo ($jenis_sampah['kategori'] == 'Sampah Organik') ? 'selected' : ''; ?>>Sampah Organik</option>
+                        <option value="Sampah B3" <?php echo ($jenis_sampah['kategori'] == 'Sampah B3') ? 'selected' : ''; ?>>Sampah B3</option>
+                        <option value="Sampah Residu" <?php echo ($jenis_sampah['kategori'] == 'Sampah Residu') ? 'selected' : ''; ?>>Sampah Residu</option>
+                    </select>
                 </div>
                 <div>
                     <label for="deskripsi" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi (Opsional)</label>

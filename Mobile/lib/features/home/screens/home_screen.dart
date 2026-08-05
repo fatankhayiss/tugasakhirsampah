@@ -944,67 +944,70 @@ class _EducationCardState extends State<_EducationCard> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.softGreen,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          widget.category,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.secondary,
-                            letterSpacing: 0.5,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.softGreen,
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        widget.title,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                          height: 1.3,
-                          letterSpacing: -0.2,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.desc,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF8A92A6),
-                          height: 1.4,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: const [
-                          Text(
-                            'Baca Selengkapnya',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                          child: Text(
+                            widget.category,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.secondary,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                          SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          widget.title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textDark,
+                            height: 1.3,
+                            letterSpacing: -0.2,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: Text(
+                            widget.desc,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF8A92A6),
+                              height: 1.4,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Row(
+                          children: const [
+                            Text(
+                              'Baca Selengkapnya',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

@@ -8,20 +8,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $harga_per_kg = filter_var($_POST['harga_per_kg'], FILTER_VALIDATE_FLOAT); // Validasi sebagai float
     $deskripsi = sanitize_input($_POST['deskripsi']);
     $satuan = sanitize_input($_POST['satuan']);
+    $kategori = sanitize_input($_POST['kategori']);
 
     // Proses Tambah Jenis Sampah Baru
     if (isset($_POST['simpan_jenis_sampah'])) {
-        if (empty($nama_sampah) || $harga_per_kg === false || $harga_per_kg < 0 || empty($satuan)) {
-            $_SESSION['error_message'] = "Nama sampah, harga (harus angka positif), dan satuan tidak boleh kosong.";
+        if (empty($nama_sampah) || $harga_per_kg === false || $harga_per_kg < 0 || empty($satuan) || empty($kategori)) {
+            $_SESSION['error_message'] = "Nama sampah, harga (harus angka positif), satuan, dan kategori tidak boleh kosong.";
             redirect(BASE_URL . 'index.php?page=jenis_sampah/tambah');
         }
 
         // Cek apakah nama sampah sudah ada (opsional, bisa jadi ada sampah sama dengan harga beda)
         // Untuk contoh ini, kita izinkan nama sampah yang sama. Jika ingin unik, tambahkan pengecekan.
 
-        $query_insert = "INSERT INTO jenis_sampah (nama_sampah, harga_per_kg, deskripsi, satuan) VALUES (?, ?, ?, ?)";
+        $query_insert = "INSERT INTO jenis_sampah (nama_sampah, harga_per_kg, deskripsi, satuan, kategori) VALUES (?, ?, ?, ?, ?)";
         $stmt_insert = mysqli_prepare($koneksi, $query_insert);
-        mysqli_stmt_bind_param($stmt_insert, "sdss", $nama_sampah, $harga_per_kg, $deskripsi, $satuan);
+        mysqli_stmt_bind_param($stmt_insert, "sdsss", $nama_sampah, $harga_per_kg, $deskripsi, $satuan, $kategori);
 
         if (mysqli_stmt_execute($stmt_insert)) {
             $_SESSION['success_message'] = "Jenis sampah baru berhasil ditambahkan.";
@@ -40,14 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         $id_jenis_sampah = sanitize_input($_POST['id_jenis_sampah']);
 
-        if (empty($nama_sampah) || $harga_per_kg === false || $harga_per_kg < 0 || empty($satuan)) {
-            $_SESSION['error_message'] = "Nama sampah, harga (harus angka positif), dan satuan tidak boleh kosong.";
+        if (empty($nama_sampah) || $harga_per_kg === false || $harga_per_kg < 0 || empty($satuan) || empty($kategori)) {
+            $_SESSION['error_message'] = "Nama sampah, harga (harus angka positif), satuan, dan kategori tidak boleh kosong.";
             redirect(BASE_URL . 'index.php?page=jenis_sampah/edit&id=' . $id_jenis_sampah);
         }
 
-        $query_update = "UPDATE jenis_sampah SET nama_sampah = ?, harga_per_kg = ?, deskripsi = ?, satuan = ? WHERE id_jenis_sampah = ?";
+        $query_update = "UPDATE jenis_sampah SET nama_sampah = ?, harga_per_kg = ?, deskripsi = ?, satuan = ?, kategori = ? WHERE id_jenis_sampah = ?";
         $stmt_update = mysqli_prepare($koneksi, $query_update);
-        mysqli_stmt_bind_param($stmt_update, "sdssi", $nama_sampah, $harga_per_kg, $deskripsi, $satuan, $id_jenis_sampah);
+        mysqli_stmt_bind_param($stmt_update, "sdsssi", $nama_sampah, $harga_per_kg, $deskripsi, $satuan, $kategori, $id_jenis_sampah);
 
         if (mysqli_stmt_execute($stmt_update)) {
             $_SESSION['success_message'] = "Data jenis sampah berhasil diperbarui.";

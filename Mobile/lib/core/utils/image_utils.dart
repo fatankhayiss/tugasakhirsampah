@@ -15,6 +15,6 @@ class ImageUtils {
         ? ApiConfig.baseUrl 
         : '${ApiConfig.baseUrl}/';
         
-    return '${baseUrl}bank_sampah/$cleanPath';
+    return '$baseUrl$cleanPath';
   }
 }

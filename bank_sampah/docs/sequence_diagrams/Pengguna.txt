@@ -1,0 +1,75 @@
+# Sequence Diagram - Kelola Pengguna
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Browser
+    participant Web Application
+    participant Database
+
+    %% LIHAT DATA
+    Admin->>Browser: Membuka halaman Kelola Pengguna
+    Browser->>Web Application: Kirim request ke halaman index
+    Web Application->>Web Application: Validasi session
+    Web Application->>Database: Query ambil data Pengguna
+    Database-->>Web Application: Kembalikan daftar data
+    Web Application-->>Browser: Tampilkan halaman dengan tabel data
+    Browser-->>Admin: Melihat data Pengguna
+
+    alt Proses Tambah Data
+        Admin->>Browser: Klik tombol Tambah Data
+        Browser->>Web Application: Kirim request form tambah
+        Web Application-->>Browser: Tampilkan form tambah
+        Admin->>Browser: Mengisi form dan klik Simpan
+        Browser->>Web Application: Kirim request proses simpan (POST)
+        Web Application->>Web Application: Validasi data input
+        
+        alt Data tidak valid
+            Web Application-->>Browser: Redirect dengan pesan error
+            Browser-->>Admin: Tampilkan pesan error
+        else Data valid
+            Web Application->>Database: Simpan data ke tabel
+            Database-->>Web Application: Berhasil simpan
+            Web Application-->>Browser: Redirect dengan status berhasil
+            Browser-->>Admin: Tampilkan pesan sukses
+        end
+
+    else Proses Edit Data
+        Admin->>Browser: Klik tombol Edit pada baris data
+        Browser->>Web Application: Kirim request form edit (dengan ID)
+        Web Application->>Database: Query ambil data berdasarkan ID
+        Database-->>Web Application: Kembalikan detail data
+        Web Application-->>Browser: Tampilkan form edit terisi data
+        Admin->>Browser: Mengubah form dan klik Update
+        Browser->>Web Application: Kirim request proses update (POST)
+        Web Application->>Web Application: Validasi data input
+        
+        alt Data tidak valid
+            Web Application-->>Browser: Redirect dengan pesan error
+            Browser-->>Admin: Tampilkan pesan error
+        else Data valid
+            Web Application->>Database: Update data di tabel
+            Database-->>Web Application: Berhasil update
+            Web Application-->>Browser: Redirect dengan status berhasil
+            Browser-->>Admin: Tampilkan pesan sukses
+        end
+
+    else Proses Hapus Data
+        Admin->>Browser: Klik tombol Hapus pada baris data
+        Browser->>Browser: Tampilkan konfirmasi hapus
+        Admin->>Browser: Konfirmasi (Ya)
+        Browser->>Web Application: Kirim request hapus data (dengan ID)
+        Web Application->>Database: Query cek data eksis
+        Database-->>Web Application: Kembalikan hasil
+        
+        alt Data tidak ditemukan
+            Web Application-->>Browser: Redirect dengan status gagal
+            Browser-->>Admin: Tampilkan pesan error
+        else Data ditemukan
+            Web Application->>Database: Jalankan perintah hapus
+            Database-->>Web Application: Berhasil hapus
+            Web Application-->>Browser: Redirect dengan status berhasil
+            Browser-->>Admin: Tampilkan pesan sukses
+        end
+    end
+```

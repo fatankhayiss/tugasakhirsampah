@@ -1,0 +1,55 @@
+# Sequence Diagram - Kelola Order Penjemputan
+
+```mermaid
+sequenceDiagram
+    participant Picker
+    participant Admin
+    participant Browser
+    participant Web Application
+    participant Database
+
+    %% LIHAT DATA ORDER
+    Admin->>Browser: Membuka daftar order
+    Browser->>Web Application: Request daftar order
+    Web Application->>Web Application: Validasi session
+    Web Application->>Database: Mengambil daftar order
+    Database-->>Web Application: Data daftar order
+    Web Application-->>Browser: Menampilkan daftar order
+    Browser-->>Admin: Melihat daftar order
+
+    alt Assign Picker
+        Admin->>Browser: Memilih order dan melakukan Assign Picker
+        Admin->>Browser: Memilih Picker
+        Browser->>Web Application: Kirim data assign picker (POST)
+        Web Application->>Database: Memperbarui picker yang bertugas
+        Web Application->>Database: Mengubah status menjadi Ditugaskan
+        Database-->>Web Application: Berhasil update
+        Web Application-->>Browser: Redirect status berhasil
+        Browser-->>Admin: Tampilkan pesan sukses
+    else Proses Penjemputan oleh Picker
+        Picker->>Web Application: Kirim update status (Dalam Perjalanan / Sudah Dekat / Dijemput)
+        Web Application->>Database: Update status order
+        Database-->>Web Application: Berhasil update
+        Web Application-->>Picker: Response status berhasil terupdate
+    else Validasi & Approve Selesai (Oleh Admin)
+        Admin->>Browser: Menerima sampah dan melakukan Validasi
+        Browser->>Web Application: Request form validasi
+        Web Application-->>Browser: Tampilkan form validasi
+        Admin->>Browser: Memasukkan berat aktual sampah
+        Admin->>Browser: Melakukan Approve (Selesai)
+        Browser->>Web Application: Kirim data validasi & berat aktual (POST)
+        Web Application->>Web Application: Menghitung poin (berat aktual * harga)
+        Web Application->>Database: Update status berubah menjadi Selesai
+        Web Application->>Database: Update poin nasabah & riwayat transaksi
+        Database-->>Web Application: Berhasil
+        Web Application-->>Browser: Redirect status sukses
+        Browser-->>Admin: Tampilkan pesan selesai
+    else Batalkan Order
+        Admin->>Browser: Klik tombol Batalkan Order
+        Browser->>Web Application: Kirim request pembatalan
+        Web Application->>Database: Update status menjadi Dibatalkan
+        Database-->>Web Application: Berhasil update
+        Web Application-->>Browser: Redirect status berhasil
+        Browser-->>Admin: Tampilkan pesan order dibatalkan
+    end
+```

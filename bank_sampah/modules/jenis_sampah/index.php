@@ -89,6 +89,18 @@ $result = mysqli_query($koneksi, $query);
                                         <?php
                                             if ($col === 'harga_per_kg') {
                                                 echo format_rupiah($row[$col]);
+                                            } elseif ($col === 'cara_pengolahan' || $col === 'deskripsi') {
+                                                $text = $row[$col] !== null && $row[$col] !== '' ? $row[$col] : '-';
+                                                if (strlen($text) > 100 && $text !== '-') {
+                                                    $shortText = htmlspecialchars(substr($text, 0, 100)) . '...';
+                                                    $fullText = nl2br(htmlspecialchars($text));
+                                                    echo '<div x-data="{ expanded: false }">';
+                                                    echo '  <div x-show="!expanded">' . $shortText . ' <br><button @click="expanded = true" class="text-sky-600 font-semibold hover:underline mt-1">Show more</button></div>';
+                                                    echo '  <div x-show="expanded" x-cloak>' . $fullText . ' <br><button @click="expanded = false" class="text-sky-600 font-semibold hover:underline mt-1">Show less</button></div>';
+                                                    echo '</div>';
+                                                } else {
+                                                    echo nl2br(htmlspecialchars($text));
+                                                }
                                             } else {
                                                 echo nl2br(htmlspecialchars($row[$col] !== null && $row[$col] !== '' ? $row[$col] : '-'));
                                             }

@@ -1,0 +1,53 @@
+﻿# Sequence Diagram - Kelola Penukaran Poin
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Browser
+    participant Web Application
+    participant Database
+
+    Admin->>Browser: Membuka halaman Kelola Penukaran Poin
+    Browser->>Web Application: Request halaman daftar penukaran
+    Web Application->>Web Application: Validasi session
+    Web Application->>Database: Query daftar penukaran poin
+    Database-->>Web Application: Data penukaran
+    Web Application-->>Browser: Tampilkan daftar penukaran
+    Browser-->>Admin: Melihat daftar penukaran
+
+    Admin->>Browser: Klik Detail
+    Browser->>Web Application: Request detail penukaran
+    Web Application->>Database: Query detail transaksi
+    Database-->>Web Application: Detail transaksi
+    Web Application-->>Browser: Tampilkan halaman detail
+
+    alt Penukaran Diselesaikan
+        Admin->>Browser: Klik tombol Selesaikan
+        Browser->>Web Application: Request form upload bukti transfer
+        Web Application-->>Browser: Tampilkan form upload
+
+        Admin->>Browser: Upload bukti transfer dan Konfirmasi
+        Browser->>Web Application: Kirim bukti transfer
+
+        Web Application->>Web Application: Validasi file
+
+        alt File tidak valid
+            Web Application-->>Browser: Tampilkan pesan error
+            Browser-->>Admin: Pesan gagal
+        else File valid
+            Web Application->>Database: Simpan bukti transfer
+            Web Application->>Database: Update status menjadi Selesai
+            Database-->>Web Application: Berhasil
+            Web Application-->>Browser: Redirect dengan status sukses
+            Browser-->>Admin: Tampilkan notifikasi berhasil
+        end
+
+    else Penukaran Ditolak
+        Admin->>Browser: Klik tombol Tolak
+        Browser->>Web Application: Kirim permintaan penolakan
+        Web Application->>Database: Update status menjadi Ditolak
+        Database-->>Web Application: Berhasil
+        Web Application-->>Browser: Redirect dengan status berhasil
+        Browser-->>Admin: Tampilkan notifikasi penolakan
+    end
+```

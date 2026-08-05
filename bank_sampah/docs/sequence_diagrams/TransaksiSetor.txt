@@ -1,0 +1,37 @@
+# Sequence Diagram - Transaksi Setor Sampah
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Browser
+    participant Web Application
+    participant Database
+
+    %% LIHAT RIWAYAT / HALAMAN SETOR
+    Admin->>Browser: Membuka halaman Setor Sampah
+    Browser->>Web Application: Request halaman setor sampah
+    Web Application->>Web Application: Validasi session
+    Web Application->>Database: Query ambil data jenis sampah & nasabah
+    Database-->>Web Application: Data jenis sampah & nasabah
+    Web Application-->>Browser: Tampilkan form setor sampah
+
+    alt Proses Setor Sampah
+        Admin->>Browser: Memilih nasabah, jenis sampah, dan berat
+        Admin->>Browser: Klik tombol Simpan/Setor
+        Browser->>Web Application: Kirim data setor sampah (POST)
+        Web Application->>Web Application: Validasi input data
+        
+        alt Data tidak valid
+            Web Application-->>Browser: Redirect dengan pesan error
+            Browser-->>Admin: Tampilkan pesan error
+        else Data valid
+            Web Application->>Web Application: Hitung total poin (berat * harga)
+            Web Application->>Database: Simpan transaksi setor sampah
+            Database-->>Web Application: Transaksi tersimpan
+            Web Application->>Database: Update saldo poin nasabah
+            Database-->>Web Application: Saldo terupdate
+            Web Application-->>Browser: Redirect dengan status berhasil
+            Browser-->>Admin: Tampilkan pesan sukses transaksi
+        end
+    end
+```
