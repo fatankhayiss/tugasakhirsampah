@@ -7,9 +7,9 @@ class Environment {
   static String get baseUrl {
     switch (current) {
       case AppEnvironment.dev:
-        return 'http://192.168.111.14/tugasakhirsampah/bank_sampah/';
+        return 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
       case AppEnvironment.production:
-        return 'http://192.168.111.14/tugasakhirsampah/bank_sampah/';
+        return 'http://192.168.31.220/tugasakhirsampah/bank_sampah/';
     }
   }
 }

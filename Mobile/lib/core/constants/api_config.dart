@@ -1,7 +1,7 @@
 /// Konfigurasi API terpusat untuk koneksi ke backend bank_sampah.
 ///
 /// Ubah [baseUrl] sesuai environment:
-/// - Production Cloud: `http://192.168.111.14/tugasakhirsampah/bank_sampah/`
+/// - Production Cloud: `http://192.168.31.220/tugasakhirsampah/bank_sampah/`
 library;
 import 'environment.dart';
 
@@ -28,4 +28,5 @@ class ApiConfig {
   static String get detect => '${baseUrl}modules/api/detect.php';
   static String get upload => '${baseUrl}modules/api/upload.php';
   static String get reward => '${baseUrl}modules/api/reward_api.php';
+  static String get fcmApi => '${baseUrl}modules/api/fcm_api.php';
 }

@@ -7,6 +7,7 @@ import '../constants/api_config.dart';
 import '../repositories/notification_repository.dart';
 import '../repositories/profile_repository.dart';
 import 'api_service.dart';
+import 'fcm_service.dart';
 import 'google_auth_service.dart';
 
 /// Target destination after application initialization completes.
@@ -170,6 +171,7 @@ class AppInitializerService {
   Future<void> _runFutureReadyHooks() async {
     try {
       // • Firebase Cloud Messaging (FCM token registration & listener attach)
+      await FCMService.instance.init();
       // • Remote Config feature flag synchronizations
       // • Version Checker & mandatory app update triggers
       // • Maintenance Mode status polling

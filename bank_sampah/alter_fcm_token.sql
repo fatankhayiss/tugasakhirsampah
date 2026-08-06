@@ -1,0 +1,1 @@
+ALTER TABLE pengguna ADD COLUMN fcm_token VARCHAR(255) NULL DEFAULT NULL AFTER api_token;
