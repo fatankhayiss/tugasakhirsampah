@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 Future<void> main() async {
-  final baseUrl = 'http://192.168.111.14/tugasakhirsampah/bank_sampah/modules/api/';
+  final baseUrl = 'http://192.168.196.14/tugasakhirsampah/bank_sampah/modules/api/';
   
   // 1. Test Jenis Sampah (GET)
   final jenisSampahUrl = baseUrl + 'jenis_sampah_api.php';

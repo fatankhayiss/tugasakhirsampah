@@ -1,0 +1,52 @@
+# Sequence Diagram - Profil Admin
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Browser
+    participant Web Application
+    participant Database
+
+    %% MELIHAT PROFIL
+    Admin->>Browser: Membuka halaman Profil
+    Browser->>Web Application: Kirim request ke halaman profil
+    Web Application->>Web Application: Ambil ID admin dari Session
+    Web Application->>Database: Query ambil data admin
+    Database-->>Web Application: Kembalikan data admin
+    Web Application-->>Browser: Tampilkan halaman form terisi data profil
+    Browser-->>Admin: Melihat profil
+
+    alt Proses Mengubah Profil
+        Admin->>Browser: Mengubah data pada form profil dan klik Simpan
+        Browser->>Web Application: Kirim proses update profil (POST)
+        Web Application->>Web Application: Validasi data input
+        
+        alt Data valid
+            Web Application->>Database: Update data di tabel admin
+            Database-->>Web Application: Berhasil update
+            Web Application->>Web Application: Update session (jika perlu)
+            Web Application-->>Browser: Redirect dengan pesan sukses
+            Browser-->>Admin: Tampilkan pesan sukses
+        else Data tidak valid
+            Web Application-->>Browser: Redirect dengan pesan error
+            Browser-->>Admin: Tampilkan pesan error
+        end
+
+    else Proses Mengubah Password
+        Admin->>Browser: Mengisi form ubah password (lama, baru, konfirmasi)
+        Browser->>Web Application: Kirim proses ubah password (POST)
+        Web Application->>Database: Ambil password lama dari DB
+        Database-->>Web Application: Data password
+        Web Application->>Web Application: Validasi password lama dan kecocokan konfirmasi
+        
+        alt Password lama salah atau tidak cocok
+            Web Application-->>Browser: Redirect dengan pesan error
+            Browser-->>Admin: Tampilkan pesan error
+        else Validasi sukses
+            Web Application->>Database: Update kolom password (Hash)
+            Database-->>Web Application: Berhasil update
+            Web Application-->>Browser: Redirect dengan pesan sukses
+            Browser-->>Admin: Tampilkan pesan sukses
+        end
+    end
+```

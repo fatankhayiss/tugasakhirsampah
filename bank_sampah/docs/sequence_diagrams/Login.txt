@@ -1,0 +1,25 @@
+﻿```mermaid
+sequenceDiagram
+    participant Admin
+    participant Browser
+    participant Web Application
+    participant Database
+
+    Admin->>Browser: Membuka halaman Login
+    Browser->>Web Application: Minta halaman login
+    Web Application-->>Browser: Tampilkan form login
+    Admin->>Browser: Mengisi form (username, password) dan klik Login
+    Browser->>Web Application: Kirim request ke proses_login.php
+    Web Application->>Web Application: Validasi input (kosong/tidak)
+    Web Application->>Database: Query cek data user
+    Database-->>Web Application: Kembalikan hasil query
+    
+    alt Login berhasil (Data ditemukan & Password cocok)
+        Web Application->>Web Application: Buat Session user
+        Web Application-->>Browser: Redirect ke halaman Dashboard
+        Browser-->>Admin: Tampilkan halaman Dashboard
+    else Login gagal (Data tidak ditemukan / Password salah)
+        Web Application-->>Browser: Redirect ke halaman Login dengan error
+        Browser-->>Admin: Tampilkan pesan error "Username atau password salah"
+    end
+```

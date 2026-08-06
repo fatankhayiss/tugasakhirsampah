@@ -1,0 +1,32 @@
+# Sequence Diagram - Laporan
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Browser
+    participant Web Application
+    participant Database
+
+    %% FILTER LAPORAN
+    Admin->>Browser: Membuka halaman Laporan
+    Browser->>Web Application: Minta halaman laporan
+    Web Application-->>Browser: Tampilkan form filter (Tanggal, Jenis, dll)
+    
+    alt Proses Generate / Lihat Laporan
+        Admin->>Browser: Mengisi filter dan klik Generate/Cari
+        Browser->>Web Application: Kirim parameter filter (GET/POST)
+        Web Application->>Database: Query ambil data berdasarkan filter
+        Database-->>Web Application: Kembalikan sekumpulan data
+        Web Application-->>Browser: Tampilkan hasil tabel laporan
+        Browser-->>Admin: Melihat laporan sesuai filter
+
+    else Proses Export Laporan (PDF / Excel)
+        Admin->>Browser: Klik tombol Export (PDF/Excel)
+        Browser->>Web Application: Kirim request cetak dengan filter
+        Web Application->>Database: Query ambil data sesuai filter
+        Database-->>Web Application: Kembalikan data
+        Web Application->>Web Application: Generate format file (PDF/Excel)
+        Web Application-->>Browser: Response Header (File Download)
+        Browser-->>Admin: Download file laporan
+    end
+```
