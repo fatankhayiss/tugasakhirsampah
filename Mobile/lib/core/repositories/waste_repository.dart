@@ -23,6 +23,8 @@ class WasteRepository {
             pricePerKg: (item['harga_per_kg'] as num?)?.toDouble() ?? 0,
             category: item['kategori'],
             description: item['deskripsi'],
+            caraPengolahan: item['cara_pengolahan'],
+            imageUrl: item['gambar'],
           );
         }).toList();
       } else {

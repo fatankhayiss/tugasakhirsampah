@@ -79,34 +79,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
     }
   }
 
-  List<WasteItem> _getFallbackItems() {
-    return [
-      WasteItem(
-        id: '1',
-        name: 'Plastik PET',
-        imageAsset: 'water_bottle',
-        pricePerKg: 250,
-      ),
-      WasteItem(
-        id: '2',
-        name: 'Kardus',
-        imageAsset: 'inventory_2',
-        pricePerKg: 150,
-      ),
-      WasteItem(
-        id: '3',
-        name: 'Kertas',
-        imageAsset: 'description',
-        pricePerKg: 180,
-      ),
-      WasteItem(
-        id: '4',
-        name: 'Kaleng',
-        imageAsset: 'liquor',
-        pricePerKg: 300,
-      ),
-    ];
-  }
+  List<WasteItem> _getFallbackItems() => [];
 
   Widget _buildItemImage(WasteItem item, {double? width, double? height, BoxFit fit = BoxFit.cover}) {
     IconData iconData = Icons.recycling;
@@ -432,6 +405,110 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
     );
   }
 
+  void _showWasteDetailPopup(WasteItem item) {
+    final matchedItem = availableItems.firstWhere(
+      (available) => available.name.toLowerCase() == item.name.toLowerCase(),
+      orElse: () => item,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+               const SizedBox(height: 24),
+               Row(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   ClipRRect(
+                     borderRadius: BorderRadius.circular(16),
+                     child: (matchedItem.imageUrl != null && matchedItem.imageUrl!.isNotEmpty)
+                         ? (matchedItem.imageUrl!.startsWith('/') || matchedItem.imageUrl!.startsWith('file://')
+                             ? _buildItemImage(matchedItem, width: 80, height: 80, fit: BoxFit.cover)
+                             : AppNetworkImage(
+                                 matchedItem.imageUrl!,
+                                 width: 80,
+                                 height: 80,
+                                 fit: BoxFit.cover,
+                                 errorWidget: Container(
+                                   width: 80, height: 80,
+                                   color: AppColors.softGreen,
+                                   child: const Icon(Icons.recycling, color: AppColors.primary, size: 32),
+                                 ),
+                               ))
+                         : Container(
+                             width: 80, height: 80,
+                             color: AppColors.softGreen,
+                             child: const Icon(Icons.recycling, color: AppColors.primary, size: 32),
+                           ),
+                   ),
+                   const SizedBox(width: 16),
+                   Expanded(
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(
+                           matchedItem.name,
+                           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Plus Jakarta Sans', color: AppColors.textDark),
+                         ),
+                         const SizedBox(height: 8),
+                         Container(
+                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                           decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                           child: Text(
+                             matchedItem.category ?? 'Tanpa Kategori',
+                             style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                           ),
+                         ),
+                       ],
+                     ),
+                   ),
+                 ],
+               ),
+               const SizedBox(height: 24),
+               if (matchedItem.description != null && matchedItem.description!.isNotEmpty) ...[
+                 const Text('Deskripsi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark)),
+                 const SizedBox(height: 8),
+                 Text(matchedItem.description!, style: const TextStyle(color: AppColors.textSoft, height: 1.5)),
+                 const SizedBox(height: 16),
+               ],
+               if (matchedItem.caraPengolahan != null && matchedItem.caraPengolahan!.isNotEmpty) ...[
+                 const Text('Cara Pengolahan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark)),
+                 const SizedBox(height: 8),
+                 Text(matchedItem.caraPengolahan!, style: const TextStyle(color: AppColors.textSoft, height: 1.5)),
+                 const SizedBox(height: 24),
+               ],
+               SizedBox(
+                 width: double.infinity,
+                 child: ElevatedButton(
+                   onPressed: () => Navigator.pop(context),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: AppColors.primary,
+                     foregroundColor: Colors.white,
+                     padding: const EdgeInsets.symmetric(vertical: 16),
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                   ),
+                   child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
+                 ),
+               )
+            ],
+          ),
+        );
+      }
+    );
+  }
+
   void _showDeleteItemDialog(WasteItem item) {
     showDialog(
       context: context,
@@ -559,7 +636,7 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
               child: CircularProgressIndicator(color: AppColors.primary),
             )
           : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 180),
               children: [
                 if (_activeScannedItem != null) ...[
                   _buildScannedReviewSection(_activeScannedItem!),
@@ -1104,7 +1181,6 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
   Widget _buildCategoryCard(WasteItem item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1117,93 +1193,183 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.softGreen,
-                  borderRadius: BorderRadius.circular(14),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _showWasteDetailPopup(item),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                          ? AppNetworkImage(
+                              item.imageUrl!,
+                              width: 52,
+                              height: 52,
+                              fit: BoxFit.cover,
+                              errorWidget: Container(
+                                width: 52, height: 52,
+                                color: AppColors.softGreen,
+                                child: const Icon(Icons.recycling, color: AppColors.primary, size: 26),
+                              ),
+                            )
+                          : Container(
+                              width: 52,
+                              height: 52,
+                              color: AppColors.softGreen,
+                              child: const Icon(Icons.recycling, color: AppColors.primary, size: 26),
+                            ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textDark,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.category ?? 'Sampah',
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Poin: ${item.pricePerKg.toInt()}/kg  •  Ketuk untuk detail',
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 11,
+                                color: AppColors.textSoft,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Icon(
-                  Icons.recycling,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
+                InkWell(
+                  onTap: () => _openWeightBottomSheet(item),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, AppColors.secondary],
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      'Tambah',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Poin: ${item.pricePerKg.toInt()}/kg',
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                      color: AppColors.textSoft,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          InkWell(
-            onTap: () => _openWeightBottomSheet(item),
-            borderRadius: BorderRadius.circular(999),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.secondary],
                 ),
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Text(
-                'Tambah',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildSelectedCard(WasteItem item) {
     final bool isScanned = item.isScanned || item.imageUrl != null;
+
+    // Tentukan gambar yang tampil:
+    // 1. Jika ada gambar scan (file lokal) → pakai itu
+    // 2. Jika ada imageUrl dari database → pakai itu
+    // 3. Fallback: ikon recycling
+    Widget imageWidget;
+    if (item.imageUrl != null && item.imageUrl!.isNotEmpty &&
+        (item.imageUrl!.startsWith('/') || item.imageUrl!.startsWith('file://'))) {
+      // Gambar lokal hasil scan kamera
+      imageWidget = _buildItemImage(item, width: 52, height: 52);
+    } else if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
+      // Gambar dari database
+      imageWidget = AppNetworkImage(
+        item.imageUrl!,
+        width: 52,
+        height: 52,
+        fit: BoxFit.cover,
+        errorWidget: Container(
+          width: 52, height: 52,
+          color: AppColors.softGreen,
+          child: const Icon(Icons.recycling, color: AppColors.primary, size: 26),
+        ),
+      );
+    } else {
+      // Cari imageUrl dari availableItems berdasarkan nama
+      final matched = availableItems.where(
+        (a) => a.name.toLowerCase() == item.name.toLowerCase()
+      );
+      final dbUrl = matched.isNotEmpty ? matched.first.imageUrl : null;
+      if (dbUrl != null && dbUrl.isNotEmpty) {
+        imageWidget = AppNetworkImage(
+          dbUrl,
+          width: 52,
+          height: 52,
+          fit: BoxFit.cover,
+          errorWidget: Container(
+            width: 52, height: 52,
+            color: AppColors.softGreen,
+            child: const Icon(Icons.recycling, color: AppColors.primary, size: 26),
+          ),
+        );
+      } else {
+        imageWidget = Container(
+          width: 52, height: 52,
+          color: AppColors.softGreen,
+          child: const Icon(Icons.recycling, color: AppColors.primary, size: 26),
+        );
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: isScanned
+              ? AppColors.primary.withValues(alpha: 0.25)
+              : AppColors.border,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -1212,81 +1378,114 @@ class _ManualDepositScreenState extends State<ManualDepositScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isScanned ? AppColors.softGreen : const Color(0xFFEAF8EF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: isScanned
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: _buildItemImage(item, width: 48, height: 48),
-                  )
-                : const Icon(
-                    Icons.check_circle_outline,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _showWasteDetailPopup(item),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
               children: [
-                Text(
-                  item.name,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
+                // Gambar / thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: imageWidget,
+                ),
+                const SizedBox(width: 12),
+
+                // Info teks
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (isScanned)
+                            Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.softGreen,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'AI',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textDark,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${item.weight.toStringAsFixed(1)} Kg  •  ${item.totalPrice.toInt()} Poin',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSoft,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${item.weight.toStringAsFixed(1)} Kg • ${item.totalPrice.toInt()} Poin',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSoft,
-                  ),
+
+                // Tombol Edit & Hapus
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        color: isScanned ? AppColors.primary : AppColors.textSoft,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        if (isScanned) {
+                          setState(() {
+                            _activeScannedItem = item;
+                            _topWeightController.text = item.weight.toStringAsFixed(
+                              item.weight.truncateToDouble() == item.weight ? 1 : 2,
+                            );
+                          });
+                        } else {
+                          _openWeightBottomSheet(item, isEditing: true);
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Color(0xFFEF4444),
+                        size: 20,
+                      ),
+                      onPressed: () => _showDeleteItemDialog(item),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(
-              Icons.edit_outlined,
-              color: isScanned ? AppColors.primary : AppColors.textSoft,
-              size: 20,
-            ),
-            onPressed: () {
-              if (isScanned) {
-                setState(() {
-                  _activeScannedItem = item;
-                  _topWeightController.text = item.weight.toStringAsFixed(
-                    item.weight.truncateToDouble() == item.weight ? 1 : 2,
-                  );
-                });
-              } else {
-                _openWeightBottomSheet(item, isEditing: true);
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.delete_outline,
-              color: Color(0xFFEF4444),
-              size: 20,
-            ),
-            onPressed: () => _showDeleteItemDialog(item),
-          ),
-        ],
+        ),
       ),
     );
   }

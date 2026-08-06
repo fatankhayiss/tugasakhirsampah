@@ -11,6 +11,7 @@ class WasteItem {
   final String? category;
   final String? confidence;
   final String? description;
+  final String? caraPengolahan;
   final bool isScanned;
 
   WasteItem({
@@ -24,6 +25,7 @@ class WasteItem {
     this.category,
     this.confidence,
     this.description,
+    this.caraPengolahan,
     this.isScanned = false,
   });
 

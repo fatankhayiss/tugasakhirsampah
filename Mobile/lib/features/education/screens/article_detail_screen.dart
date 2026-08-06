@@ -178,7 +178,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   widget.article.imageUrl,
                   widget.article.imageAsset,
                   width: double.infinity,
-                  height: (MediaQuery.of(context).size.width * 0.55).clamp(180.0, 300.0),
+                  fit: BoxFit.contain,
                   heroTag: 'article_image_${widget.article.id}',
                 ),
               ),

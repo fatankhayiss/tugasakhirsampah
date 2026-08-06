@@ -220,10 +220,23 @@ if ($tbl_exists) {
     $top_berat = 1.0;
     $top_estimasi = 0.0; // Wait, without joining jenis_sampah, we don't know the price. But Flutter handles this.
     
+    // ── Confidence guard: tolak deteksi yang terlalu lemah ───────────────
+    // Confidence dari Python worker sudah dalam skala 0-100.
+    // Jika di bawah threshold ini, objek dianggap tidak dikenali.
+    // HARUS konsisten dengan nilai CONFIDENCE di detect_worker.py (× 100).
+    $MIN_CONFIDENCE_PERCENT = 40.0;
+    
     if (!empty($results)) {
         $first = $results[0];
-        $top_kategori_sampah = !empty($first['class']) ? $first['class'] : 'Tidak Dikenali';
-        $top_confidence = isset($first['confidence']) ? floatval($first['confidence']) : 0.0;
+        $conf  = isset($first['confidence']) ? floatval($first['confidence']) : 0.0;
+        
+        if ($conf >= $MIN_CONFIDENCE_PERCENT) {
+            $top_kategori_sampah = !empty($first['class']) ? $first['class'] : 'Tidak Dikenali';
+            $top_confidence = $conf;
+        } else {
+            // Confidence terlalu rendah — bukan sampah yang dikenali
+            error_log("[detect.php] Confidence {$conf}% < threshold {$MIN_CONFIDENCE_PERCENT}% → override ke 'Tidak Dikenali'");
+        }
         // Default values, will be updated from Flutter
     }
     $cat_esc = mysqli_real_escape_string($koneksi, $top_kategori_sampah);

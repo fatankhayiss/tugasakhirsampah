@@ -9,6 +9,7 @@ import '../../../core/navigation/app_page_transitions.dart';
 import '../../../core/repositories/detect_repository.dart';
 import '../../../core/repositories/waste_repository.dart';
 import 'manual_deposit_screen.dart';
+import 'scan_screen.dart';
 
 class WasteScanResultScreen extends StatefulWidget {
   final int? detectionId;
@@ -144,6 +145,43 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
     );
   }
 
+  void _scanAgain() {
+    if (_record == null) return;
+
+    final imageUrl = widget.localImagePath?.isNotEmpty == true
+        ? widget.localImagePath
+        : _record!.imageUrl;
+
+    final categoryId = _matchedCategory?.id ?? 'scan_${DateTime.now().millisecondsSinceEpoch}';
+    final categoryName = _matchedCategory?.name ?? WasteLabels.display(_record!.kategoriSampah);
+    final categoryPrice = _matchedCategory?.pricePerKg ?? 0.0;
+    final categoryDesc = _matchedCategory?.category ?? WasteLabels.display(_record!.kategoriSampah);
+
+    final newItem = WasteItem(
+      id: categoryId,
+      name: categoryName,
+      imageAsset: 'water_bottle', // generic icon fallback
+      pricePerKg: categoryPrice,
+      weight: _record!.berat,
+      imageUrl: imageUrl,
+      category: categoryDesc,
+      confidence: '${(_record!.confidence * 100).toStringAsFixed(0)}%',
+      isScanned: true,
+    );
+
+    final updatedCart = [
+      if (widget.existingCartItems != null) ...widget.existingCartItems!,
+      newItem,
+    ];
+
+    Navigator.pushReplacement(
+      context,
+      CustomPageRoute(
+        page: ScanScreen(existingCartItems: updatedCart),
+      ),
+    );
+  }
+
   void _goManual() {
     Navigator.pushReplacement(
       context,
@@ -154,6 +192,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
       ),
     );
   }
+
 
   void _openEditSheet() {
     if (_record == null) return;
@@ -658,10 +697,10 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
 
     if (_record == null || _record!.kategoriSampah == 'Tidak Dikenali') {
       return _buildFallbackView(
-        icon: Icons.search_off_rounded,
+        icon: Icons.help_outline_rounded,
         iconColor: const Color(0xFFD97706),
-        title: 'Sampah Tidak Dikenali',
-        subtitle: 'AI tidak dapat mengenali objek pada foto ini.\nSilakan foto ulang dengan lebih jelas atau pilih kategori secara manual.',
+        title: 'Sampah di Luar 7 Kelas Model',
+        subtitle: 'Objek yang difoto tidak termasuk dalam 7 kelas sampah yang dikenali model AI:\n\nKaca • Kaleng • Kardus • Kertas\nOrganik • Plastik HDPE • Plastik PET\n\nPilih kategori secara manual jika Anda yakin ini adalah sampah.',
         showManualButton: true,
       );
     }
@@ -698,7 +737,7 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
             ],
           ),
           const SizedBox(height: 16),
-          if (_record!.confidence < 0.60)
+          if (_record!.confidence < 60)
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(12),
@@ -734,8 +773,8 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _confirmAndProceed,
-              icon: const Icon(Icons.check_circle_outline_rounded),
-              label: const Text('Lanjutkan Transaksi'),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Simpan & Setor Manual'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -751,9 +790,9 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: _goManual,
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('Pilih Kategori Manual'),
+              onPressed: _scanAgain,
+              icon: const Icon(Icons.document_scanner_outlined, size: 18),
+              label: const Text('Simpan & Scan Lagi'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: BorderSide(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
@@ -808,7 +847,8 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
             Positioned(
               bottom: 16, left: 16,
               child: _ConfidenceBadge(
-                confidence: '${(_record!.confidence * 100).toStringAsFixed(0)}%',
+                // confidence sudah dalam skala 0-100 dari Python worker
+                confidence: '${_record!.confidence.toStringAsFixed(0)}%',
               ),
             ),
         ],
@@ -954,10 +994,55 @@ class _WasteScanResultScreenState extends State<WasteScanResultScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(color: AppColors.softGreen, borderRadius: BorderRadius.circular(20)),
-                    child: Text('Rp${harga.toStringAsFixed(0)}/kg', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                    child: Text('${harga.toStringAsFixed(0)} Poin/kg', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
                   ),
                 ],
               ),
+              // Deskripsi & Cara Pengolahan dari database
+              if (_matchedCategory?.description != null && _matchedCategory!.description!.isNotEmpty) ...[
+                const Divider(height: 20),
+                const Text(
+                  'Deskripsi',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _matchedCategory!.description!,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    color: AppColors.textSoft,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+              if (_matchedCategory?.caraPengolahan != null && _matchedCategory!.caraPengolahan!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Cara Pengolahan',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _matchedCategory!.caraPengolahan!,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    color: AppColors.textSoft,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

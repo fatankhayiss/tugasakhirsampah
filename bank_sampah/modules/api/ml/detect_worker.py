@@ -47,7 +47,10 @@ WORKER_PORT  = config.SERVER_PORT
 BACKLOG      = 10
 LOG_FILE     = Path(__file__).parent / "worker.log"
 MODEL_PATH   = Path(__file__).parent / "best.onnx"
-CONFIDENCE   = 0.05   # Minimum detection confidence threshold
+CONFIDENCE   = 0.40   # Minimum detection confidence threshold (skala 0-1)
+                       # Dinaikkan ke 0.40 agar objek asing (bukan 7 kelas)
+                       # tidak lolos filter dan dikembalikan sebagai hasil kosong.
+                       # Nilai yang dikirim ke PHP sudah dalam skala 0-100.
 MAX_IMG_SIZE = 640    # YOLO input size
 
 # ─────────────────────────────────────────────
